@@ -1,0 +1,39 @@
+<% q = params[:name] %>
+<h1>RQ : Queue [ <%= q %> ]</h1>
+
+<ul>
+<%  qc = RQ::QueueClient.new(q) %>
+<li>
+<span class=""> <a href="<%= "#{url}queue/#{q}" %>"><%= "#{url}queue/#{q}" %></a> </span>
+<br />
+<% if qc.running? %>
+  Status: <span class="green">queue is OPERATIONAL</span>
+  <span class="green"> <%=  qc.ping %> </span>
+  <span class="green"> <%=  qc.read_pid %> </span>
+  up for <%= qc.uptime %> seconds
+  <% else %>
+  Status: <span class="red">queue is DOWN</span>
+<br />
+  TODO: Display options, restarts
+<% end %>
+</li>
+</ul>
+
+<h3>Message List</h3>
+<a href="new_message">New Message</a>
+<ul>
+<% if RQ::QueueMgrClient.running? %>
+<%   msgs = qc.messages %>
+<%   msgs.each do |msg| %>
+<li>
+  <span class="">
+    <a href="<%= "#{url}queue/#{q}/#{msg}" %>"><%= "#{url}queue/#{q}/#{msg}" %></a>
+  </span>
+  <br />
+  status: <span class="green"> <%= msg.status %></span>
+</li>
+<%   end %>
+<% end %>
+</ul>
+
+The bomb... <%= Time.now %> - <%= Dir.pwd %>

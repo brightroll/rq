@@ -68,6 +68,25 @@ module RQ
       client.close
       result ? JSON.parse(result[0]) : nil
     end
+
+    def status
+      return "OPERATIONAL"
+      client = UNIXSocket.open(@queue_sock_path)
+      client.send("status", 0)
+      result = client.recvfrom(1024)
+      client.close
+      result ? JSON.parse(result[0]) : nil
+    end
+
+    def messages
+      return []
+      client = UNIXSocket.open(@queue_sock_path)
+      client.send("uptime", 0)
+      result = client.recvfrom(1024)
+      client.close
+      result ? JSON.parse(result[0]) : nil
+    end
+
   end
 end
 

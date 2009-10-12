@@ -41,7 +41,8 @@ module RQ
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
       end
-      "We got <pre> #{params.inspect} </pre> from route"
+
+      erb :queue
 
     end
   end
