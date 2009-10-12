@@ -29,7 +29,7 @@ show queue status
 <%   queues.each do |q| %>
 <%     qc = RQ::QueueClient.new(q) %>
 <li>
-<span class=""> <%= "#{url}#{q}" %> </span>
+<span class=""> <a href="<%= "#{url}queue/#{q}" %>"><%= "#{url}queue/#{q}" %></a> </span>
 <br />
 <%if  qc.running? %>
   <span class="green">queue is OPERATIONAL</span>
