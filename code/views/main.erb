@@ -1,0 +1,47 @@
+
+<h1>RQ</h1>
+
+<ul>
+<li>
+<%if  RQ::QueueMgrClient.running? %>
+  <span class="green">QUEUE MGR is OPERATIONAL</span>
+  <span class="green"> <%=  RQ::QueueMgrClient.ping %> </span>
+  <span class="green"> <%=  RQ::QueueMgrClient.read_pid %> </span>
+  up for <%= RQ::QueueMgrClient.uptime %> seconds
+  <% else %>
+  <span class="red">QUEUE MGR is DOWN</span>
+<%end %>
+</li>
+<li>
+are we running
+</li>
+<li>
+show queue status
+</li>
+</ul>
+
+
+<h3>Queue List</h3>
+<a href="new_queue">New Queue</a>
+<ul>
+<% if RQ::QueueMgrClient.running? %>
+<%   queues = RQ::QueueMgrClient.queues %>
+<%   queues.each do |q| %>
+<%     qc = RQ::QueueClient.new(q) %>
+<li>
+<span class=""> <%= "#{url}#{q}" %> </span>
+<br />
+<%if  qc.running? %>
+  <span class="green">queue is OPERATIONAL</span>
+  <span class="green"> <%=  qc.ping %> </span>
+  <span class="green"> <%=  qc.read_pid %> </span>
+  up for <%= qc.uptime %> seconds
+  <% else %>
+  <span class="red">queue is DOWN</span>
+<%end %>
+</li>
+<%   end %>
+<% end %>
+</ul>
+
+The bomb... <%= Time.now %> - <%= Dir.pwd %>

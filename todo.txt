@@ -1,0 +1,46 @@
+
+#goals get a web server install up
+#install queu dir
+#Create IPC system
+#Restart Server Command
+#Test non block
+#See server Uptime (JSON result)
+#Create queues (local and other)
+#See Queue List (JSON result)
+#Change queue process name
+#Fix bug with spaces in queue names and script names
+#Detect queue death and restart
+#Have QueueSupervisor shut down children upon shutdown
+
+Refactor Quemgr to be like queue
+Git checkin
+
+Lite Click on queues to dig deeper
+Lite Queue startup -> verify dirs -> loads state (active messages)
+
+Have queue states (clean shutdown, hold, go)
+Queue a job via cmd line (using ruby lib)
+Have queue process show the items in queue via order
+Lite Queue Restart and QueueMgr child process detection
+
+DEMO
+
+Have a local queue script deliver message
+ - local queue on same host
+ - remote queue on other host
+   - network listener
+   - ruby lib to talk protocol 
+
+Have a script for another queue (cdb push)
+
+Have a local queue script move job to a remote queue
+
+DONE
+
+Restart Server Command via web
+View log via web (last 10 entries)
+#  Simple IPC via cmd line or web to running process
+#    Core is Unix Domain, Web Proxies
+Have the queue send job to destination queue (local machine, local filesystem)
+Have remote queue deliver
+Have remote queue run

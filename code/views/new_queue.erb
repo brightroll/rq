@@ -1,0 +1,50 @@
+
+<h1>RQ</h1>
+
+<h3>New Queue</h3>
+<form id="new_queue_form" method="post" action="/new_queue">
+<fieldset>
+<legend>Queue Configuration</legend>  
+
+<div class="field">
+<label class="field_label" for="queue_name">Queue name</label>
+<span class=""><%= "#{url}/" %></span>
+<input type="text" size="50" name="queue[name]" id="queue_name" value="" />
+</div>
+
+<div class="field">
+<label class="field_label" for="queue_script">Queue script path</label>
+<input type="text" size="80" name="queue[script]" id="queue_script" value="" />
+</div>
+
+<div class="field">
+<label class="field_label" for="queue_ordering">Queue ordering</label>
+<label for="queue_ordering">ordered</label>
+<input type="radio" name="queue[ordering]" value="ordered" checked />
+<label for="queue_ordering">un-ordered</label>
+<input type="radio" name="queue[ordering]" value="unordered" />
+</div>
+
+<div class="field">
+<label class="field_label" for="queue_num_workers">Max number of workers</label>
+<input type="text" name="queue[num_workers]" value="1" size="3" />
+<p class="note">Anything >1 means parallelism</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="queue_fsync">Queue fsync</label>
+<label for="queue_fsync">fsync</label>
+<input type="radio" name="queue[fsync]" value="fsync" checked/>
+<label for="queue_fsync">no-fsync</label>
+<input type="radio" name="queue[fsync]" value="no-fsync" />
+<p class="note">ignored - always fsync currently</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="queue_fsync">&nbsp;</label>
+<input type="submit" name="queue_name" value="submit" />
+</div>
+
+</fieldset>
+</form>
+

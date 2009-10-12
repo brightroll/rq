@@ -1,0 +1,43 @@
+
+.green { background-color: green; color: white; }
+.red { background-color: red; color: yellow; }
+#edit_table button { background: transparent 2px 2px no-repeat; border: none;
+    color: #666; margin: 0; padding: 2px 1em 2px 22px; cursor: pointer;
+      font-size: 95%; font-weight: bold; line-height: 16px;
+    }
+/*
+ * #edit_table button:hover { background-position: 2px -30px; color: #000; }
+ * #edit_table button:active { background-position: 2px -62px; color: #000; }
+ */
+#edit_table button.add { background-image: url(../image/add.png); }
+#edit_table button.compact { background-image: url(../image/compact.png); }
+#edit_table button.delete { background-image: url(/images/icons/delete.png); }
+#edit_table button.load { background-image: url(../image/load.png); }
+#edit_table button.run { background-image: url(../image/run.png); }
+#edit_table button.save { background-image: url(../image/save.png); }
+
+
+#new_queue_form label.field_label {
+    display: block;
+    float: left;	
+    width: 18%;
+    padding: .2em 2% 0 0;
+    text-align: right;
+    clear: left;
+}
+
+#new_queue_form .field {
+    margin: 0;
+    padding: 0 0 1em 0;
+    clear: both;
+    width: 100%;
+    overflow: auto;
+}
+
+
+#new_queue_form .note {
+    font-size: .8em;
+    padding: 0 0 0 20%;
+    color: #444;
+    font-style: italic;
+}
