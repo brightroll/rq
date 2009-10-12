@@ -26,10 +26,23 @@ module RQ
     end
 
     post '/new_queue' do
-      # Create a queue
-      # Start a queue
+      # TODO: validation
+
+      # This creates and starts a queue
       result = RQ::QueueMgrClient.create_queue(params['queue'])
       "We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr"
+    end
+
+    get '/queue/:name' do
+      # check for queue
+      # TODO: sanitize names (no dots or slashes)
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+      "We got <pre> #{params.inspect} </pre> from route"
+
     end
   end
 end

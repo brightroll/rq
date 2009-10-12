@@ -14,6 +14,10 @@ module RQ
       @queue_sock_path = "queue/#{@name}/queue.sock"
     end
 
+    def exists?
+      File.directory?(@queue_path)
+    end
+
     def running?
       pid = read_pid
       begin
