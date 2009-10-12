@@ -11,9 +11,8 @@
 #Fix bug with spaces in queue names and script names
 #Detect queue death and restart
 #Have QueueSupervisor shut down children upon shutdown
+#Git checkin
 
-Refactor Quemgr to be like queue
-Git checkin
 
 Lite Click on queues to dig deeper
 Lite Queue startup -> verify dirs -> loads state (active messages)
@@ -22,6 +21,8 @@ Have queue states (clean shutdown, hold, go)
 Queue a job via cmd line (using ruby lib)
 Have queue process show the items in queue via order
 Lite Queue Restart and QueueMgr child process detection
+
+Refactor Quemgr to be like queue
 
 DEMO
 
