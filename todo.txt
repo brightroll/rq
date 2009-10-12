@@ -12,17 +12,25 @@
 #Detect queue death and restart
 #Have QueueSupervisor shut down children upon shutdown
 #Git checkin
+#Lite Click on queues to dig deeper
+  + main page has links
+  + queue page has info
 
+Monday
+------
+Add to git.btrll.com repo
+Queue status
+Lite-web queue process restart
+Lite Queue startup -> verify dirs -> loads state (operational status)
+Lite Have a message data store (ordered)
+Have Queue restart show messages in store
+Lite queue message manipulation
 
-Lite Click on queues to dig deeper
-Lite Queue startup -> verify dirs -> loads state (active messages)
-
-Have queue states (clean shutdown, hold, go)
+Magit on Aquamacs
 Queue a job via cmd line (using ruby lib)
 Have queue process show the items in queue via order
 Lite Queue Restart and QueueMgr child process detection
 
-Refactor Quemgr to be like queue
 
 DEMO
 
@@ -31,6 +39,9 @@ Have a local queue script deliver message
  - remote queue on other host
    - network listener
    - ruby lib to talk protocol 
+
+Control queue states (clean shutdown, hold, go)
+Refactor Quemgr to be like queue
 
 Have a script for another queue (cdb push)
 
