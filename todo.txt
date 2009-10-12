@@ -18,7 +18,7 @@
 
 Monday
 ------
-Add to git.btrll.com repo
+#Add to git.btrll.com repo
 Queue status
 Lite-web queue process restart
 Lite Queue startup -> verify dirs -> loads state (operational status)
