@@ -43,7 +43,29 @@ module RQ
       end
 
       erb :queue
-
     end
+
+    get '/queue/:name/restart' do
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      qc.shutdown
+
+      <<-HERE
+        <script type="text/javascript">
+        <!--
+        function delayer(){
+            history.back();
+        }
+        setTimeout('delayer()', 1000);
+        //-->
+        </script>
+        Queue restarted... (returning in 1 sec)
+      HERE
+    end
+
   end
 end

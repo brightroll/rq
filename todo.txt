@@ -19,18 +19,29 @@
 Monday
 ------
 #Add to git.btrll.com repo
-Queue status
-Lite-web queue process restart
++Queue status
+  + store status
+  + return status
+  + Lite-web queue process restart (hit a link, does restart, says
+  'OK', you hit back button)
+
+QueueSupervisor state
+  - Try to start queues (just start any queue with a dir)
 Lite Queue startup -> verify dirs -> loads state (operational status)
+Lite queue mod administrative and operational state
+
 Lite Have a message data store (ordered)
 Have Queue restart show messages in store
 Lite queue message manipulation
 
 Magit on Aquamacs
+
 Queue a job via cmd line (using ruby lib)
 Have queue process show the items in queue via order
 Lite Queue Restart and QueueMgr child process detection
 
+Monday
+------
 
 DEMO
 

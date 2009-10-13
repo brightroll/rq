@@ -9,8 +9,11 @@ module RQ
       @start_time = Time.now
       # Read config
       @queue_path = "queue/#{options['name']}"
-      @queue_opts = options
-      @sock = init_socket
+      init_socket
+
+      if load_config == false
+        @config = { "opts" => options, "admin_status" => "UP", "oper_status" => "UP" }
+      end
     end
 
     def self.create(options)
@@ -96,7 +99,29 @@ module RQ
 
       # Setup IPC
       File.unlink(@queue_path + '/queue.sock') rescue nil
-      sock = UNIXServer.open(@queue_path + '/queue.sock')
+      @sock = UNIXServer.open(@queue_path + '/queue.sock')
+    end
+
+    def load_config
+      begin
+        data = File.read(@queue_path + '/queue.config')
+        @config = JSON.parse(data)
+      rescue
+        return false
+      end
+      return true
+    end
+
+    def write_config
+      begin
+        data = @config.to_json
+        File.open(@queue_path + '/queue.config.tmp', 'w') { |f| f.write(data) }
+        File.rename(@queue_path + '/queue.config.tmp', @queue_path + '/queue.config')
+      rescue
+        log("FATAL - couldn't write config")
+        return false
+      end
+      return true
     end
 
     def log(mesg)
@@ -106,8 +131,9 @@ module RQ
       end
     end
 
-    def shutdown(mesg)
+    def shutdown!
       log("Received shutdown")
+      write_config
       Process.exit! 0
     end
 
@@ -115,7 +141,7 @@ module RQ
 
       Signal.trap("TERM") do
         log("received TERM signal")
-        shutdown
+        shutdown!
       end
 
       # Keep this here, cruft loves crufty company
@@ -169,15 +195,32 @@ module RQ
         sock.close
         return
       end
+
       if data[0].index('options')
-        resp = @queue_opts.to_json
+        resp = @config["opts"].to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close
         return
       end
-      
-      
+
+      if data[0].index('status')
+        resp = [ @config["admin_status"], @config["oper_status"] ].to_json
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('shutdown')
+        resp = [ 'ok' ].to_json
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        shutdown!
+        return
+      end
+
       sock.send("ERROR", 0)
       sock.close
       log("RESP [ ERROR ] - Unhandled message")

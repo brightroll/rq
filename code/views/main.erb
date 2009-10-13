@@ -32,13 +32,17 @@ show queue status
 <span class=""> <a href="<%= "#{url}queue/#{q}" %>"><%= "#{url}queue/#{q}" %></a> </span>
 <br />
 <%if  qc.running? %>
-  <span class="green">queue is OPERATIONAL</span>
+  <% admin_stat, oper_stat = qc.status %>
+  <span class="green">queue is administratively: <%= admin_stat %> </span>
+  <span class="green">queue is operationally: <%= oper_stat %> </span>
   <span class="green"> <%=  qc.ping %> </span>
   <span class="green"> <%=  qc.read_pid %> </span>
   up for <%= qc.uptime %> seconds
   <% else %>
   <span class="red">queue is DOWN</span>
 <%end %>
+  <br />
+<span class=""> <a href="<%= "#{url}queue/#{q}/restart" %>">Restart</a> </span>
 </li>
 <%   end %>
 <% end %>
