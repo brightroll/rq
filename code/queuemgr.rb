@@ -68,13 +68,12 @@ module RQ
           resp = ['fail', 'already created'].to_json
         else
           resp = ['fail', 'queue not created'].to_json
-          options['ppid'] = Process.pid
           results = RQ::Queue.create(options)
           File.open('config/queuemgr.log', "a") do
             |f|
             f.write("#{Process.pid} - #{Time.now} - STARTED [ #{options['name']}#{results[0]} ]\n")
           end
-          if resp
+          if results
             qc = QueueClient.new(options['name'])
             worker = Worker.new
             worker.name = options['name']
@@ -117,7 +116,6 @@ module RQ
         |q|
         Process.kill("TERM", q.pid)
       end
-
     end
 
     def final_shutdown!
@@ -126,10 +124,38 @@ module RQ
       Process.exit! 0
     end
 
+    def start_queue(qname)
+      options = { }
+      options['name'] = qname
+      results = RQ::Queue.start_process(options)
+      if results
+        qc = QueueClient.new(options['name'])
+        worker = Worker.new
+        worker.name = options['name']
+        worker.qc = qc
+        worker.options = options
+        worker.status = "RUNNING"
+        worker.pid = results[0]
+        worker.child_write_pipe = results[1]
+        worker.num_restarts = 0
+        @queues << worker
+        log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
+      end
+    end
+
+    def load_queues
+      queues = Dir.entries('queue').reject {|i| i.include? '.'}
+      
+      queues.each do
+        |q|
+        start_queue q
+      end
+    end
+
   end
 end
 
-# Move these codez
+# TODO: Move these codez
 
 def init
   # Show pid
@@ -160,6 +186,8 @@ def run_loop
     qmgr.shutdown
   end
 
+
+  qmgr.load_queues
 
   require 'fcntl'
   flag = File::NONBLOCK
@@ -208,7 +236,7 @@ def run_loop
             worker.child_write_pipe.close
             if worker.status == "RUNNING"
               results = RQ::Queue.start_process(worker.options)
-              log("STARTED [ #{worker.options['name']}#{results[0]} ]")
+              log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
               worker.pid = results[0]
               worker.child_write_pipe = results[1]
               worker.num_restarts += 1

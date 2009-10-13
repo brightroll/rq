@@ -45,6 +45,32 @@ module RQ
       erb :queue
     end
 
+    get '/queue/:name/new_message' do
+      # check for queue
+      # TODO: sanitize names (no dots or slashes)
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      erb :new_message
+    end
+
+    post '/queue/:name/new_message' do
+      # check for queue
+      # TODO: sanitize names (no dots or slashes)
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      result = qc.create_message(params['mesg'])
+      "We got <pre> #{params.inspect} </pre> from form, and #{result} from Queue"
+    end
+
+
     get '/queue/:name/restart' do
       qc = RQ::QueueClient.new(params[:name])
 

@@ -25,31 +25,48 @@ Monday
   + Lite-web queue process restart (hit a link, does restart, says
   'OK', you hit back button)
 
-QueueSupervisor state
-  - Try to start queues (just start any queue with a dir)
-Lite Queue startup -> verify dirs -> loads state (operational status)
-Lite queue mod administrative and operational state
++QueueSupervisor state
+  + Try to start queues (just start any queue with a dir)
 
-Lite Have a message data store (ordered)
-Have Queue restart show messages in store
-Lite queue message manipulation
++Lite Queue startup -> verify dirs -> loads state (operational status)
+?Move administrative state to queuemgr
+ - Maybe queue process is always up, though?, yeah, quemgr just loads
+ procs
+  
++ Identify message ID and attribs, make an object
++ Lite queue message manipulation
+  + inject message
+  - delete message
++Have Queue show num messages in store
++Have Queue show list of messages in store
++Lite Have a message data store (ordered)
 
-Magit on Aquamacs
+Lite show message
 
 Queue a job via cmd line (using ruby lib)
-Have queue process show the items in queue via order
-Lite Queue Restart and QueueMgr child process detection
 
-Monday
-------
-
-DEMO
 
 Have a local queue script deliver message
  - local queue on same host
  - remote queue on other host
    - network listener
    - ruby lib to talk protocol 
+
+View queue log
+Lite queue mod administrative and operational state
+ - Set to up or down
+
+Implement CDB push system
+ - Delivers to local
+ - Relayed to cdb_push script
+ - cdb_push creates new cdb file
+ - cdb_push creates new messages to other machines
+ - cdb_push waits for all messages to complete or errors out
+ - remote machines script moves file into proper location as proper user
+
+Later...
+Have TMS keep track of last 3 completed jobs per user (in session)
+Have TMS keep track of active jobs
 
 Control queue states (clean shutdown, hold, go)
 Refactor Quemgr to be like queue

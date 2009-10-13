@@ -85,11 +85,20 @@ module RQ
       result ? JSON.parse(result[0]) : nil
     end
 
-    def messages
-      return []
+    def create_message(params)
+      json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
-      client.send("uptime", 0)
+      client.send("create_message #{json_params}", 0)
       result = client.recvfrom(1024)
+      client.close
+      result ? JSON.parse(result[0]) : nil
+    end
+
+    def messages
+      client = UNIXSocket.open(@queue_sock_path)
+      client.send("messages", 0)
+      # TODO - deal with larger packet sizes
+      result = client.recvfrom(4096)
       client.close
       result ? JSON.parse(result[0]) : nil
     end

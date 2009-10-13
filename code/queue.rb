@@ -1,6 +1,7 @@
 
 require 'socket'
 require 'json'
+require 'fcntl'
 
 module RQ
   class Queue
@@ -11,9 +12,13 @@ module RQ
       @queue_path = "queue/#{options['name']}"
       init_socket
 
+      @messages = []
+
       if load_config == false
         @config = { "opts" => options, "admin_status" => "UP", "oper_status" => "UP" }
       end
+
+      load_messages
     end
 
     def self.create(options)
@@ -40,7 +45,7 @@ module RQ
       # nice pipes writeup
       # http://www.cim.mcgill.ca/~franco/OpSys-304-427/lecture-notes/node28.html
       child_rd, parent_wr = IO.pipe
-      
+
       child_pid = fork do
         queue_path = "queue/#{options['name']}"
         $0 = "[rq] [#{options['name']}]"
@@ -124,6 +129,71 @@ module RQ
       return true
     end
 
+    def alloc_id(msg)
+      # Simple time insertion system - should work since single threaded
+      times = 0
+      begin
+        z = Time.now.getutc
+        name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
+        #fd = IO::sysopen(@queue_path + '/mesgs/' + name, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT)
+        # There we have created a name and inode
+        #IO.new(fd).close
+
+        Dir.mkdir(@queue_path + "/mesgs/" + name)
+        msg["msg_id"] = name
+        return msg
+      rescue
+        times += 1
+        if times > 10 
+          log("FAILED TO ALLOC ID")
+          return nil
+        end
+        retry
+      end
+      nil  # fail
+    end
+
+    def inject(msg)
+      # Write message to disk
+      begin
+        data = msg.to_json
+        # Need a sysopen style system here TODO
+        basename = @queue_path + '/mesgs/' + msg['msg_id']
+        File.open(basename+ '/tmp', 'w') { |f| f.write(data) }
+        File.rename(basename + '/tmp', basename + '/msg')
+      rescue
+        log("FATAL - couldn't write message")
+        return false
+      end
+
+      # Put in queue
+      @messages << msg
+
+      # Persist queue
+      # TODO
+      return true
+    end
+
+    def load_messages
+
+      basename = @queue_path + '/mesgs/'
+      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+
+      messages.sort!
+
+      messages.each do
+        |mname|
+        begin
+          data = File.read(basename + mname + "/msg")
+          msg = JSON.parse(data)
+        rescue
+          log("Bad message in queue: #{mname}")
+          next
+        end
+        @messages << msg
+      end
+    end
+
     def log(mesg)
       File.open(@queue_path + '/queue.log', "a") do
         |f|
@@ -182,13 +252,13 @@ module RQ
 
       log("REQ [ #{data[0]} ]")
 
-      if data[0].index('ping')
+      if data[0].index('ping') == 0
         log("RESP [ pong ]")
         sock.send("pong", 0)
         sock.close
         return
       end
-      if data[0].index('uptime')
+      if data[0].index('uptime') == 0
         resp = [(Time.now - @start_time).to_i, ].to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
@@ -196,7 +266,7 @@ module RQ
         return
       end
 
-      if data[0].index('options')
+      if data[0].index('options') == 0
         resp = @config["opts"].to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
@@ -204,7 +274,7 @@ module RQ
         return
       end
 
-      if data[0].index('status')
+      if data[0].index('status') == 0
         resp = [ @config["admin_status"], @config["oper_status"] ].to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
@@ -212,7 +282,7 @@ module RQ
         return
       end
 
-      if data[0].index('shutdown')
+      if data[0].index('shutdown') == 0
         resp = [ 'ok' ].to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
@@ -221,7 +291,34 @@ module RQ
         return
       end
 
-      sock.send("ERROR", 0)
+      if data[0].index('create_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        msg = { }
+        if alloc_id(msg)
+          msg.merge!(options)
+          inject(msg)
+          resp = [ "ok", msg['msg_id'] ].to_json
+        else
+          resp = [ "fail", "unknown reason"].to_json
+        end
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('messages') == 0
+        data = @messages.map { |m| [m['msg_id'], m['status']] }
+        resp = data.to_json
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      sock.send('[ "ERROR" ]', 0)
       sock.close
       log("RESP [ ERROR ] - Unhandled message")
     end

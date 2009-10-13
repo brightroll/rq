@@ -20,17 +20,20 @@
 </ul>
 
 <h3>Message List</h3>
-<a href="new_message">New Message</a>
-<ul>
+<a href="<%= "#{url}queue/#{q}/new_message" %>">New Message</a>
+<br />
 <% if RQ::QueueMgrClient.running? %>
 <%   msgs = qc.messages %>
+<span><%= msgs.length %> items in queue </span>
+<ul>
 <%   msgs.each do |msg| %>
 <li>
   <span class="">
-    <a href="<%= "#{url}queue/#{q}/#{msg}" %>"><%= "#{url}queue/#{q}/#{msg}" %></a>
+    <a href="<%= "#{url}queue/#{q}/#{msg[0]}" %>"><%= "#{url}queue/#{q}/#{msg[0]}" %></a>
   </span>
   <br />
-  status: <span class="green"> <%= msg.status %></span>
+  id: <span class=""> <%= msg[0] %></span>
+  status: <span class="green"> <%= msg[1] %></span>
 </li>
 <%   end %>
 <% end %>

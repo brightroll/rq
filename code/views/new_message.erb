@@ -1,0 +1,60 @@
+
+<h1>RQ</h1>
+
+<h3>New Message</h3>
+<form id="new_queue_form" method="post" action="<%= "/queue/#{params['name']}/new_message" %>">
+<fieldset>
+<legend>Message Options</legend>  
+
+<div class="field">
+<label class="field_label" for="mesg_dest">Destination Queue</label>
+<input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}queue/" %>" />
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_src">Source Identifier</label>
+<input type="text" size="80" name="mesg[src]" id="mesg_src" value="" />
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_param1">Param 1</label>
+<input type="text" name="mesg[param1]" value="" size="80" />
+<p class="note">optional parameter</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_param2">Param 2</label>
+<input type="text" name="mesg[param2]" value="" size="80" />
+<p class="note">optional parameter</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_param3">Param 3</label>
+<input type="text" name="mesg[param3]" value="" size="80" />
+<p class="note">optional parameter</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_param4">Param 4</label>
+<input type="text" name="mesg[param4]" value="" size="80" />
+<p class="note">optional parameter</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_status">Status</label>
+<label for="mesg_status">ready</label>
+<input type="radio" name="mesg[status]" value="ready" checked />
+<label for="mesg_status">prep</label>
+<input type="radio" name="mesg[status]" value="prep" />
+<p class="note">Ready gets queued now. Prep stays in prep state until commited (allows attachments/modification/etc.)</p>
+</div>
+
+
+<div class="field">
+<label class="field_label" for="mesg_submit">&nbsp;</label>
+<input type="submit" name="mesg_submit" value="submit" />
+</div>
+
+</fieldset>
+</form>
+
