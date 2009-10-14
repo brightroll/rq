@@ -44,17 +44,17 @@ Monday
 Tuesday
 -------
 + Design doc -> simple supervisor model, simple understanding of locking
-- Children detect parent death and die
-A New FileQue class
++ Children detect parent death and die
 Multiple queue dirs
     ['_lock', 'w'], -> lockfile for queue
     ['_log',  'w'],
     ['_tmp',  'd'],
-    ['que',   'd'], -> prep
-    ['run',   'd'], -> queued
+    ['prep',  'd'], -> prep
+    ['que',   'd'], -> queued
     ['pause', 'd'], -> running (for a 1 worker queue, 1 at a time)
     ['done',  'd'], -> done (removed, errored and removed, etc)
     ['_err',  'd'], -> error (malformed, unfinished?)
+A New FileQue class
 
 Lite delete message
 Lite show message

@@ -34,6 +34,9 @@
   <br />
   id: <span class=""> <%= msg[0] %></span>
   status: <span class="green"> <%= msg[1] %></span>
+  <span class="">
+    <!-- TODO: Ajax delete as POST -->
+    <a href="<%= "#{url}queue/#{q}/#{msg[0]}/delete" %>">delete</a>
 </li>
 <%   end %>
 <% end %>

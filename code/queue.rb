@@ -150,6 +150,7 @@ module RQ
           log("FAILED TO ALLOC ID")
           return nil
         end
+        sleep 0.001
         retry
       end
       nil  # fail
