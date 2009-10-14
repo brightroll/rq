@@ -6,10 +6,12 @@ require 'fcntl'
 module RQ
   class Queue
 
-    def initialize(options)
+    def initialize(options, parent_pipe)
       @start_time = Time.now
       # Read config
-      @queue_path = "queue/#{options['name']}"
+      @name = options['name']
+      @queue_path = "queue/#{@name}"
+      @parent_pipe = parent_pipe
       init_socket
 
       @messages = []
@@ -59,7 +61,7 @@ module RQ
           # TODO: probly some other signal, session, proc grp, etc. crap
           
           RQ::Queue.log(queue_path, 'post close_all')
-          q = RQ::Queue.new(options)
+          q = RQ::Queue.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
           RQ::Queue.log(queue_path, 'post new')
@@ -223,26 +225,36 @@ module RQ
       @sock.fcntl(Fcntl::F_SETFL, flag)
 
       while true
+        log('sleeping')
         begin
-          # old way, not so friendly... too much hidden
-          # better to use the new way (which depends on Fcntl above)
-          # client_socket, client_sockaddr = @sock.accept_nonblock
-          client_socket, client_sockaddr = @sock.accept
+          ready = IO.select([@sock, @parent_pipe], nil, nil, 60)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-          log('sleeping')
-          # TODO: self-pipe 'trick' coming soon
-          IO.select([@sock], nil, nil, 60)
+          log("error on SELECT #{$!}")
           retry
         end
 
-        # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
-        flag = 0xffffffff ^ File::NONBLOCK
-        if defined?(Fcntl::F_GETFL)
-          flag &= client_socket.fcntl(Fcntl::F_GETFL)
+        next unless ready
+
+        ready[0].each do |io|
+          if io.fileno == @sock.fileno
+            begin
+              client_socket, client_sockaddr = @sock.accept
+            rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+              log('error acception on main sock, supposed to be readysleeping')
+            end
+            # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
+            flag = 0xffffffff ^ File::NONBLOCK
+            if defined?(Fcntl::F_GETFL)
+              flag &= client_socket.fcntl(Fcntl::F_GETFL)
+            end
+            #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
+            client_socket.fcntl(Fcntl::F_SETFL, flag)
+            handle_request(client_socket)
+          else
+            log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
+            shutdown!
+          end
         end
-        #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
-        client_socket.fcntl(Fcntl::F_SETFL, flag)
-        handle_request(client_socket)
       end
     end
 
