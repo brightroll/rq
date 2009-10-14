@@ -1,0 +1,28 @@
+
+RQ
+
+
+RQ is a simple queuing system based on message passing.
+
+Every
+
+
+Architecture
+
+The system exists in one directory. The commands to operate on a queue are bound to the queues in the directory the commands exist in.
+
+The system is composed of a web server and a supervisor process. The webserver is Sinatra running on Rack running on Webrick. This may change.
+All processes are single threaded.
+The web server communicates with the supervisor process on a unix domain socket.
+
+There will only be one supervisor process. 
+The supervisor process starts up queue supervisor (quesup) processes for all the queues.
+Any children of any process will have a pipe to their parent. If that pipe goes away, a child should shut down immediately. 
+
+There should only be one quesup for a given queue. A file-lock will be used for safety.
+Since there is only one, no locks are required in the filesystem to manage the queue for injection.
+
+
+It handles all communication and 
+
+
