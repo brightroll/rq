@@ -41,13 +41,45 @@ Monday
 +Have Queue show list of messages in store
 +Lite Have a message data store (ordered)
 
+Tuesday
+-------
++ Design doc -> simple supervisor model, simple understanding of locking
+- Children detect parent death and die
+A New FileQue class
+Multiple queue dirs
+    ['_lock', 'w'], -> lockfile for queue
+    ['_log',  'w'],
+    ['_tmp',  'd'],
+    ['que',   'd'], -> prep
+    ['run',   'd'], -> queued
+    ['pause', 'd'], -> running (for a 1 worker queue, 1 at a time)
+    ['done',  'd'], -> done (removed, errored and removed, etc)
+    ['_err',  'd'], -> error (malformed, unfinished?)
+
+Lite delete message
 Lite show message
+Sleep random for inject
+View queue log
+View mesg log
 
 Queue a job via cmd line (using ruby lib)
+  - simple message
+  - file attachment via same filesystem (check stat.dev for equality)
+  - file attachment via diff filesystem (make a temp file, copy file)
+Message list has length param for packet length?
 
+*milestone*
 
-Have a local queue script deliver message
+Have a local queue script deliver message to a local queue
+ - run a script in an environment
+ - record redirect
  - local queue on same host
+ - remote queue on other host
+   - network listener
+   - ruby lib to talk protocol 
+
+Have a local queue script deliver message to a remote queue
+ - setup socket listener
  - remote queue on other host
    - network listener
    - ruby lib to talk protocol 
@@ -60,11 +92,12 @@ Implement CDB push system
  - Delivers to local
  - Relayed to cdb_push script
  - cdb_push creates new cdb file
- - cdb_push creates new messages to other machines
+ - cdb_push preps new messages to other machines
  - cdb_push waits for all messages to complete or errors out
  - remote machines script moves file into proper location as proper user
 
 Later...
+Implement lock files for all queues.
 Have TMS keep track of last 3 completed jobs per user (in session)
 Have TMS keep track of active jobs
 
