@@ -45,28 +45,33 @@ Tuesday
 -------
 + Design doc -> simple supervisor model, simple understanding of locking
 + Children detect parent death and die
-Multiple queue dirs
++ Multiple queue dirs
     ['_lock', 'w'], -> lockfile for queue
     ['_log',  'w'],
     ['_tmp',  'd'],
     ['prep',  'd'], -> prep
     ['que',   'd'], -> queued
+    ['run',   'd'], -> running (for a 1 worker queue, 1 at a time)
     ['pause', 'd'], -> running (for a 1 worker queue, 1 at a time)
     ['done',  'd'], -> done (removed, errored and removed, etc)
     ['_err',  'd'], -> error (malformed, unfinished?)
-A New FileQue class
+?A New FileQue class
 
-Lite delete message
-Lite show message
-Sleep random for inject
-View queue log
-View mesg log
++Sleep random for inject
++Change 'queue' to 'q' in message id and url
+Change 'messages' status to show all q's
+Message list has length param for packet length on both sides
+-Change relay q to properly show actual dest of message
 
 Queue a job via cmd line (using ruby lib)
   - simple message
   - file attachment via same filesystem (check stat.dev for equality)
   - file attachment via diff filesystem (make a temp file, copy file)
-Message list has length param for packet length?
+Lite delete message
+Lite show message
+Message list has length param for packet length on both sides
+View queue log
+View mesg log
 
 *milestone*
 
