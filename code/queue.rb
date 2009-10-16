@@ -357,8 +357,14 @@ module RQ
       end
 
       if data[0].index('messages') == 0
-        data = @que.map { |m| [m['msg_id'], m['status']] }
-        resp = data.to_json
+        status = { }
+        status['prep']   = @prep
+        status['que']    = @que.map { |m| [m['msg_id'], m['status']] }
+        status['run']    = @run.map { |m| [m['msg_id'], m['status']] }
+        status['pause']  = @pause.map { |m| [m['msg_id'], m['status']] }
+        status['done']   = @done.length
+
+        resp = status.to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close

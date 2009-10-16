@@ -98,7 +98,7 @@ module RQ
       client = UNIXSocket.open(@queue_sock_path)
       client.send("messages", 0)
       # TODO - deal with larger packet sizes
-      result = client.recvfrom(4096)
+      result = client.recvfrom(16384)
       client.close
       result ? JSON.parse(result[0]) : nil
     end

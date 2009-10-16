@@ -24,9 +24,18 @@
 <br />
 <% if RQ::QueueMgrClient.running? %>
 <%   msgs = qc.messages %>
-<span><%= msgs.length %> items in queue </span>
+<span><%= msgs['prep'].length %> items in prep</span>
+<br />
+<span><%= msgs['run'].length %> items in run</span>
+<br />
+<span><%= msgs['pause'].length %> items in pause</span>
+<br />
+<span><%= msgs['done'] %> items in done</span>
+<br />
+<span><%= msgs['que'].length %> items in que</span>
+<br />
 <ul>
-<%   msgs.each do |msg| %>
+<%   msgs['que'].each do |msg| %>
 <li>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
