@@ -14,7 +14,11 @@ module RQ
       @parent_pipe = parent_pipe
       init_socket
 
-      @messages = []
+      @prep   = []  # should be small
+      @que    = []  # could be large
+      @run    = []  # should be small
+      @pause  = []  # should be small
+      @done   = []  # should be large
 
       if load_config == false
         @config = { "opts" => options, "admin_status" => "UP", "oper_status" => "UP" }
@@ -27,7 +31,12 @@ module RQ
       # Create a directories and config
       queue_path = "queue/#{options['name']}"
       FileUtils.mkdir_p(queue_path)
-      FileUtils.mkdir_p(queue_path + '/mesgs')
+      FileUtils.mkdir_p(queue_path + '/prep')
+      FileUtils.mkdir_p(queue_path + '/que')
+      FileUtils.mkdir_p(queue_path + '/run')
+      FileUtils.mkdir_p(queue_path + '/pause')
+      FileUtils.mkdir_p(queue_path + '/done')
+      FileUtils.mkdir_p(queue_path + '/err')
       # Write config to dir
       File.open(queue_path + '/config.json', "w") do
         |f|
@@ -141,7 +150,8 @@ module RQ
         # There we have created a name and inode
         #IO.new(fd).close
 
-        Dir.mkdir(@queue_path + "/mesgs/" + name)
+        Dir.mkdir(@queue_path + "/prep/" + name)
+        @prep << name
         msg["msg_id"] = name
         return msg
       rescue
@@ -156,21 +166,38 @@ module RQ
       nil  # fail
     end
 
-    def inject(msg)
+    def store_msg(msg)
       # Write message to disk
       begin
         data = msg.to_json
         # Need a sysopen style system here TODO
-        basename = @queue_path + '/mesgs/' + msg['msg_id']
-        File.open(basename+ '/tmp', 'w') { |f| f.write(data) }
+        basename = @queue_path + "/prep/" + msg['msg_id']
+        File.open(basename + '/tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '/tmp', basename + '/msg')
       rescue
         log("FATAL - couldn't write message")
         return false
       end
 
+      return true
+    end
+
+    def que(msg, from_q = 'prep')
+      msg_id = msg['msg_id']
+      begin
+        basename = @queue_path + "/#{from_q}/" + msg_id
+        return false unless File.exists? basename
+        newname = @queue_path + "/que/" + msg_id
+        File.rename(basename, newname)
+      rescue
+        log("FATAL - couldn't commit message #{msg_id}")
+        log("        [ #{$!} ]")
+        return false
+      end
+
       # Put in queue
-      @messages << msg
+      @prep.delete(msg['msg_id'])
+      @que << msg
 
       # Persist queue
       # TODO
@@ -179,7 +206,13 @@ module RQ
 
     def load_messages
 
-      basename = @queue_path + '/mesgs/'
+      # prep just has message ids
+      basename = @queue_path + '/prep/'
+      @prep = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+      @prep.sort!
+
+      # que has actual messages copied
+      basename = @queue_path + '/que/'
       messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
 
       messages.sort!
@@ -193,7 +226,7 @@ module RQ
           log("Bad message in queue: #{mname}")
           next
         end
-        @messages << msg
+        @que << msg
       end
     end
 
@@ -311,7 +344,8 @@ module RQ
         msg = { }
         if alloc_id(msg)
           msg.merge!(options)
-          inject(msg)
+          store_msg(msg)
+          que(msg)
           resp = [ "ok", msg['msg_id'] ].to_json
         else
           resp = [ "fail", "unknown reason"].to_json
@@ -323,7 +357,7 @@ module RQ
       end
 
       if data[0].index('messages') == 0
-        data = @messages.map { |m| [m['msg_id'], m['status']] }
+        data = @que.map { |m| [m['msg_id'], m['status']] }
         resp = data.to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
