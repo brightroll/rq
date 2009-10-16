@@ -33,7 +33,7 @@ module RQ
       "We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr"
     end
 
-    get '/queue/:name' do
+    get '/q/:name' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
@@ -45,7 +45,7 @@ module RQ
       erb :queue
     end
 
-    get '/queue/:name/new_message' do
+    get '/q/:name/new_message' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
@@ -57,7 +57,7 @@ module RQ
       erb :new_message
     end
 
-    post '/queue/:name/new_message' do
+    post '/q/:name/new_message' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
@@ -71,7 +71,7 @@ module RQ
     end
 
 
-    get '/queue/:name/restart' do
+    get '/q/:name/restart' do
       qc = RQ::QueueClient.new(params[:name])
 
       if not qc.exists?

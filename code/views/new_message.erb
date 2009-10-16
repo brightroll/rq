@@ -2,13 +2,13 @@
 <h1>RQ</h1>
 
 <h3>New Message</h3>
-<form id="new_queue_form" method="post" action="<%= "/queue/#{params['name']}/new_message" %>">
+<form id="new_queue_form" method="post" action="<%= "/q/#{params['name']}/new_message" %>">
 <fieldset>
 <legend>Message Options</legend>  
 
 <div class="field">
 <label class="field_label" for="mesg_dest">Destination Queue</label>
-<input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}queue/" %>" />
+<input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}q/" %>" />
 </div>
 
 <div class="field">
