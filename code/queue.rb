@@ -197,7 +197,7 @@ module RQ
 
       # Put in queue
       @prep.delete(msg['msg_id'])
-      @que << msg
+      @que.unshift(msg)
 
       # Persist queue
       # TODO
