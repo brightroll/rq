@@ -49,6 +49,15 @@
 <p class="note">Ready gets queued now. Prep stays in prep state until commited (allows attachments/modification/etc.)</p>
 </div>
 
+<div class="field">
+<label class="field_label" for="mesg_relay_ok">Relay ok?</label>
+<label for="mesg_relay_ok">yes</label>
+<input type="radio" name="mesg[relay_ok]" value="yes" checked />
+<label for="mesg_relay_ok">no</label>
+<input type="radio" name="mesg[relay_ok]" value="no" />
+<p class="note">Determine if relaying is ok for this message, if not destined for this queue.</p>
+</div>
+
 
 <div class="field">
 <label class="field_label" for="mesg_submit">&nbsp;</label>

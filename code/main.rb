@@ -59,15 +59,26 @@ module RQ
 
     post '/q/:name/new_message' do
       # check for queue
-      # TODO: sanitize names (no dots or slashes)
-      qc = RQ::QueueClient.new(params[:name])
+      this_queue = "http://#{request.host}:#{request.port}/q/#{params[:name]}"
+
+      if this_queue == params['mesg']['dest']
+        q_name = params[:name]
+      else
+        if params['mesg']['relay_ok'] == 'yes'
+          q_name = 'relay' # Relay is the special Q
+        else
+          throw :halt, [404, "404 - Not this Queue. Relaying not allowed"]
+        end
+      end
+
+      qc = RQ::QueueClient.new(q_name)
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
       end
 
       result = qc.create_message(params['mesg'])
-      "We got <pre> #{params.inspect} </pre> from form, and #{result} from Queue"
+      "We got <pre> #{params.inspect} </pre> from form, and #{result} from Queue #{q_name}"
     end
 
 

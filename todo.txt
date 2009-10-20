@@ -61,6 +61,11 @@ Tuesday
 +Change 'queue' to 'q' in message id and url
 +Change 'messages' status to show all q's
 -Have q inject go to actual q
+ - change form
+ - change controller
+ - change mesg_id code
+ - relay pointer record
+- Reverse presentation of messages in a queue
 
 Queue a job via cmd line (using ruby lib)
   - simple message
