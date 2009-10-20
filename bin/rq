@@ -1,0 +1,11 @@
+
+
+
+# Figure out what directory I'm running from
+
+# Figure out directory I belong in to run
+
+# Make it happen
+
+ruby ./code/rq.rb "$@"
+
