@@ -209,13 +209,13 @@ module RQ
       # prep just has message ids
       basename = @queue_path + '/prep/'
       @prep = Dir.entries(basename).reject {|i| i.index('.') == 0 }
-      @prep.sort!
+      @prep.sort!.reverse!
 
       # que has actual messages copied
       basename = @queue_path + '/que/'
       messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
 
-      messages.sort!
+      messages.sort!.reverse!
 
       messages.each do
         |mname|
