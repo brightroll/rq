@@ -204,6 +204,90 @@ module RQ
       return true
     end
 
+    def lookup_msg(msg, state = 'prep')
+      msg_id = msg['msg_id']
+      basename = @queue_path + "/#{state}/" + msg_id
+      if state == 'prep'
+        if @prep.include?(msg_id) == false
+          return false
+        end
+      end
+      if not File.exists?(basename)
+        log("WARNING - serious queue inconsistency #{msg_id}")
+        log("WARNING - #{msg_id} in memory but not on disk")
+        return false
+      end
+      return true
+    end
+
+    def attach_msg(msg)
+      msg_id = msg['msg_id']
+      # validate attachment
+      begin
+        basename = @queue_path + "/prep/" + msg_id
+        return [false, "No message on disk"] unless File.exists? basename
+
+        #TODO: deal with symlinks
+        # simple early check, ok, now check for pathname
+        return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].index("/") == 0
+        return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
+        return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
+        return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
+        return [false, "Attachment currently not of supported type: #{msg['pathname']}"] unless File.file?(msg['pathname'])
+
+
+        # simple check for attachment dir
+        attach_path = basename + '/attach/'
+        Dir.mkdir(attach_path) unless File.exists?(attach_path)
+
+        # OK do we have a name?
+        # Try that first, else use basename
+        name = msg['name'] || File.basename(msg['pathname'])
+
+        # Validate - that it does not have any '/' chars or a '.' prefix
+        if (name.index(".") == 0)
+          return [false, "Attachment name as a dot-file not allowed: #{name}"]
+        end
+        # Unsafe char removal
+        name_test = name.tr('?[]|$&<>', '*')
+        if name_test.index("*")
+          return [false, "Attachment name has invalid chara dot-file not allowed: #{name}"]
+        end
+        #  TODO: support directory moves
+
+        # OK is path on same filesystem?
+        # stat of basename
+        if File.stat(attach_path).dev != File.stat(msg['pathname']).dev
+          return [false, "Attachment must be on same filesystem as que: #{msg['pathname']}"]
+        end
+
+        # No  - is local_fs_only set, then error out
+        #       FOR NOW: error out (tough Shit!), blocking would take too long MF
+        #       TODO: else, make a copy in
+        #             ELSE, lock, fork, do copy, return status updates, complex yada yada
+        #       SCREW THIS: let the client do the prep on the cmd line
+        # Yes - good - just do a link, then rename
+
+        #       First hardlink to temp file that doesn't exist (link will fail
+        #       if new name already exists in dir
+        new_path = attach_path + name
+        tmp_new_path = attach_path + name + '.tmp'
+        File.unlink(tmp_new_path) rescue nil
+        File.link(msg['pathname'], tmp_new_path)
+        #       Second, do a rename, that will overwrite
+        File.rename(tmp_new_path, new_path)
+        # DONE
+
+      rescue
+        log("FATAL - couldn't add attachment to message #{msg_id}")
+        log("        [ #{$!} ]")
+        return false
+      end
+
+      return [true, "Attachment added successfully"]
+    end
+
+
     def load_messages
 
       # prep just has message ids
@@ -365,6 +449,76 @@ module RQ
         status['done']   = @done.length
 
         resp = status.to_json
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('prep_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        msg = { }
+        if alloc_id(msg)
+          msg.merge!(options)
+          store_msg(msg)
+          resp = [ "ok", msg['msg_id'] ].to_json
+        else
+          resp = [ "fail", "unknown reason"].to_json
+        end
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('attach_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          log("RESP [ #{resp} ]")
+          sock.send(resp, 0)
+          sock.close
+          return
+        end
+
+        if lookup_msg(options)
+          success, attach_message = attach_msg(options)
+          if success
+            resp = [ "ok", attach_message ].to_json
+          else
+            resp = [ "fail", attach_message ].to_json
+          end
+        else
+          resp = [ "fail", "unknown reason"].to_json
+        end
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('commit_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          log("RESP [ #{resp} ]")
+          sock.send(resp, 0)
+          sock.close
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        if lookup_msg(options) and que(options)
+          resp = [ "ok", "msg commited" ].to_json
+        end
+
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close

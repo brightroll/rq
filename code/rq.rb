@@ -52,13 +52,23 @@ p args
 
 require 'code/queueclient'
 
+def check_attachment(msg)
+  # simple early check, ok, now check for pathname
+  return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
+  return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
+  return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
+  return [false, "Attachment currently not of supported type: #{msg['pathname']}"] unless File.file?(msg['pathname'])
+  return [true, '']
+end
+
+
 # Which queue am I bound to?
 # TODO: later 
 
 # Create a message
-#   - dest queue
+#   - 'dest' queue
+#   - 'src' id
 #   - relay_ok = default yes
-#   - src id
 #   - param[1234]
 if args[:cmd] == 'sendmesg'
   q_name = args['dest']
@@ -76,24 +86,91 @@ if args[:cmd] == 'sendmesg'
   end
 
   # Construct message
-  mesg = {   'dest' => args['dest'],
-              'src' => args['src'],
-           'param1' => args['params1'],
-           'param2' => args['params2'],
-           'param3' => args['params3'],
-           'param4' => args['params4'],
-  }
+  mesg = {}
+  keys = %w(dest src param1 param2 param3 param3)
+  keys.each do
+    |key|
+    next unless args.has_key?(key)
+    mesg[key] = args[key]
+  end
   result = qc.create_message(mesg)
-  p "Message: #{result} inserted into queue: #{q_name}"
+  p "Message: #{result.inspect} inserted into queue: #{q_name}"
 
 end
 
-if ARGV[0] == 'prepmesg'
+if args[:cmd] == 'prepmesg'
+  q_name = args['dest']
+
+  if (q_name.index('http:') == 0) && args.has_key?('relay-ok')
+    q_name = 'relay'
+  else
+    throw :halt, [404, 'Sorry - cannot relay message']
+  end
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found"]
+  end
+
+  # Construct message
+  mesg = {}
+  keys = %w(dest src param1 param2 param3 param3)
+  keys.each do
+    |key|
+    next unless args.has_key?(key)
+    mesg[key] = args[key]
+  end
+  result = qc.prep_message(mesg)
+  p "Message: #{result.inspect} inserted into queue: #{q_name}"
 end
 
-if ARGV[0] == 'attach'
+if args[:cmd] == 'attachmesg'
+  full_mesg_id = args['msg_id']
+
+  q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
+  msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found"]
+  end
+
+  # Construct message for queue mgr
+  msg = {'msg_id' => msg_id}
+  keys = %w(pathname name local_fs_only)
+  keys.each do
+    |key|
+    next unless args.has_key?(key)
+    msg[key] = args[key]
+  end
+
+  msg['pathname'] = File.expand_path(msg['pathname'])
+  results = check_attachment(msg)
+  if not results[0]
+    p results[1]
+    throw :halt, [404, "404 - #{results[0]}"]
+  end
+  result = qc.attach_message(msg)
+  p "#{result} for Message: #{msg_id} attachment"
 end
 
-if ARGV[0] == 'commit'
+if args[:cmd] == 'commitmesg'
+  full_mesg_id = args['msg_id']
+
+  q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
+  msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found"]
+  end
+
+  # Construct message for queue mgr
+  mesg = {'msg_id' => msg_id }
+  result = qc.commit_message(mesg)
+  p "#{result} for Message: #{mesg['msg-id']} committed"
 end
 

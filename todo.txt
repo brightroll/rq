@@ -65,10 +65,11 @@ Tuesday
  + change controller
 + Reverse presentation of messages in a queue
 
-Queue a job via cmd line (using ruby lib)
-  - simple message
++ Queue a job via cmd line (using ruby lib)
+  + simple message
   - file attachment via same filesystem (check stat.dev for equality)
   - file attachment via diff filesystem (make a temp file, copy file)
+  - return full msg_id with q_name back
 Lite delete message
 Lite show message
 Message list has length param for packet length on both sides
@@ -104,6 +105,8 @@ Implement CDB push system
  - remote machines script moves file into proper location as proper user
 
 Later...
+CLI show message
+CLI show queue
 Implement lock files for all queues.
 Have TMS keep track of last 3 completed jobs per user (in session)
 Have TMS keep track of active jobs
