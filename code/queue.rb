@@ -182,10 +182,10 @@ module RQ
       return true
     end
 
-    def que(msg, from_q = 'prep')
+    def que(msg, from_state = 'prep')
       msg_id = msg['msg_id']
       begin
-        basename = @queue_path + "/#{from_q}/" + msg_id
+        basename = @queue_path + "/#{from_state}/" + msg_id
         return false unless File.exists? basename
         newname = @queue_path + "/que/" + msg_id
         File.rename(basename, newname)
