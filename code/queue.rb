@@ -20,7 +20,7 @@ module RQ
       @pause  = []  # should be small
       @done   = []  # should be large
 
-      if load_config == false
+      if load_config() == false
         @config = { "opts" => options, "admin_status" => "UP", "oper_status" => "UP" }
       end
 
