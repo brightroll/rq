@@ -29,7 +29,7 @@ module RQ
         |f|
         f.write("#{Process.pid} - #{Time.now} - REQ [ #{data[0]} ]\n")
       end
-      if data[0].index('ping')
+      if data[0].index('ping') == 0
         sock.send("pong", 0)
         sock.close
         File.open('config/queuemgr.log', "a") do
@@ -38,7 +38,7 @@ module RQ
         end
         return
       end
-      if data[0].index('queues')
+      if data[0].index('queues') == 0
         data = @queues.map { |q| q.name }.to_json
         File.open('config/queuemgr.log', "a") do
           |f|
@@ -49,7 +49,7 @@ module RQ
         return
       end
 
-      if data[0].index('uptime')
+      if data[0].index('uptime') == 0
         data = [(Time.now - @start_time).to_i, ].to_json #['local','brserv_push'].to_json
         File.open('config/queuemgr.log', "a") do
           |f|
@@ -60,7 +60,7 @@ module RQ
         return
       end
 
-      if data[0].index('create_queue')
+      if data[0].index('create_queue') == 0
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
         # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1"}} 
