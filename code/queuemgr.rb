@@ -63,7 +63,7 @@ module RQ
       if data[0].index('create_queue') == 0
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
-        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1"}} 
+        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", "url"=>"http://localhost:3333/"}} 
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
         else
