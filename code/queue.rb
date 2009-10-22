@@ -220,6 +220,11 @@ module RQ
       return true
     end
 
+    def gen_full_msg_id(msg)
+      full_name = "#{@config['opts']['url']}q/#{@name}/#{msg['msg_id']}"
+      return full_name
+    end
+
     def attach_msg(msg)
       msg_id = msg['msg_id']
       # validate attachment
@@ -430,7 +435,8 @@ module RQ
           msg.merge!(options)
           store_msg(msg)
           que(msg)
-          resp = [ "ok", msg['msg_id'] ].to_json
+          msg_id = gen_full_msg_id(msg)
+          resp = [ "ok", msg_id ].to_json
         else
           resp = [ "fail", "unknown reason"].to_json
         end
@@ -463,7 +469,8 @@ module RQ
         if alloc_id(msg)
           msg.merge!(options)
           store_msg(msg)
-          resp = [ "ok", msg['msg_id'] ].to_json
+          msg_id = gen_full_msg_id(msg)
+          resp = [ "ok", msg_id ].to_json
         else
           resp = [ "fail", "unknown reason"].to_json
         end

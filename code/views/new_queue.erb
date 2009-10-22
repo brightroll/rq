@@ -6,9 +6,11 @@
 <fieldset>
 <legend>Queue Configuration</legend>  
 
+<input type="hidden" name="queue[url]" id="queue_url" value="<%= url %>" />
+
 <div class="field">
 <label class="field_label" for="queue_name">Queue name</label>
-<span class=""><%= "#{url}" %></span>
+<span class=""><%= url %></span>
 <input type="text" size="50" name="queue[name]" id="queue_name" value="" />
 </div>
 

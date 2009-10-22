@@ -67,8 +67,8 @@ Tuesday
 
 + Queue a job via cmd line (using ruby lib)
   + simple message
-  - file attachment via same filesystem (check stat.dev for equality)
-  - file attachment via diff filesystem (make a temp file, copy file)
+  + file attachment via same filesystem (check stat.dev for equality)
+  + file attachment via diff filesystem (make a temp file, copy file)
   - return full msg_id with q_name back
 Lite delete message
 Lite show message
