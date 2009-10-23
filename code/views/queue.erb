@@ -35,7 +35,7 @@
 <span><%= msgs['que'].length %> items in que</span>
 <br />
 <ul>
-<%   msgs['que'].each do |msg| %>
+<%   msgs['que'].reverse.each do |msg| %>
 <li>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
@@ -44,8 +44,12 @@
   id: <span class=""> <%= msg[0] %></span>
   status: <span class="green"> <%= msg[1] %></span>
   <span class="">
-    <!-- TODO: Ajax delete as POST -->
-    <a href="<%= "#{url}q/#{q}/#{msg[0]}/delete" %>">delete</a>
+    <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
+    <input name="_method" type="hidden" value="delete" />
+    <button type="submit">Destroy it</button>
+    </form>
+  </span>
+</form>
 </li>
 <%   end %>
 <% end %>

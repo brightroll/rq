@@ -69,32 +69,29 @@ Tuesday
   + simple message
   + file attachment via same filesystem (check stat.dev for equality)
   + file attachment via diff filesystem (make a temp file, copy file)
-  - return full msg_id with q_name back
-Lite delete message
-Lite show message
-Message list has length param for packet length on both sides
-View queue log
-View mesg log
+  + return full msg_id with q_name back
++ Lite show/delete routing
++ Lite delete message
++ Lite show message
+
+- Lite View queue log
+- Lite View mesg log
 
 *milestone*
 
 Have a local queue script deliver message to a local queue
- - run a script in an environment
+ - scheduler wakes up on injection
+ - run a script in an environment for message
  - record redirect
  - local queue on same host
- - remote queue on other host
-   - network listener
-   - ruby lib to talk protocol 
 
 Have a local queue script deliver message to a remote queue
+ - scheduler wakes up on injection, routes to remote
+   - starts a delivery process
  - setup socket listener
  - remote queue on other host
    - network listener
    - ruby lib to talk protocol 
-
-View queue log
-Lite queue mod administrative and operational state
- - Set to up or down
 
 Implement CDB push system
  - Delivers to local
@@ -110,7 +107,9 @@ CLI show queue
 Implement lock files for all queues.
 Have TMS keep track of last 3 completed jobs per user (in session)
 Have TMS keep track of active jobs
--Message list has length param for packet length on both sides
+ -Message list has length param for packet length on both sides
+Lite queue mod administrative and operational state
+ - Set to up or down
 
 Control queue states (clean shutdown, hold, go)
 Refactor Quemgr to be like queue

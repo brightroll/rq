@@ -206,18 +206,72 @@ module RQ
 
     def lookup_msg(msg, state = 'prep')
       msg_id = msg['msg_id']
-      basename = @queue_path + "/#{state}/" + msg_id
       if state == 'prep'
+        basename = @queue_path + "/#{state}/" + msg_id
         if @prep.include?(msg_id) == false
           return false
         end
+      end
+      if state == '*'
+        if @prep.include?(msg_id)
+          state = 'prep'
+        end
+        if @que.find { |o| o['msg_id'] == msg_id }
+          state = 'que'
+        end
+        # TODO
+        # @run
+        # @pause
+        # @done
+
+        return false unless state != '*'
+        basename = @queue_path + "/#{state}/" + msg_id
       end
       if not File.exists?(basename)
         log("WARNING - serious queue inconsistency #{msg_id}")
         log("WARNING - #{msg_id} in memory but not on disk")
         return false
       end
-      return true
+      return state
+    end
+
+    def delete_msg!(msg)
+      state = lookup_msg(msg, '*')
+      return nil unless state
+
+      basename = @queue_path + "/#{state}/" + msg['msg_id']
+
+      if state == 'prep'
+        #FileUtils.remove_entry_secure(basename)
+        FileUtils.rm_rf(basename)
+        @prep.delete(msg['msg_id'])
+      end
+      if state == 'que'
+        #FileUtils.remove_entry_secure(basename)
+        FileUtils.rm_rf(basename)
+        @que.delete_if { |o| o['msg_id'] == msg['msg_id'] }
+      end
+      # TODO
+      # @run
+      # @pause
+      # @done
+    end
+
+    def get_message(params, state)
+
+      basename = @queue_path + "/#{state}/" + params['msg_id']
+      
+      msg = nil
+      begin
+        data = File.read(basename + "/msg")
+        msg = JSON.parse(data)
+        msg['status'] = state
+      rescue
+        msg = nil
+        log("Bad message in queue: #{basename}")
+      end
+
+      return msg
     end
 
     def gen_full_msg_id(msg)
@@ -531,6 +585,66 @@ module RQ
         sock.close
         return
       end
+
+      if data[0].index('get_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          log("RESP [ #{resp} ]")
+          sock.send(resp, 0)
+          sock.close
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        state = lookup_msg(options, '*')
+        if state
+          msg = get_message(options, state)
+          if msg
+            resp = [ "ok", msg ].to_json
+          else
+            resp = [ "fail", "msg couldn't be read" ].to_json
+          end
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('delete_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          log("RESP [ #{resp} ]")
+          sock.send(resp, 0)
+          sock.close
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        if lookup_msg(options, '*')
+          delete_msg!(options)
+          resp = [ "ok", "msg commited" ].to_json
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
 
       sock.send('[ "ERROR" ]', 0)
       sock.close
