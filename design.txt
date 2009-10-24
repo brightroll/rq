@@ -26,3 +26,50 @@ Since there is only one, no locks are required in the filesystem to manage the q
 It handles all communication and 
 
 
+Special queue: relay
+
+The queue states
+
+prep
+que
+run
+  - starting
+  - running
+  - finishing
+done
+  - relay
+err
+
+
+Two-Phase Commit for Protocol
+
+... avoids duplicate sends or 
+
+Sender         Receiver
+------         --------
+if no id,
+         -----> alloc_id
+   id    <-----
+
+else
+ use stored
+ id
+         -----> prep, id
+ ok |        <-----
+  -> continue
+ fail/unknown |    <-----
+  -> fail job
+ ok/already commited |    <-----
+  -> mark job done
+
+continue:
+  modify or make
+  attachments
+         <----->  attach/etc
+
+ok, commit
+          ----->  commit
+ ok |        <-----
+  -> mark job done
+
+
