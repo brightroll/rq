@@ -26,6 +26,13 @@ Since there is only one, no locks are required in the filesystem to manage the q
 It handles all communication and 
 
 
+
+BIN Dir
+
+We have a binary directory for future CLI compatability.
+
+
+
 Special queue: relay
 
 The queue states
