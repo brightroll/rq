@@ -190,6 +190,12 @@ module RQ
 
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_PIPE"] = "3"
+          ENV["RQ_PARAM1"] = msg['param1']
+          ENV["RQ_PARAM2"] = msg['param2']
+          ENV["RQ_PARAM3"] = msg['param3']
+          ENV["RQ_PARAM4"] = msg['param4']
+
+          RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           exec(script_path)
         rescue
