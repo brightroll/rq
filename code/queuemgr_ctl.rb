@@ -10,8 +10,6 @@ gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default
 Gem.clear_paths
 Gem.send :set_paths, gem_paths.join(":")
 
-require 'daemons'
-
 require 'code/queuemgrclient'
 
 def log(mesg)
