@@ -166,12 +166,15 @@ module RQ
       nil  # fail
     end
 
-    def store_msg(msg)
+    def store_msg(msg, que = 'prep')
       # Write message to disk
       begin
+        if not msg.has_key?('due')
+          msg['due'] = Time.now.to_i
+        end
         data = msg.to_json
         # Need a sysopen style system here TODO
-        basename = @queue_path + "/prep/" + msg['msg_id']
+        basename = @queue_path + "/#{que}/" + msg['msg_id']
         File.open(basename + '/tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '/tmp', basename + '/msg')
       rescue
