@@ -74,24 +74,44 @@ Tuesday
 + Lite delete message
 + Lite show message
 
-- Lite View queue log
-- Lite View mesg log
-
-*milestone*
+*milestone 1*
 
 Have a local queue script deliver message to a local queue
- - scheduler wakes up on injection
- - run a script in an environment for message
+ + scheduler wakes up on injection
+ + Create a simple script that writes its ENV to a log (verify file descriptors,etc)
+ + run a script in an environment for message
+  + Have a script to run. if script fails. queue is stopped.
+  + Child script is monitored by this process
+    + notice pipe, exit
+    - properly move job to done when done
+   - queue reads run states from disk on restart
+     -run - started
+     -run - running
+     -done  -  (diff fileque)
+     -fail  -  (diff fileque)
+     -relay - new ID
+   + lite restart queue, re-run scheduler
+   ? script runs and has an environment and a log
+     - should that be via IPC? (cheap)
+     - or via a program? (expensive)
+     - both
+ - a script in ruby that looks at dest of message, notices that
+   if it is this host, move to that queue via cmdline?
+   if it isn't this host, fail now
  - record redirect
  - local queue on same host
 
+*milestone 2*
+
+- System for respawn flooding (aka wait * 2)
+- Attach returns md5
 Have a local queue script deliver message to a remote queue
  - scheduler wakes up on injection, routes to remote
-   - starts a delivery process
- - setup socket listener
- - remote queue on other host
-   - network listener
-   - ruby lib to talk protocol 
+   - script starts a delivery process
+ - use webrick on remote host
+   - client side work for attachments (md5)
+
+*milestone 3*
 
 Implement CDB push system
  - Delivers to local
@@ -102,6 +122,11 @@ Implement CDB push system
  - remote machines script moves file into proper location as proper user
 
 Later...
+- Lite View queue log
+- Lite View mesg log
+- Attach returns md5
+- Alternative to webrick
+- Resource managment (memory needs - disk, cpu, etc.)
 CLI show message
 CLI show queue
 Implement lock files for all queues.

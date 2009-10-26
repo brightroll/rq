@@ -20,6 +20,8 @@ module RQ
       @pause  = []  # should be small
       @done   = []  # should be large
 
+      @wait_time = 1
+
       if load_config() == false
         @config = { "opts" => options, "admin_status" => "UP", "oper_status" => "UP" }
       end
@@ -64,11 +66,11 @@ module RQ
           parent_wr.close
           #child only code block
           RQ::Queue.log(queue_path, 'post fork')
-          
+
           # Unix house keeping
           self.close_all_fds([child_rd.fileno])
           # TODO: probly some other signal, session, proc grp, etc. crap
-          
+
           RQ::Queue.log(queue_path, 'post close_all')
           q = RQ::Queue.new(options, child_rd)
           # This should never return, it should Kernel.exit!
@@ -96,7 +98,7 @@ module RQ
     def self.close_all_fds(exclude_fds)
       0.upto(1023) do |fd|
         begin
-          next if exclude_fds.include? fd 
+          next if exclude_fds.include? fd
           if io = IO::new(fd)
             io.close
           end
@@ -104,6 +106,112 @@ module RQ
         end
       end
     end
+
+    def run_queue_script!(msg)
+      msg_id = msg['msg_id']
+
+      basename = @queue_path + "/run/" + msg_id
+      job_path = File.expand_path(basename + '/job/')
+      Dir.mkdir(job_path) unless File.exists?(job_path)
+
+      # TODO: Identify executable to run, if there is no script, go administratively down
+      script_path = File.expand_path(@config['opts']['script'])
+      if (not File.exists?(script_path)) && (not File.executable?(script_path))
+        # Set queue adminitratively down
+        log("queue down - script not there or runnable #{script_path}")
+        @config['oper_status'] = 'DOWN'
+        write_config
+        return
+      end
+
+      log("0 child process prep step for runnable #{script_path}")
+      # 0 = stdin, 1 = stdout, 2 = stderr, 4 = pipe
+      #
+      child_rd, parent_wr = IO.pipe
+
+      log("1 child process prep step for runnable #{script_path}")
+      log("1 child process prep step for runnable #{job_path}")
+
+      child_pid = fork do
+        # Setup env
+        $0 = "[rq] [#{@name}] [#{msg_id}]"
+        begin
+          Dir.chdir(job_path)   # Chdir to child path
+
+          RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
+          parent_wr.close
+          #child only code block
+          RQ::Queue.log(job_path, "post fork - child pipe fd: #{child_rd.fileno}")
+
+          # Unix house keeping
+          #self.close_all_fds([child_rd.fileno])
+
+          if child_rd.fileno != 3
+            IO.for_fd(3).close rescue nil
+            fd = child_rd.fcntl(Fcntl::F_DUPFD, 3)
+            RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
+            #... the pipe fd will get closed on exec
+          end
+
+          f = File.open(job_path + "/stdio.log", "w")
+          RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
+          if f.fileno != 0
+            IO.for_fd(0).close rescue nil
+          end
+          if f.fileno != 1
+            IO.for_fd(1).close rescue nil
+          end
+          if f.fileno != 2
+            IO.for_fd(2).close rescue nil
+          end
+
+          if f.fileno != 0
+            fd = f.fcntl(Fcntl::F_DUPFD, 0)
+            RQ::Queue.log(job_path, "Error duping fd for 0 - got #{fd}") unless fd == 0
+          end
+          if f.fileno != 1
+            fd = f.fcntl(Fcntl::F_DUPFD, 1)
+            RQ::Queue.log(job_path, "Error duping fd for 1 - got #{fd}") unless fd == 1
+          end
+          if f.fileno != 2
+            fd = f.fcntl(Fcntl::F_DUPFD, 2)
+            RQ::Queue.log(job_path, "Error duping fd for 2 - got #{fd}") unless fd == 2
+          end
+
+          RQ::Queue.log(job_path, 'post stdio re-assigning') unless fd == 2
+          (4..1024).each do |io|
+            io = IO.for_fd(io) rescue nil
+            next unless io
+            io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
+          end
+          RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
+
+          RQ::Queue.log(job_path, "running #{script_path}")
+
+          ENV["RQ_MSG_ID"] = msg_id
+          ENV["RQ_PIPE"] = "3"
+
+          exec(script_path)
+        rescue
+          RQ::Queue.log(job_path, $!)
+          RQ::Queue.log(job_path, $!.backtrace)
+          raise
+        end
+      end
+
+      #parent only code block
+      child_rd.close
+
+      if child_pid == nil
+        parent_wr.close
+        log("failed to run child script: queue_path, $!")
+        return nil
+      end
+
+      msg['child_pid'] = child_pid
+      msg['child_write_pipe'] = parent_wr
+    end
+
 
     def init_socket
       # Show pid
@@ -156,7 +264,7 @@ module RQ
         return msg
       rescue
         times += 1
-        if times > 10 
+        if times > 10
           log("FAILED TO ALLOC ID")
           return nil
         end
@@ -202,8 +310,30 @@ module RQ
       @prep.delete(msg['msg_id'])
       @que.unshift(msg)
 
-      # Persist queue
-      # TODO
+      run_scheduler!
+
+      return true
+    end
+
+    def run_job(msg, from_state = 'que')
+      msg_id = msg['msg_id']
+      begin
+        basename = @queue_path + "/#{from_state}/" + msg_id
+        return false unless File.exists? basename
+        newname = @queue_path + "/run/" + msg_id
+        File.rename(basename, newname)
+      rescue
+        log("FATAL - couldn't run message #{msg_id}")
+        log("        [ #{$!} ]")
+        return false
+      end
+
+      # Put in run queue
+      @que.delete(msg)
+      @run.unshift(msg)
+
+      run_queue_script!(msg)
+
       return true
     end
 
@@ -263,7 +393,7 @@ module RQ
     def get_message(params, state)
 
       basename = @queue_path + "/#{state}/" + params['msg_id']
-      
+
       msg = nil
       begin
         data = File.read(basename + "/msg")
@@ -349,6 +479,16 @@ module RQ
       return [true, "Attachment added successfully"]
     end
 
+    def fixup_msg(msg, que)
+      needs_fixing = false
+      if not msg.has_key?('due')
+        needs_fixing = true
+      end
+
+      if needs_fixing
+        store_msg(msg, que)
+      end
+    end
 
     def load_messages
 
@@ -368,11 +508,30 @@ module RQ
         begin
           data = File.read(basename + mname + "/msg")
           msg = JSON.parse(data)
+          fixup_msg(msg, 'que')
         rescue
           log("Bad message in queue: #{mname}")
           next
         end
         @que << msg
+      end
+
+      # run has actual messages copied
+      basename = @queue_path + '/run/'
+      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+
+      messages.sort!.reverse!
+
+      messages.each do
+        |mname|
+        begin
+          data = File.read(basename + mname + "/msg")
+          msg = JSON.parse(data)
+        rescue
+          log("Bad message in queue: #{mname}")
+          next
+        end
+        @run << msg
       end
     end
 
@@ -387,6 +546,57 @@ module RQ
       log("Received shutdown")
       write_config
       Process.exit! 0
+    end
+
+    def run_scheduler!
+      @wait_time = 60
+
+      # If oper_status != "UP"
+      if (@config['admin_status'] != "UP") && (@config['oper_status'] != "UP")
+        log("Status != up  admin: #{@config['admin_status']}  oper: #{@config['oper_status']}")
+        return
+      end
+
+      # Are we arleady running max workers
+      active_count = @run.inject(0) do
+        |acc,o|
+        if o.has_key?('child_pid')
+          acc = acc + 1
+        end
+        acc
+      end
+
+      if active_count >= @config['opts']['num_workers'].to_i
+        log("Already running #{active_count} config is max: #{@config['opts']['num_workers']}")
+        return
+      end
+
+      # If we got started, and there are jobs in run que, but
+      # without any workers
+      if @run.length != active_count
+        job = @run.find { |o| not o.has_key?('child_pid') }
+        run_queue_script!(job)
+        return
+      end
+
+      if @que.empty?
+        return
+      end
+
+      # Ok, locate the next job
+      sorted = @que.sort_by { |e| e['due'] }
+
+      delta = sorted[0]['due'].to_i - Time.now.to_i
+
+      if delta <=0
+        run_job(sorted[0])
+      else
+        if delta < 60# Set timeout to be this
+          @wait_time = delta
+        end
+      end
+
+      run_scheduler!   # Tail recursion, fail me now, I'm in Ruby
     end
 
     def run_loop
@@ -405,36 +615,70 @@ module RQ
       @sock.fcntl(Fcntl::F_SETFL, flag)
 
       while true
+        run_scheduler!
+
+        io_list = @run.map { |i| i['child_write_pipe'] }
+        io_list.compact!
+        io_list << @sock
+        io_list << @parent_pipe
         log('sleeping')
         begin
-          ready = IO.select([@sock, @parent_pipe], nil, nil, 60)
+          ready = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
           log("error on SELECT #{$!}")
           retry
         end
 
-        next unless ready
+        # If no timeout occurred
+        if ready
+          ready[0].each do |io|
+            if io.fileno == @sock.fileno
+              begin
+                client_socket, client_sockaddr = @sock.accept
+              rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+                log('error acception on main sock, supposed to be readysleeping')
+              end
+              # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
+              flag = 0xffffffff ^ File::NONBLOCK
+              if defined?(Fcntl::F_GETFL)
+                flag &= client_socket.fcntl(Fcntl::F_GETFL)
+              end
+              #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
+              client_socket.fcntl(Fcntl::F_SETFL, flag)
+              handle_request(client_socket)
+              next
+            elsif io.fileno == @parent_pipe
+              log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
+              shutdown!
+              next
+            end
 
-        ready[0].each do |io|
-          if io.fileno == @sock.fileno
-            begin
-              client_socket, client_sockaddr = @sock.accept
-            rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-              log('error acception on main sock, supposed to be readysleeping')
+            job = @run.find { |o| o['child_write_pipe'].fileno == io.fileno }
+            if job
+              log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe close... #{job['child_pid']}")
+
+              res = Process.wait2(job['child_pid'], Process::WNOHANG)
+              if res
+                log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{job['child_pid']} exit with status #{res[1]}")
+                job['child_write_pipe'].close
+
+                # Remove job from run queue
+                @run.delete(job)
+
+                # TODO: Put into done queue
+                # Based on status of job
+              else
+                log("EXITING: queue #{@name} - script job #{job['child_pid']} was not ready to be reaped")
+              end
+
+            else
+              log("QUEUE #{@name} of PID #{Process.pid} noticed fd close on fd #{io.fileno}...")
+
             end
-            # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
-            flag = 0xffffffff ^ File::NONBLOCK
-            if defined?(Fcntl::F_GETFL)
-              flag &= client_socket.fcntl(Fcntl::F_GETFL)
-            end
-            #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
-            client_socket.fcntl(Fcntl::F_SETFL, flag)
-            handle_request(client_socket)
-          else
-            log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
-            shutdown!
           end
         end
+
+
       end
     end
 
@@ -506,7 +750,7 @@ module RQ
       if data[0].index('messages') == 0
         status = { }
         status['prep']   = @prep
-        status['que']    = @que.map { |m| [m['msg_id'], m['status']] }
+        status['que']    = @que.map { |m| [m['msg_id'], m['status'], m['due']] }
         status['run']    = @run.map { |m| [m['msg_id'], m['status']] }
         status['pause']  = @pause.map { |m| [m['msg_id'], m['status']] }
         status['done']   = @done.length
