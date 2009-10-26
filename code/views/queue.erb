@@ -7,13 +7,16 @@
 <span class=""> <a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a> </span>
 <br />
 <% if qc.running? %>
-  Status: <span class="green">queue is OPERATIONAL</span>
-  <span class="green"> <%=  qc.ping %> </span>
-  <span class="green"> <%=  qc.read_pid %> </span>
+<% admin_status, oper_status = qc.status %>
+  Status:
+  Admin Status: <span class="<%= admin_status == "UP" ? "green" : "red" %>"> <%= admin_status %> </span>
+  Oper Status: <span class="<%= oper_status == "UP" ? "green" : "red" %>"> <%= oper_status %> </span>
+  <span class=""> <%=  qc.ping %> </span>
+  <span class=""> <%=  qc.read_pid %> </span>
   up for <%= qc.uptime %> seconds
-  <% else %>
-  Status: <span class="red">queue is DOWN</span>
-<br />
+<% else %>
+  Status: <span class="red">queue is COMPLETELY DOWN</span>
+  <br />
   TODO: Display options, restarts
 <% end %>
 </li>
