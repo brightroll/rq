@@ -1,5 +1,6 @@
 config
 queue
+queue.noindex
 .#*
 code/vendor/gems/json_pure-1.1.6/
 code/vendor/gems/rack-1.0.0/
