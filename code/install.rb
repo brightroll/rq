@@ -19,7 +19,11 @@ module RQ
     end
     post '/install' do
       FileUtils.mkdir('config')
-      FileUtils.mkdir('queue')
+
+      # After watching my mds process go nuts
+      # http://support.apple.com/kb/TA24975?viewlocale=en_US
+      FileUtils.mkdir('queue.noindex')
+      FileUtils.ln_sf('queue.noindex', 'queue')
       `ruby ./code/queuemgr_ctl.rb run`
       erb :installed
     end
