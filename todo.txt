@@ -83,30 +83,34 @@ Have a local queue script deliver message to a local queue
   + Have a script to run. if script fails. queue is stopped.
   + Child script is monitored by this process
     + notice pipe, exit
-   - queue states
-     -run - started / process message
-     -run - running / (time remaining x secs -or- Ykb of Zkb remaining
+   + queue states
+     +run - started / process message
+     +run - running / (time remaining x secs -or- Ykb of Zkb remaining
                        -or- X bytes of Z bytes processed)
      -done  - Proper status exit with 0 process return (diff fileque)
      -fail  - Any process exit without commit (diff fileque)
      -relay - Another proper status exit - new ID
+     -reschedule - Another proper status exit - same ID, new due date
     - properly move job to done when done
-   - queue reads run states from disk on restart
+   x queue reads run states from disk on restart
   x lite restart queue, re-run scheduler
    + script runs and has an environment
-   - script runs and has an environment and a log
+   + script runs and has an environment and a log
      - should that be via IPC? (cheap)
-     - or via a program? (expensive)
-     - both
+     x or via a program? (expensive)
+    x both
  - a script in ruby that looks at dest of message, notices that
    if it is this host, move to that queue via cmdline?
    if it isn't this host, fail now
  - record redirect
  - local queue on same host
 
+ (change format bash friendly, use a buffer to keep track of
+ pipe read, handle proper completion done/fail/relay/resend)
+ (do a proper route delivery)
+
 *milestone 2*
- - Make a partial for queue status
-- Attach returns md5
+  - Attach returns md5
 Have a local queue script deliver message to a remote queue
  - scheduler wakes up on injection, routes to remote
    - script starts a delivery process
@@ -123,7 +127,11 @@ Implement CDB push system
  - cdb_push waits for all messages to complete or errors out
  - remote machines script moves file into proper location as proper user
 
+*milestone 3*
+
 Later...
+ - Make a partial for queue status
+ - Master qmgr cleans up all processes if queue doesn't do so properly
 - Bloom filter for Done
   - might be in X, if not - then definitely not
   - might be just lru / array of Y most recent

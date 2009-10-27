@@ -366,22 +366,24 @@ module RQ
             state = 'run'
             break
           end
-          if not Dir.glob("#{queue_path}/done/#{msg_id}").empty? 
+          if not Dir.glob("#{@queue_path}/done/#{msg_id}").empty?
             state = 'done'
             break
           end
-          if not Dir.glob("#{queue_path}/relayed/#{msg_id}").empty? 
+          if not Dir.glob("#{@queue_path}/relayed/#{msg_id}").empty?
             state = 'relayed'
             break
           end
-          if not Dir.glob("#{queue_path}/err/#{msg_id}").empty? 
+          if not Dir.glob("#{@queue_path}/err/#{msg_id}").empty?
             state = 'err'
             break
           end
-          if not Dir.glob("#{queue_path}/pause/#{msg_id}").empty? 
+          if not Dir.glob("#{@queue_path}/pause/#{msg_id}").empty?
             state = 'pause'
             break
           end
+
+          break
         end
 
         return false unless state != '*'
@@ -733,6 +735,7 @@ module RQ
             job = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
             if job
               #log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{job['child_pid']}")
+              #log("QUEUE #{@name} of PID #{Process.pid} #{job['child_read_pipe'].object_id} <=> #{io.object_id}")
 
               # TODO: make this stateful for incomplete reads
               next if handle_status_read(job)
