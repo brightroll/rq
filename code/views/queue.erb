@@ -39,13 +39,20 @@
 <br />
 <ul>
 <%   msgs['que'].reverse.each do |msg| %>
+<%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
   </span>
   <br />
   id: <span class=""> <%= msg[0] %></span>
-  status: <span class="green"> <%= msg[1] %></span>
+  <% if q == 'relay' %>
+    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
+    <% if ok == 'ok' %>
+      dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+    <% end %>
+  <% end %>
+  : <span class="green"> <%= msg[1] %></span>
   <span class="">
     <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
     <input name="_method" type="hidden" value="delete" />

@@ -1,6 +1,8 @@
 
 .green { background-color: green; color: white; }
 .red { background-color: red; color: yellow; }
+.yellow { background-color: yellow; color: black; }
+
 #edit_table button { background: transparent 2px 2px no-repeat; border: none;
     color: #666; margin: 0; padding: 2px 1em 2px 22px; cursor: pointer;
       font-size: 95%; font-weight: bold; line-height: 16px;

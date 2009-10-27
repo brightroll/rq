@@ -756,7 +756,7 @@ module RQ
       if data[0].index('messages') == 0
         status = { }
         status['prep']   = @prep
-        status['que']    = @que.map { |m| [m['msg_id'], m['status'], m['due']] }
+        status['que']    = @que.map { |m| [m['msg_id'], m['due']] }
         status['run']    = @run.map { |m| [m['msg_id'], m['status']] }
         status['pause']  = @pause.map { |m| [m['msg_id'], m['status']] }
         status['done']   = @done.length
