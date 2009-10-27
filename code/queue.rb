@@ -38,6 +38,7 @@ module RQ
       FileUtils.mkdir_p(queue_path + '/run')
       FileUtils.mkdir_p(queue_path + '/pause')
       FileUtils.mkdir_p(queue_path + '/done')
+      FileUtils.mkdir_p(queue_path + '/relayed')
       FileUtils.mkdir_p(queue_path + '/err')
       # Write config to dir
       File.open(queue_path + '/config.json', "w") do
