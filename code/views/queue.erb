@@ -31,6 +31,34 @@
 <br />
 <span><%= msgs['run'].length %> items in run</span>
 <br />
+<ul>
+<%   msgs['run'].reverse.each do |msg| %>
+<%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
+<li>
+  <span class="">
+    <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
+  </span>
+  <br />
+  id: <span class=""> <%= msg[0] %></span>
+  <% if q == 'relay' %>
+    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
+    <% if ok == 'ok' %>
+      dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+      STATUS: <span class="yellow"> <%= msg_full['status'] %></span>
+    <% else %>
+      STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
+    <% end %>
+  <% end %>
+  <span class="">
+    <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
+    <input name="_method" type="hidden" value="delete" />
+    <button type="submit">Destroy it</button>
+    </form>
+  </span>
+</form>
+</li>
+<%   end %>
+</ul>
 <span><%= msgs['pause'].length %> items in pause</span>
 <br />
 <span><%= msgs['done'] %> items in done</span>

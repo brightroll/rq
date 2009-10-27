@@ -128,7 +128,7 @@ module RQ
       log("0 child process prep step for runnable #{script_path}")
       # 0 = stdin, 1 = stdout, 2 = stderr, 4 = pipe
       #
-      child_rd, parent_wr = IO.pipe
+      parent_rd, child_wr = IO.pipe
 
       log("1 child process prep step for runnable #{script_path}")
       log("1 child process prep step for runnable #{job_path}")
@@ -140,16 +140,16 @@ module RQ
           Dir.chdir(job_path)   # Chdir to child path
 
           RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
-          parent_wr.close
+          parent_rd.close
           #child only code block
-          RQ::Queue.log(job_path, "post fork - child pipe fd: #{child_rd.fileno}")
+          RQ::Queue.log(job_path, "post fork - child pipe fd: #{child_wr.fileno}")
 
           # Unix house keeping
-          #self.close_all_fds([child_rd.fileno])
+          #self.close_all_fds([child_wr.fileno])
 
-          if child_rd.fileno != 3
+          if child_wr.fileno != 3
             IO.for_fd(3).close rescue nil
-            fd = child_rd.fcntl(Fcntl::F_DUPFD, 3)
+            fd = child_wr.fcntl(Fcntl::F_DUPFD, 3)
             RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
             #... the pipe fd will get closed on exec
           end
@@ -207,16 +207,16 @@ module RQ
       end
 
       #parent only code block
-      child_rd.close
+      child_wr.close
 
       if child_pid == nil
-        parent_wr.close
+        parent_rd.close
         log("failed to run child script: queue_path, $!")
         return nil
       end
 
       msg['child_pid'] = child_pid
-      msg['child_write_pipe'] = parent_wr
+      msg['child_read_pipe'] = parent_rd
     end
 
 
@@ -353,16 +353,36 @@ module RQ
         end
       end
       if state == '*'
-        if @prep.include?(msg_id)
-          state = 'prep'
+        while true
+          if @prep.include?(msg_id)
+            state = 'prep'
+            break
+          end
+          if @que.find { |o| o['msg_id'] == msg_id }
+            state = 'que'
+            break
+          end
+          if @run.find { |o| o['msg_id'] == msg_id }
+            state = 'run'
+            break
+          end
+          if not Dir.glob("#{queue_path}/done/#{msg_id}").empty? 
+            state = 'done'
+            break
+          end
+          if not Dir.glob("#{queue_path}/relayed/#{msg_id}").empty? 
+            state = 'relayed'
+            break
+          end
+          if not Dir.glob("#{queue_path}/err/#{msg_id}").empty? 
+            state = 'err'
+            break
+          end
+          if not Dir.glob("#{queue_path}/pause/#{msg_id}").empty? 
+            state = 'pause'
+            break
+          end
         end
-        if @que.find { |o| o['msg_id'] == msg_id }
-          state = 'que'
-        end
-        # TODO
-        # @run
-        # @pause
-        # @done
 
         return false unless state != '*'
         basename = @queue_path + "/#{state}/" + msg_id
@@ -398,7 +418,6 @@ module RQ
     end
 
     def get_message(params, state)
-
       basename = @queue_path + "/#{state}/" + params['msg_id']
 
       msg = nil
@@ -406,9 +425,15 @@ module RQ
         data = File.read(basename + "/msg")
         msg = JSON.parse(data)
         msg['status'] = state
+        if File.exists?(basename + "/status")
+          xtra_data = File.read(basename + "/status")
+          xtra_status = JSON.parse(xtra_data)
+          msg['status'] += " - #{xtra_status['job_status']}"
+        end
       rescue
         msg = nil
         log("Bad message in queue: #{basename}")
+        log("        [ #{$!} ]")
       end
 
       return msg
@@ -542,6 +567,51 @@ module RQ
       end
     end
 
+    def handle_status_read(msg)
+      child_io = msg['child_read_pipe']
+      x = child_io.read(5)
+
+      return false unless x
+      return false if x.length != 5
+
+      dat = x.unpack("CN")
+
+      # Check the version
+      return false if dat[0] != "0"[0]
+
+      status_data = child_io.read(dat[1]) 
+
+      return false if status_data.length != dat[1]
+
+      #TODO: verify message
+      parts = status_data.split("\000")
+
+      write_msg_status(msg, parts[1])
+
+      #TODO handle non 'run' parts[0]
+      if (parts[0] != "run")
+        log("Non 'run' status came in")
+      end
+
+      return true
+    end
+
+    def write_msg_status(msg, mesg)
+      # Write message to disk
+      begin
+        data = { 'job_status' => mesg }.to_json
+        basename = @queue_path + "/run/" + msg['msg_id'] + "/status"
+        File.open(basename + '.tmp', 'w') { |f| f.write(data) }
+        File.rename(basename + '.tmp', basename)
+      rescue
+        log("FATAL - couldn't write status message")
+        return false
+      end
+
+      return true
+    end
+
+
     def log(mesg)
       File.open(@queue_path + '/queue.log', "a") do
         |f|
@@ -574,7 +644,7 @@ module RQ
       end
 
       if active_count >= @config['opts']['num_workers'].to_i
-        log("Already running #{active_count} config is max: #{@config['opts']['num_workers']}")
+        #log("Already running #{active_count} config is max: #{@config['opts']['num_workers']}")
         return
       end
 
@@ -624,11 +694,11 @@ module RQ
       while true
         run_scheduler!
 
-        io_list = @run.map { |i| i['child_write_pipe'] }
+        io_list = @run.map { |i| i['child_read_pipe'] }
         io_list.compact!
         io_list << @sock
         io_list << @parent_pipe
-        log('sleeping')
+        #log('sleeping') if @wait_time == 60
         begin
           ready = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
@@ -660,14 +730,19 @@ module RQ
               next
             end
 
-            job = @run.find { |o| o['child_write_pipe'].fileno == io.fileno }
+            job = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
             if job
+              #log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{job['child_pid']}")
+
+              # TODO: make this stateful for incomplete reads
+              next if handle_status_read(job)
+
               log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe close... #{job['child_pid']}")
 
               res = Process.wait2(job['child_pid'], Process::WNOHANG)
               if res
                 log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{job['child_pid']} exit with status #{res[1]}")
-                job['child_write_pipe'].close
+                job['child_read_pipe'].close
 
                 # Remove job from run queue
                 @run.delete(job)

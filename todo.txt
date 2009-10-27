@@ -83,15 +83,18 @@ Have a local queue script deliver message to a local queue
   + Have a script to run. if script fails. queue is stopped.
   + Child script is monitored by this process
     + notice pipe, exit
+   - queue states
+     -run - started / process message
+     -run - running / (time remaining x secs -or- Ykb of Zkb remaining
+                       -or- X bytes of Z bytes processed)
+     -done  - Proper status exit with 0 process return (diff fileque)
+     -fail  - Any process exit without commit (diff fileque)
+     -relay - Another proper status exit - new ID
     - properly move job to done when done
    - queue reads run states from disk on restart
-     -run - started
-     -run - running
-     -done  -  (diff fileque)
-     -fail  -  (diff fileque)
-     -relay - new ID
-   + lite restart queue, re-run scheduler
-   ? script runs and has an environment and a log
+  x lite restart queue, re-run scheduler
+   + script runs and has an environment
+   - script runs and has an environment and a log
      - should that be via IPC? (cheap)
      - or via a program? (expensive)
      - both
@@ -102,8 +105,7 @@ Have a local queue script deliver message to a local queue
  - local queue on same host
 
 *milestone 2*
-
-- System for respawn flooding (aka wait * 2)
+ - Make a partial for queue status
 - Attach returns md5
 Have a local queue script deliver message to a remote queue
  - scheduler wakes up on injection, routes to remote
@@ -122,6 +124,22 @@ Implement CDB push system
  - remote machines script moves file into proper location as proper user
 
 Later...
+- Bloom filter for Done
+  - might be in X, if not - then definitely not
+  - might be just lru / array of Y most recent
+- System for handling a down machine
+  - Tiny window where client doesn't get updated location
+  - Admins push jobs somewhere else, generally one machine
+  - Admins have host that responds to that queue and sends redir
+    response to client
+- Proper way to migrate people from a machine
+  - Take machine out of pool of machines
+  - Watch traffic die down, all jobs flush (once jobs completed,
+  generally safe to take down)
+  - Take machine offline
+
+- System for respawn flooding (aka wait * 2)
+- catch child death via sigchild
 - Lite View queue log
 - Lite View mesg log
 - Attach returns md5
