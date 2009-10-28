@@ -99,15 +99,17 @@ Have a local queue script deliver message to a local queue
      - should that be via IPC? (cheap)
      x or via a program? (expensive)
     x both
+ + a format that is bash friendly
+ + KINDA - a buffer for pipe reads? (must do properly)
+ - test with Bash
+ - handle proper completion done/fail/relay/resend
  - a script in ruby that looks at dest of message, notices that
+   routing
    if it is this host, move to that queue via cmdline?
    if it isn't this host, fail now
  - record redirect
  - local queue on same host
 
- (change format bash friendly, use a buffer to keep track of
- pipe read, handle proper completion done/fail/relay/resend)
- (do a proper route delivery)
 
 *milestone 2*
   - Attach returns md5

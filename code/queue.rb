@@ -571,28 +571,48 @@ module RQ
 
     def handle_status_read(msg)
       child_io = msg['child_read_pipe']
-      x = child_io.read(5)
 
-      return false unless x
-      return false if x.length != 5
+      log("Reading status from child")
+      # I should just use sysread and syswrite everywhere
+      # the ruby IO model removes power from those who know
+      # with wrappers written by those who do not know
+      # update... using sysread
+      data = ""
+      loop do
+        begin
+          #child_io.sysread(4096)
+          #data += child_io.readpartial(4096)
+          data += child_io.sysread(4096)
+          break
+        rescue Errno::EAGAIN, Errno::EINTR
+          #log("Error: #{$!}")
+          retry
+        rescue EOFError
+          #log("EOFError - #{$!}")
+          break
+        end
+      end
 
-      dat = x.unpack("CN")
+      #if data
+      #  log("Done Reading status from child len: #{data.length}")
+      #else
+      #  log("Done Reading status from child (nil)")
+      #end
 
-      # Check the version
-      return false if dat[0] != "0"[0]
+      return false if data.empty?
 
-      status_data = child_io.read(dat[1]) 
+      child_msgs = data.split("\000")
 
-      return false if status_data.length != dat[1]
+      child_msgs.each do
+        |child_msg|
+        parts = child_msg.split(" ", 2)
 
-      #TODO: verify message
-      parts = status_data.split("\000")
+        write_msg_status(msg, parts[1])
 
-      write_msg_status(msg, parts[1])
-
-      #TODO handle non 'run' parts[0]
-      if (parts[0] != "run")
-        log("Non 'run' status came in")
+        #TODO handle non 'run' parts[0]
+        if (parts[0] != "run")
+          log("Non 'run' status came in")
+        end
       end
 
       return true
