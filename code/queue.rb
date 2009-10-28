@@ -601,7 +601,7 @@ module RQ
 
       return false if data.empty?
 
-      child_msgs = data.split("\000")
+      child_msgs = data.split("\n")
 
       child_msgs.each do
         |child_msg|
