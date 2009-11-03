@@ -17,8 +17,8 @@ module RQ
       @prep   = []  # should be small
       @que    = []  # could be large
       @run    = []  # should be small
-      @pause  = []  # should be small
-      @done   = []  # should be large
+
+      @completed = [] # Messages that have properly set their status and exited properly
 
       @wait_time = 1
 
@@ -414,9 +414,9 @@ module RQ
         @que.delete_if { |o| o['msg_id'] == msg['msg_id'] }
       end
       # TODO
-      # @run
-      # @pause
-      # @done
+      # run
+      # pause
+      # done
     end
 
     def get_message(params, state)
@@ -570,6 +570,7 @@ module RQ
     end
 
     def handle_status_read(msg)
+      msg_id = msg['msg_id']
       child_io = msg['child_read_pipe']
 
       log("Reading status from child")
@@ -607,11 +608,46 @@ module RQ
         |child_msg|
         parts = child_msg.split(" ", 2)
 
+        # Always write message status
         write_msg_status(msg, parts[1])
 
-        #TODO handle non 'run' parts[0]
+        # BELOW - changed my mind about moving the message into its new
+        # queue. Why? What if the msg says it is done, but the process
+        # doesn't exit cleanly. That would be bad form. The safe thing
+        # to do is to re-run the process if there is a crash (for now)
+
+        # Also, we record the timestamp of this message in the completion
+        # This allows us to notice any processes that have failed to terminate
+        # and then kill them down the road.
+
         if (parts[0] != "run")
-          log("Non 'run' status came in")
+          log("Non 'run' status came in: #{parts[0]}")
+          if parts[0] == 'done'
+            @completed << [msg, :done, Time.now.to_i]
+          end
+          if parts[0] == 'fail' || parts[0] == 'err'
+            @completed << [msg, :err, Time.now.to_i]
+            ## THE QUESTIONS: Do we kill the job now?
+            # No  - up to script writer. They should exit
+            #       we'll trust them for now
+
+          end
+          if parts[0] == 'pause'
+            @completed << [msg, :pause, Time.now.to_i]
+          end
+          if parts[0] == 'relayed'
+            @completed << [msg, :relayed, Time.now.to_i]
+          end
+          if parts[0] == 'resend'
+            @completed << [msg, :resend, Time.now.to_i]
+            due,reason = parts[1].split('-')
+            msg['due'] = Time.now.to_i + due.to_i
+            store_msg(msg, 'run')
+            # *** THIS ONE IS DIFFERENT ***
+            # We need to set the messages 'due' time. This is safe
+            # since we are in the run queue, and we want to record
+            # this to disk before moving on 
+          end
         end
       end
 
@@ -728,6 +764,9 @@ module RQ
           retry
         end
 
+        # TODO: handle children that have reported a state change, but have
+        #       not exited
+
         # If no timeout occurred
         if ready
           ready[0].each do |io|
@@ -752,26 +791,85 @@ module RQ
               next
             end
 
-            job = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
-            if job
-              #log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{job['child_pid']}")
-              #log("QUEUE #{@name} of PID #{Process.pid} #{job['child_read_pipe'].object_id} <=> #{io.object_id}")
+            msg = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
+            if msg
+              #log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{msg['child_pid']}")
+              #log("QUEUE #{@name} of PID #{Process.pid} #{msg['child_read_pipe'].object_id} <=> #{io.object_id}")
 
               # TODO: make this stateful for incomplete reads
-              next if handle_status_read(job)
+              next if handle_status_read(msg)
 
-              log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe close... #{job['child_pid']}")
+              log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe close... #{msg['child_pid']}")
 
-              res = Process.wait2(job['child_pid'], Process::WNOHANG)
+              res = Process.wait2(msg['child_pid'], Process::WNOHANG)
               if res
-                log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{job['child_pid']} exit with status #{res[1]}")
-                job['child_read_pipe'].close
+                log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{msg['child_pid']} exit with status #{res}")
 
-                # Remove job from run queue
-                @run.delete(job)
+                msg_id = msg['msg_id']
 
-                # TODO: Put into done queue
-                # Based on status of job
+                # Ok, close the pipe on our end
+                msg['child_read_pipe'].close
+
+                # Determine status of msg
+                completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
+
+                if completion
+                  log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} completion [#{completion}]")
+                end
+
+                new_state = nil
+                if completion[1] == :done && res[1] == 0
+                  new_state = 'done'
+                end
+
+                if completion[1] == :relayed && res[1] == 0
+                  new_state = 'relayed'
+                end
+
+                if completion[1] == :err
+                  new_state = 'err'
+                end
+
+                #if completion[1] == :pause
+                #  new_state = 'err'
+                #end
+
+                if completion[1] == :resend && res[1] == 0
+                  new_state = 'que'
+                end
+
+                if new_state == nil
+                  # log a message
+                  write_msg_status(msg, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res}" )
+                  new_state = 'err'
+                end
+
+                # Move to relay dir and update in-memory data structure
+                begin
+                  basename = @queue_path + "/run/" + msg_id
+                  raise unless File.exists? basename
+                  newname = "#{@queue_path}/#{new_state}/#{msg_id}" + msg_id
+                  File.rename(basename, newname)
+                rescue
+                  log("FATAL - couldn't move from 'run' to 'relay' #{msg_id}")
+                  log("        [ #{$!} ]")
+                  next
+                end
+
+                # Remove from completion
+                @completed.delete(completion)
+                # Remove from run
+                @run = @run.reject { |i| i['msg_id'] == msg_id }
+
+                if new_state == :resend
+                  # Re-inject into que
+                  msg['due'] = Time.now.to_i + completion[]
+                  @que.unshift(msg)
+
+                  # No-need to re-run scheduler, it runs on every iteration
+                  # of this loop
+                end
+
               else
                 log("EXITING: queue #{@name} - script job #{job['child_pid']} was not ready to be reaped")
               end

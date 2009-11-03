@@ -101,14 +101,21 @@ Have a local queue script deliver message to a local queue
     x both
  + a format that is bash friendly
  + KINDA - a buffer for pipe reads? (must do properly)
- - test with Bash
+ + test with Bash
  - handle proper completion done/fail/relay/resend
+   - done - just move into that dir
+   - fail - move into that dir
+   - relay - indicate that the job was relayed to a url
+   - resend - delay time - requeue, and log some messages
+   - move the job into the proper dir
+ - a simple test curl script to create a queue and messages to it
  - a script in ruby that looks at dest of message, notices that
    routing
    if it is this host, move to that queue via cmdline?
    if it isn't this host, fail now
  - record redirect
  - local queue on same host
+ - Queue status message should be updated for fail, pause, done, err, etc.
 
 
 *milestone 2*
@@ -132,6 +139,11 @@ Implement CDB push system
 *milestone 3*
 
 Later...
+ - Lower priority of all children
+ - Put children in process groups
+ - Properly detect signals that suspend processes
+ - Insure that all children get killed (hmm a vote for C)
+   Do Linker tricks later
  - Make a partial for queue status
  - Master qmgr cleans up all processes if queue doesn't do so properly
 - Bloom filter for Done
