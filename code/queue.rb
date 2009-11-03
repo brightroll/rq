@@ -958,8 +958,8 @@ module RQ
         status['prep']   = @prep
         status['que']    = @que.map { |m| [m['msg_id'], m['due']] }
         status['run']    = @run.map { |m| [m['msg_id'], m['status']] }
-        status['pause']  = @pause.map { |m| [m['msg_id'], m['status']] }
-        status['done']   = @done.length
+        status['pause']  = []
+        status['done']   = Dir.entries(@queue_path + "/done/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
         log("RESP [ #{resp} ]")
