@@ -196,6 +196,8 @@ module RQ
           ENV["RQ_PARAM3"] = msg['param3']
           ENV["RQ_PARAM4"] = msg['param4']
 
+#          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
+
           RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           exec(script_path)
@@ -303,6 +305,8 @@ module RQ
     def que(msg, from_state = 'prep')
       msg_id = msg['msg_id']
       begin
+        # Read in full message
+        msg = get_message(msg, from_state)
         basename = @queue_path + "/#{from_state}/" + msg_id
         return false unless File.exists? basename
         newname = @queue_path + "/que/" + msg_id
