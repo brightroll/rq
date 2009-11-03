@@ -807,7 +807,7 @@ module RQ
 
               res = Process.wait2(msg['child_pid'], Process::WNOHANG)
               if res
-                log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{msg['child_pid']} exit with status #{res}")
+                log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{msg['child_pid']} exit with status #{res.inspect}")
 
                 msg_id = msg['msg_id']
 
@@ -818,7 +818,7 @@ module RQ
                 completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
 
                 if completion
-                  log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} completion [#{completion}]")
+                  log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} completion [#{completion.inspect}]")
                 end
 
                 new_state = nil
@@ -844,7 +844,7 @@ module RQ
 
                 if new_state == nil
                   # log a message
-                  write_msg_status(msg, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res}" )
+                  write_msg_status(msg, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}" )
                   new_state = 'err'
                 end
 
