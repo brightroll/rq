@@ -108,18 +108,29 @@ Have a local queue script deliver message to a local queue
    - relay - indicate that the job was relayed to a url
    - resend - delay time - requeue, and log some messages
    - move the job into the proper dir
+ 
+ Tuesday
  - a simple test curl script to create a queue and messages to it
- - a script in ruby that looks at dest of message, notices that
+   - pulls from repo
+   - runs tests, detects if tests pass
+   - sets up two queues (relay and test)
+   - test script responds to param1
+   - sends messages
+     - 2 for done with attach
+     - 1 for fail with attach
+     - 1 for relay, get relay and done on final
+     - 1 for resend, detect that it was resent
+ - a real relay script in ruby that looks at dest of message, notices that
    routing
    if it is this host, move to that queue via cmdline?
    if it isn't this host, fail now
- - record redirect
+ - test router script
  - local queue on same host
- - Queue status message should be updated for fail, pause, done, err, etc.
+ - Queue status message should be updated for fail, pause, done, err
 
 
 *milestone 2*
-  - Attach returns md5
+ - Attach returns md5
 Have a local queue script deliver message to a remote queue
  - scheduler wakes up on injection, routes to remote
    - script starts a delivery process
@@ -129,7 +140,7 @@ Have a local queue script deliver message to a remote queue
 *milestone 3*
 
 Implement CDB push system
- - Delivers to local
+- Delivers to local
  - Relayed to cdb_push script
  - cdb_push creates new cdb file
  - cdb_push preps new messages to other machines
