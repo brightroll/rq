@@ -634,7 +634,6 @@ module RQ
             ## THE QUESTIONS: Do we kill the job now?
             # No  - up to script writer. They should exit
             #       we'll trust them for now
-
           end
           if parts[0] == 'pause'
             @completed << [msg, :pause, Time.now.to_i]
