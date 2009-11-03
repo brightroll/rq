@@ -850,9 +850,9 @@ module RQ
 
                 # Move to relay dir and update in-memory data structure
                 begin
-                  basename = @queue_path + "/run/" + msg_id
+                  basename = "#{@queue_path}/run/#{msg_id}"
                   raise unless File.exists? basename
-                  newname = "#{@queue_path}/#{new_state}/#{msg_id}" + msg_id
+                  newname = "#{@queue_path}/#{new_state}/#{msg_id}"
                   File.rename(basename, newname)
                 rescue
                   log("FATAL - couldn't move from 'run' to 'relay' #{msg_id}")
