@@ -7,6 +7,16 @@ require 'erb'
 #    set :root, File.dirname('code')
 #set :root, File.dirname('code'__FILE__)
 
+def start_backend
+  fork do
+    exec "ruby ./code/queuemgr_ctl.rb start"
+  end
+  p "Waiting on start..."
+  Process.wait
+  p "Done Waiting..."
+end
+
+
 module RQ
   class Install < Sinatra::Base
     
@@ -24,7 +34,10 @@ module RQ
       # http://support.apple.com/kb/TA24975?viewlocale=en_US
       FileUtils.mkdir('queue.noindex')
       FileUtils.ln_sf('queue.noindex', 'queue')
-      `ruby ./code/queuemgr_ctl.rb run`
+      p "Starting..."
+      # This isn't working in WEBrick
+      #start_backend
+      p "Started..."
       erb :installed
     end
   end

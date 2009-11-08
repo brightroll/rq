@@ -102,18 +102,17 @@ Have a local queue script deliver message to a local queue
  + a format that is bash friendly
  + KINDA - a buffer for pipe reads? (must do properly)
  + test with Bash
- - handle proper completion done/fail/relay/resend
-   - done - just move into that dir
-   - fail - move into that dir
-   - relay - indicate that the job was relayed to a url
-   - resend - delay time - requeue, and log some messages
-   - move the job into the proper dir
- 
+ + handle proper completion done/fail/relay/resend
+  + done - just move into that dir
+  + fail - move into that dir
+  + relay - indicate that the job was relayed to a url
+  + resend - delay time - requeue, and log some messages
+
  Tuesday
  - a simple test curl script to create a queue and messages to it
    - pulls from repo
    - runs tests, detects if tests pass
-   - sets up two queues (relay and test)
+   + sets up two queues (relay and test)
    - test script responds to param1
    - sends messages
      - 2 for done with attach

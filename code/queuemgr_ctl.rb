@@ -44,22 +44,30 @@ end
 def daemonize()
   srand # Split rand streams between spawning and daemonized process
   log('daemonize did srand')
-  exit if fork #and exit # Fork and exit from the parent
+  if fork
+    log("exiting parent...")
+    exit
+  end
 
   # Detach from the controlling terminal
   unless sess_id = Process.setsid
-    log('deamonize exception')
+    log('daemonize exception')
     raise RuntimeException.new('cannot detach from controlling terminal')
   end
+
+  log("New session id = #{sess_id}")
 
   # Prevent the possibility of acquiring a controlling terminal
   #if oldmode.zero?
   trap 'SIGHUP', 'IGNORE'
 
-  # Exit from the parent again
+  # Exit from the parent again, to guarantee we cannot reconnect to old
+  # session
   exit if fork
   #end
   log('daemonize done forking')
+
+  log("New session id = #{sess_id}")
 
   # TODO: re chdir to proper dir
   #Dir.chdir "/"   # Release old working directory
@@ -91,7 +99,7 @@ end
 
 if ARGV[0] == 'start'
   start
-  # daemonize forks and exits
+  # daemonize forks and exits from parent
 elsif (ARGV[0] == 'run' or ARGV[0] == 'debug')
   p "Staying in foreground..."
 elsif (ARGV[0] == 'restart')
@@ -106,7 +114,7 @@ end
 
 
 
-log("Doing chdri")
+log("Doing chdir")
 
 Dir.chdir(cwd)
 

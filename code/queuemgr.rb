@@ -105,7 +105,7 @@ module RQ
     end
 
     def shutdown
-      final_shutdown if @queues.empty?
+      final_shutdown! if @queues.empty?
       
       @queues.each do
         |q|
