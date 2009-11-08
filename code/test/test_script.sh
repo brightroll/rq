@@ -36,7 +36,7 @@ fi
 
 if [ "$RQ_PARAM1" == "sneaky" ]; then
   echo "This script should *still* end up with err status"
-  write_status 'done' "sneaky non zero-exit"
+  write_status 'done' "sneaky non-zero exit"
   exit 1
 fi
 

@@ -844,6 +844,7 @@ module RQ
                 if new_state == nil
                   # log a message
                   write_msg_status(msg, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}" )
+                  write_msg_status(msg, "PROCESS EXITED IMPROPERLY" )
                   new_state = 'err'
                 end
 
@@ -874,7 +875,7 @@ module RQ
                 end
 
               else
-                log("EXITING: queue #{@name} - script job #{job['child_pid']} was not ready to be reaped")
+                log("EXITING: queue #{@name} - script msg #{msg['child_pid']} was not ready to be reaped")
               end
 
             else

@@ -113,24 +113,25 @@ Have a local queue script deliver message to a local queue
   - runs tests, detects if tests pass
     + sets up two queues (relay and test)
     + See why messages are going into relay
-    - test script responds to param1
-    - script checks job status
-    - web queue status for done is propper
-  - sends messages
-    - 1 for done
-    - 1 for fail
-    - 1 for relay, get relay and done on final
+    + test script responds to param1
+    + script checks job status
+ - sends messages
+    + 1 for done
+    + 1 for fail/err
+    + 1 for done with non-zero exit (err)
     - 1 for resend, detect that it was resent
-- a real relay script in ruby that looks at dest of message, notices that
+ - a real relay script in ruby that looks at dest of message, notices that
    routing
    if it is this host, move to that queue via cmdline?
    if it isn't this host, fail now
+   - 1 for relay, get relay and done on final
  - test router script
  - local queue on same host
  - Queue status message should be updated for fail, pause, done, err
 
 
 *milestone 2*
+ - web queue status for done is propper
  - Attach returns md5
 Have a local queue script deliver message to a remote queue
  - scheduler wakes up on injection, routes to remote
