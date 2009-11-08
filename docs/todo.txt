@@ -111,15 +111,17 @@ Have a local queue script deliver message to a local queue
  Tuesday
  - a simple test curl script to create a queue and messages to it
   - runs tests, detects if tests pass
-   + sets up two queues (relay and test)
-   - test script responds to param1
-   - See why messages are going into relay
-   - sends messages
-     - 2 for done with attach
-     - 1 for fail with attach
-     - 1 for relay, get relay and done on final
-     - 1 for resend, detect that it was resent
- - a real relay script in ruby that looks at dest of message, notices that
+    + sets up two queues (relay and test)
+    + See why messages are going into relay
+    - test script responds to param1
+    - script checks job status
+    - web queue status for done is propper
+  - sends messages
+    - 1 for done
+    - 1 for fail
+    - 1 for relay, get relay and done on final
+    - 1 for resend, detect that it was resent
+- a real relay script in ruby that looks at dest of message, notices that
    routing
    if it is this host, move to that queue via cmdline?
    if it isn't this host, fail now

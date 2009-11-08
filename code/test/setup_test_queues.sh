@@ -75,7 +75,7 @@ fi
 
 
 echo "Creating the test queue..."
-curl http://127.0.0.1:3333/new_queue -sL -F queue[url]=http://localhost:3333/ -F queue[name]=test -F queue[script]=./code/test_script.rb -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
+curl http://127.0.0.1:3333/new_queue -sL -F queue[url]=http://localhost:3333/ -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1

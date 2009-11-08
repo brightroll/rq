@@ -2,7 +2,7 @@
 
 # Send the test queue a test message that should end up in done
 
-out=`./bin/rq prepmesg  --dest test --src dru4 --relay-ok --param1=done`
+out=`./bin/rq prepmesg  --dest test --src dru4 --relay-ok --param1=err`
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test message properly"
   exit 1
