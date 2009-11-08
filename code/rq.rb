@@ -9,7 +9,7 @@ gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default
 Gem.clear_paths
 Gem.send :set_paths, gem_paths.join(":")
 
-p ARGV.inspect
+#p ARGV.inspect
 
 def process_args(arg_list)
   input = { }
@@ -47,7 +47,7 @@ def process_args(arg_list)
 end
 
 args = process_args(ARGV)
-p args 
+#p args 
 
 
 require 'code/queueclient'
@@ -122,7 +122,8 @@ if args[:cmd] == 'prepmesg'
     mesg[key] = args[key]
   end
   result = qc.prep_message(mesg)
-  p "Message: #{result.inspect} inserted into queue: #{q_name}"
+  print "#{result[0]} #{result[1]}"
+  #p "Message: #{result} inserted into queue: #{q_name}"
 end
 
 if args[:cmd] == 'attachmesg'
@@ -171,6 +172,7 @@ if args[:cmd] == 'commitmesg'
   # Construct message for queue mgr
   mesg = {'msg_id' => msg_id }
   result = qc.commit_message(mesg)
-  p "#{result} for Message: #{mesg['msg-id']} committed"
+  print "#{result[0]} #{result[1]}"
+  #p "#{result} for Message: #{mesg['msg-id']} committed"
 end
 

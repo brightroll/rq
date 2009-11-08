@@ -110,10 +110,10 @@ Have a local queue script deliver message to a local queue
 
  Tuesday
  - a simple test curl script to create a queue and messages to it
-   - pulls from repo
-   - runs tests, detects if tests pass
+  - runs tests, detects if tests pass
    + sets up two queues (relay and test)
    - test script responds to param1
+   - See why messages are going into relay
    - sends messages
      - 2 for done with attach
      - 1 for fail with attach
@@ -147,6 +147,8 @@ Implement CDB push system
  - remote machines script moves file into proper location as proper user
 
 *milestone 3*
+ - parallel job running
+ - test delete message
 
 Later...
  - Lower priority of all children
