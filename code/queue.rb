@@ -154,7 +154,7 @@ module RQ
             #... the pipe fd will get closed on exec
           end
 
-          f = File.open(job_path + "/stdio.log", "w")
+          f = File.open(job_path + "/stdio.log", "a")
           RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
           if f.fileno != 0
             IO.for_fd(0).close rescue nil
@@ -191,6 +191,7 @@ module RQ
 
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_PIPE"] = "3"
+          ENV["RQ_COUNT"] = msg.fetch('count', 0).to_s
           ENV["RQ_PARAM1"] = msg['param1']
           ENV["RQ_PARAM2"] = msg['param2']
           ENV["RQ_PARAM3"] = msg['param3']
@@ -289,7 +290,8 @@ module RQ
         if not msg.has_key?('due')
           msg['due'] = Time.now.to_i
         end
-        data = msg.to_json
+        clean = msg.reject { |k,v| k == 'child_read_pipe' }
+        data = clean.to_json
         # Need a sysopen style system here TODO
         basename = @queue_path + "/#{que}/" + msg['msg_id']
         File.open(basename + '/tmp', 'w') { |f| f.write(data) }
@@ -642,9 +644,10 @@ module RQ
             @completed << [msg, :relayed, Time.now.to_i]
           end
           if parts[0] == 'resend'
-            @completed << [msg, :resend, Time.now.to_i]
+            @completed << [msg, :resend, parts[1].to_i]
             due,reason = parts[1].split('-')
             msg['due'] = Time.now.to_i + due.to_i
+            msg['count'] = msg.fetch('count', 1)
             store_msg(msg, 'run')
             # *** THIS ONE IS DIFFERENT ***
             # We need to set the messages 'due' time. This is safe
@@ -732,6 +735,7 @@ module RQ
         if delta < 60# Set timeout to be this
           @wait_time = delta
         end
+        return
       end
 
       run_scheduler!   # Tail recursion, fail me now, I'm in Ruby
@@ -812,6 +816,7 @@ module RQ
 
                 # Ok, close the pipe on our end
                 msg['child_read_pipe'].close
+                msg.delete('child_read_pipe')
 
                 # Determine status of msg
                 completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
@@ -860,15 +865,18 @@ module RQ
                   next
                 end
 
+                log("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
                 # Remove from completion
                 @completed.delete(completion)
                 # Remove from run
                 @run = @run.reject { |i| i['msg_id'] == msg_id }
 
-                if new_state == :resend
+                if (completion[1] == :resend) && (new_state == 'que')
                   # Re-inject into que
-                  msg['due'] = Time.now.to_i + completion[]
+                  msg['due'] = Time.now.to_i + completion[2]
                   @que.unshift(msg)
+
+                  log("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
 
                   # No-need to re-run scheduler, it runs on every iteration
                   # of this loop

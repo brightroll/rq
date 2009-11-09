@@ -119,13 +119,14 @@ Have a local queue script deliver message to a local queue
     + 1 for done
     + 1 for fail/err
     + 1 for done with non-zero exit (err)
-    - 1 for resend, detect that it was resent
+    + 1 for resend, detect that it was resent
+    + Increment RQ_COUNT for every resend
  - a real relay script in ruby that looks at dest of message, notices that
    routing
-   if it is this host, move to that queue via cmdline?
-   if it isn't this host, fail now
-   - 1 for relay, get relay and done on final
- - test router script
+   - if it is this host, move to that queue via cmdline?
+   - if it isn't this host, fail at this time
+   - 1 for relay, get relay redirect location and done on final queue
+- test router script
  - local queue on same host
  - Queue status message should be updated for fail, pause, done, err
 

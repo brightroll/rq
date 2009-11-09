@@ -40,6 +40,14 @@ if [ "$RQ_PARAM1" == "sneaky" ]; then
   exit 1
 fi
 
+if [ "$RQ_PARAM1" == "resend1" ]; then
+    if [ "$RQ_COUNT" == "0" ]; then
+        echo "This script should resend the current job at a new time"
+        write_status 'resend' "2"
+        exit 0
+    fi
+fi
+
 echo "done"
 write_status 'done' "done sleeping"
 

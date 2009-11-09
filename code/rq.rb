@@ -200,3 +200,25 @@ if args[:cmd] == 'statusmesg'
   end
 end
 
+if args[:cmd] == 'statuscountmesg'
+  full_mesg_id = args['msg_id']
+
+  q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
+  msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found"]
+  end
+
+  # Construct message for queue mgr
+  mesg = {'msg_id' => msg_id }
+  result = qc.get_message(mesg)
+  if result[0] == 'ok'
+    print "#{result[0]} #{result[1].fetch('count', '0')}"
+  else
+    print "#{result[0]} #{result[1]}"
+  end
+end
+
