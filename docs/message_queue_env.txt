@@ -1,0 +1,30 @@
+
+RQ
+--------------
+
+Current Dir = <que>/<state>/<short msg id>/job/
+
+Full Msg ID = host + q_name + msg_id
+
+ENV["RQ_HOST"]       = Base URL of host (Ex. "http://localhost:3333/")
+
+ENV["RQ_DEST"]       = Full Msg ID
+                       (Ex. http://localhost:3333/q/test/20091109.0558.57.780)
+
+ENV["RQ_DEST_QUEUE"] = Queue Name (Ex. 'test')
+
+ENV["RQ_MSG_ID"]     = Short msg id (Ex. "20091109.0558.57.780")
+
+ENV["RQ_PIPE"]       = Pipe FD to Queue management process
+
+ENV["RQ_COUNT"]      = Number of times message has been relayed or processed
+
+ENV["RQ_PARAM1"]     = param1 for message
+ENV["RQ_PARAM2"]     = param2 for message
+ENV["RQ_PARAM3"]     = param3 for message
+ENV["RQ_PARAM4"]     = param4 for message
+
+
+
+--------------
+

@@ -109,32 +109,35 @@ Have a local queue script deliver message to a local queue
   + resend - delay time - requeue, and log some messages
 
  Tuesday
- - a simple test curl script to create a queue and messages to it
-  - runs tests, detects if tests pass
+ + a simple test curl script to create a queue and messages to it
+  + runs tests, detects if tests pass
     + sets up two queues (relay and test)
     + See why messages are going into relay
     + test script responds to param1
     + script checks job status
- - sends messages
+ + sends messages
     + 1 for done
     + 1 for fail/err
     + 1 for done with non-zero exit (err)
     + 1 for resend, detect that it was resent
     + Increment RQ_COUNT for every resend
- - a real relay script in ruby that looks at dest of message, notices that
+ + a real relay script in ruby that looks at dest of message, notices that
    routing
-   - if it is this host, move to that queue via cmdline?
-   - if it isn't this host, fail at this time
-   - 1 for relay, get relay redirect location and done on final queue
-- test router script
- - local queue on same host
- - Queue status message should be updated for fail, pause, done, err
+   + if it is this host
+   + if it isn't this host, fail at this time
+   + script to test relay
+   + 1 for relay, get relay redirect location and done on final queue
+   + Store ID
+   + Use ID
+ + test router script
+ + local queue on same host
+ + Queue status message should be updated for fail, pause, done, err
 
 
 *milestone 2*
  - web queue status for done is propper
  - Attach returns md5
-Have a local queue script deliver message to a remote queue
+ Have a local queue script deliver message to a remote queue
  - scheduler wakes up on injection, routes to remote
    - script starts a delivery process
  - use webrick on remote host

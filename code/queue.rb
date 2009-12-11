@@ -189,6 +189,9 @@ module RQ
 
           RQ::Queue.log(job_path, "running #{script_path}")
 
+          ENV["RQ_HOST"] = @config['opts']['url']
+          ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
+          ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_PIPE"] = "3"
           ENV["RQ_COUNT"] = msg.fetch('count', 0).to_s
@@ -282,6 +285,22 @@ module RQ
         retry
       end
       nil  # fail
+    end
+
+    def check_msg(msg, input)
+      # Required parameter
+      return false unless input.has_key?('dest')
+      msg['dest'] = input['dest']
+
+      # Copy only these keys from input message
+      keys = %w(src count param1 param2 param3 param3)
+      keys.each do
+        |key|
+        next unless input.has_key?(key)
+        msg[key] = input[key]
+      end
+
+      return true
     end
 
     def store_msg(msg, que = 'prep')
@@ -452,6 +471,21 @@ module RQ
       return full_name
     end
 
+    def gen_full_dest(msg)
+      res = { 'dest' => "#{@config['opts']['url']}q/#{msg['dest']}/",
+        'queue' => msg['dest'] }
+
+      # IF message already has full remote dest...
+      if msg['dest'].index('http:') == 0
+        res['dest'] = msg['dest']
+        q_name = msg['dest'][/\/q\/([^\/]+)/, 1]
+        res['queue'] = q_name;
+        #msg_id = msg['dest'][/\/q\/[^\/]+\/([^\/]+)/, 1]
+      end
+
+      res
+    end
+
     def attach_msg(msg)
       msg_id = msg['msg_id']
       # validate attachment
@@ -481,7 +515,7 @@ module RQ
           return [false, "Attachment name as a dot-file not allowed: #{name}"]
         end
         # Unsafe char removal
-        name_test = name.tr('?[]|$&<>', '*')
+        name_test = name.tr('~?[]|$&<>', '*')
         if name_test.index("*")
           return [false, "Attachment name has invalid chara dot-file not allowed: #{name}"]
         end
@@ -647,7 +681,7 @@ module RQ
             @completed << [msg, :resend, parts[1].to_i]
             due,reason = parts[1].split('-')
             msg['due'] = Time.now.to_i + due.to_i
-            msg['count'] = msg.fetch('count', 1)
+            msg['count'] = msg.fetch('count', 0) + 1
             store_msg(msg, 'run')
             # *** THIS ONE IS DIFFERENT ***
             # We need to set the messages 'due' time. This is safe
@@ -729,16 +763,19 @@ module RQ
 
       delta = sorted[0]['due'].to_i - Time.now.to_i
 
-      if delta <=0
-        run_job(sorted[0])
-      else
-        if delta < 60# Set timeout to be this
+      # If it is time to wait, then run 
+      if delta >= 0
+        if delta < 60  # Set timeout to be this, vs default of 60 set above
           @wait_time = delta
         end
         return
       end
 
+      # Looks like it is time to run now...
+      run_job(sorted[0])
       run_scheduler!   # Tail recursion, fail me now, I'm in Ruby
+                       # So, lets hope the load isn't too high
+                       # If it is, then we will loop like crazy
     end
 
     def run_loop
@@ -947,8 +984,7 @@ module RQ
         options = JSON.parse(json)
 
         msg = { }
-        if alloc_id(msg)
-          msg.merge!(options)
+        if alloc_id(msg) and check_msg(msg, options)
           store_msg(msg)
           que(msg)
           msg_id = gen_full_msg_id(msg)
@@ -969,6 +1005,7 @@ module RQ
         status['run']    = @run.map { |m| [m['msg_id'], m['status']] }
         status['pause']  = []
         status['done']   = Dir.entries(@queue_path + "/done/").reject {|i| i.index('.') == 0 }
+        status['relayed']  = Dir.entries(@queue_path + "/relayed/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
         log("RESP [ #{resp} ]")
@@ -982,8 +1019,7 @@ module RQ
         options = JSON.parse(json)
 
         msg = { }
-        if alloc_id(msg)
-          msg.merge!(options)
+        if alloc_id(msg) and check_msg(msg, options)
           store_msg(msg)
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
