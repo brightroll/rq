@@ -8,13 +8,14 @@ module RQ
     attr_accessor :name
     attr_accessor :pid
 
-    def initialize(name)
+    def initialize(name, path=".")
       @name = name
-      @queue_path = "queue/#{@name}"
-      @queue_sock_path = "queue/#{@name}/queue.sock"
+      @queue_path = "#{path}/queue/#{@name}"
+      @queue_sock_path = "#{path}/queue/#{@name}/queue.sock"
     end
 
     def exists?
+      # TODO: do more of a test, actual round trip ping
       File.directory?(@queue_path)
     end
 
