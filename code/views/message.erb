@@ -1,9 +1,7 @@
 <% q = params[:name] %>
-<h1>RQ : Queue [ <%= q %> ] : Mesg: [ <%= params[:msg_id] %> ] </h1>
+<h1>RQ : Queue [ <%= q %> ] : Mesg: [ <%= locals['msg_id'] %> ] </h1>
 
 <ul>
-<%  qc = RQ::QueueClient.new(q) %>
-<%  ok, msg = qc.get_message(params) %>
 
 <h3>Message Attribs</h3>
 <br />
@@ -11,7 +9,7 @@
 <%  ['src', 'dest', 'msg_id', 'status'].each do |key| %>
 <li>
   <span class="">
-    <%= key %> : <%= msg[key] %>
+    <%= key %> : <%= locals['msg'][key] %>
   </span>
 </li>
 <% end %>
