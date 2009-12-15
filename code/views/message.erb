@@ -6,7 +6,8 @@
 <h3>Message Attribs</h3>
 <br />
 <ul>
-<%  ['src', 'dest', 'msg_id', 'status'].each do |key| %>
+<%  ['src', 'dest', 'msg_id', 'status', 'count', 'param1', 'param2', 'param3', 'param4'].each do |key| %>
+<%    next unless locals['msg'].has_key?(key) %>
 <li>
   <span class="">
     <%= key %> : <%= locals['msg'][key] %>
