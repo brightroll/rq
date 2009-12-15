@@ -124,7 +124,7 @@ if args[:cmd] == 'prepmesg'
     mesg[key] = args[key]
   end
   result = qc.prep_message(mesg)
-  print "#{result[0]} #{result[1]}"
+  print "#{result[0]} #{result[1]}\n"
   #p "Message: #{result} inserted into queue: #{q_name}"
 end
 
@@ -156,7 +156,7 @@ if args[:cmd] == 'attachmesg'
     throw :halt, [404, "404 - #{results[0]}"]
   end
   result = qc.attach_message(msg)
-  p "#{result} for Message: #{msg_id} attachment"
+  print "#{result[0]} #{result[1]} for Message: #{full_mesg_id} attachment\n"
 end
 
 if args[:cmd] == 'commitmesg'
@@ -174,7 +174,7 @@ if args[:cmd] == 'commitmesg'
   # Construct message for queue mgr
   mesg = {'msg_id' => msg_id }
   result = qc.commit_message(mesg)
-  print "#{result[0]} #{result[1]}"
+  print "#{result[0]} #{result[1]}\n"
   #p "#{result} for Message: #{mesg['msg-id']} committed"
 end
 
