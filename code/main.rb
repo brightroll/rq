@@ -84,7 +84,11 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      result = qc.create_message(prms)
+      if prms.fetch("_method", 'commit') == 'prep'
+        result = qc.prep_message(prms)
+      else
+        result = qc.create_message(prms)
+      end
 
       if api_call == 'json'
         "#{result.to_json}"
@@ -135,9 +139,18 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
+      api_call = params.fetch('x_format', 'html')
+
       if params[:_method] == 'delete'
         result = qc.delete_message( {'msg_id' => params[:msg_id]} )
         "Delete #{params[:name]}/#{params[:msg_id]} got #{result}"
+      elsif params[:_method] == 'commit'
+        result = qc.commit_message( {'msg_id' => params[:msg_id]} )
+        if api_call == 'json'
+          result.to_json
+        else
+          "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
+        end
       else
         "Post #{params[:name]}/#{params[:msg_id]}"
       end
