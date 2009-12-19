@@ -2,6 +2,7 @@
 require 'socket'
 require 'json'
 require 'fcntl'
+require 'digest'
 
 module RQ
   class Queue
@@ -489,6 +490,7 @@ module RQ
     def attach_msg(msg)
       msg_id = msg['msg_id']
       # validate attachment
+      result = [false, 'Unknown error']
       begin
         basename = @queue_path + "/prep/" + msg_id
         return [false, "No message on disk"] unless File.exists? basename
@@ -541,16 +543,24 @@ module RQ
         File.unlink(tmp_new_path) rescue nil
         File.link(msg['pathname'], tmp_new_path)
         #       Second, do a rename, that will overwrite
+
+        hasher = Digest::MD5.new
+
+        File.open(tmp_new_path, 'r') do |file|
+          hasher.update(file.read(32768)) until file.eof
+        end
+
         File.rename(tmp_new_path, new_path)
         # DONE
 
+        result = [true, "#{hasher.hexdigest}-Attached successfully"]
       rescue
         log("FATAL - couldn't add attachment to message #{msg_id}")
         log("        [ #{$!} ]")
         return false
       end
 
-      return [true, "Attachment added successfully"]
+      return result
     end
 
     def fixup_msg(msg, que)

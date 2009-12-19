@@ -130,6 +130,57 @@ module RQ
       end
     end
 
+    post '/q/:name/:msg_id/attach/new' do
+      # check for queue
+      # TODO: sanitize names (no dots or slashes)
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      # Sample of what params look like
+      # {"name"=>"test", "filedata"=>{:type=>"image/jpeg", :head=>"Content-Disposition: form-data; name=\"data\"; filename=\"studio3.jpg\"\r\nContent-Type: image/jpeg\r\n", :tempfile=>#<File:/var/folders/st/st7hSqrMFB0Sfm3p4OeypE+++TM/-Tmp-/RackMultipart20091218-76387-t47zdi-0>, :name=>"filedata", :filename=>"studio3.jpg"}, "msg_id"=>"20091215.1829.21.853", "x_format"=>"json"}
+      #
+      #p params
+      #p params['filedata']
+      #p params['filedata'][:tempfile].path
+      #p params['filedata'][:tempfile].class
+      #p params['filedata'][:tempfile].methods.sort
+
+      if not params['filedata']
+        throw :halt, [404, "404 - Missing required param data"]
+      end
+
+      if params['filedata'].class != Hash
+        throw :halt, [404, "404 - Wrong input type for data param"]
+      end
+
+      if not params['filedata'][:tempfile]
+        throw :halt, [404, "404 - Missing pathname to upload temp file in filedata param"]
+      end
+
+      if not params['filedata'][:filename]
+        throw :halt, [404, "404 - Missing filename of uploaded file in filedata param"]
+      end
+
+
+      api_call = params.fetch('x_format', 'html')
+
+      msg = { 'msg_id' => params['msg_id'],
+        'pathname' => params['filedata'][:tempfile].path,
+        'name' => params['filedata'][:filename]
+      }
+
+      result = qc.attach_message( msg )
+
+      if api_call == 'json'
+        result.to_json
+      else
+        "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
+      end
+    end
+
     post '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)

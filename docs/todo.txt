@@ -134,30 +134,35 @@ Have a local queue script deliver message to a local queue
  + Queue status message should be updated for fail, pause, done, err
 
 
+ - Test file upload 
+   + Hand run curl script
+   + Code to put file as attachment into system
+   - Attach returns md5 of attachment
+   - Code to return md5s of attachments
+   - Test script to upload a file (aka curl) and verify md5 (message now hass 'attachments' field)
+
 *milestone 2*
- - web queue status for done is propper
- - Attach returns md5
- Have a local queue script deliver message to a remote queue
- - scheduler wakes up on injection, routes to remote
-   - script starts a delivery process
+ - Have relay queue script deliver message to a remote queue
+ - Require a script to do multi-part form upload
  - use webrick on remote host
-   - client side work for attachments (md5)
 
 *milestone 3*
 
 Implement CDB push system
-- Delivers to local
- - Relayed to cdb_push script
- - cdb_push creates new cdb file
- - cdb_push preps new messages to other machines
- - cdb_push waits for all messages to complete or errors out
- - remote machines script moves file into proper location as proper user
+ - Delivers to local
+   - Relayed to cdb_push script
+   - cdb_push creates new cdb file
+   - cdb_push preps new messages to other machines
+   - cdb_push waits for all messages to complete or errors out
+   - remote machines script moves file into proper location as proper user
 
 *milestone 3*
  - parallel job running
  - test delete message
 
 Later...
+ - Store due dates for jobs in que
+ - web queue status for done is propper
  - Lower priority of all children
  - Put children in process groups
  - Properly detect signals that suspend processes
