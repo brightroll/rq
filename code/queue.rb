@@ -1062,7 +1062,7 @@ module RQ
             resp = [ "fail", attach_message ].to_json
           end
         else
-          resp = [ "fail", "unknown reason"].to_json
+          resp = [ "fail", "couldn't locate message in prep"].to_json
         end
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
