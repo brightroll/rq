@@ -149,11 +149,11 @@ module RQ
       #p params['filedata'][:tempfile].methods.sort
 
       if not params['filedata']
-        throw :halt, [404, "404 - Missing required param data"]
+        throw :halt, [404, "404 - Missing required param filedata"]
       end
 
       if params['filedata'].class != Hash
-        throw :halt, [404, "404 - Wrong input type for data param"]
+        throw :halt, [404, "404 - Wrong input type for filedata param"]
       end
 
       if not params['filedata'][:tempfile]
