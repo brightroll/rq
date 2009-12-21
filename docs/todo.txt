@@ -137,16 +137,19 @@ Have a local queue script deliver message to a local queue
  - Test file upload 
    + Hand run curl script
    + Code to put file as attachment into system
-   - Attach returns md5 of attachment
-   - Code to return md5s of attachments
-   - Test script to upload a file (aka curl) and verify md5 (message now hass 'attachments' field)
+   + Attach returns md5 of attachment
+   - Test script to upload a file (aka curl) and verify md5
 
 *milestone 2*
  - Have relay queue script deliver message to a remote queue
- - Require a script to do multi-part form upload
- - use webrick on remote host
+ - Require relay script to do multi-part form upload
+ - Have a test script test this end to end
 
 *milestone 3*
+ - Have a series of test scripts
+ - Have a versioning system
+ - DONE
+
 
 Implement CDB push system
  - Delivers to local
@@ -161,6 +164,8 @@ Implement CDB push system
  - test delete message
 
 Later...
+ - Code to return md5s of attachments
+ - Code to return md5s and mime/types of attachments
  - Store due dates for jobs in que
  - web queue status for done is propper
  - Lower priority of all children

@@ -458,6 +458,20 @@ module RQ
           xtra_status = JSON.parse(xtra_data)
           msg['status'] += " - #{xtra_status['job_status']}"
         end
+
+        # Now check for attachments
+        if File.directory?(basename + "/attach/")
+          ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
+          if not ents.empty?
+            msg['_attachments'] = { }
+            ents.each do
+              |ent|
+              msg['_attachments'][ent] = { }
+              msg['_attachments'][ent]['md5'] = file_md5("#{basename}/attach/#{ent}")
+            end
+          end
+        end
+
       rescue
         msg = nil
         log("Bad message in queue: #{basename}")
@@ -544,16 +558,12 @@ module RQ
         File.link(msg['pathname'], tmp_new_path)
         #       Second, do a rename, that will overwrite
 
-        hasher = Digest::MD5.new
-
-        File.open(tmp_new_path, 'r') do |file|
-          hasher.update(file.read(32768)) until file.eof
-        end
+        md5 = file_md5(tmp_new_path)
 
         File.rename(tmp_new_path, new_path)
         # DONE
 
-        result = [true, "#{hasher.hexdigest}-Attached successfully"]
+        result = [true, "#{md5}-Attached successfully"]
       rescue
         log("FATAL - couldn't add attachment to message #{msg_id}")
         log("        [ #{$!} ]")
@@ -561,6 +571,16 @@ module RQ
       end
 
       return result
+    end
+
+    def file_md5(path)
+      hasher = Digest::MD5.new
+
+      File.open(path, 'r') do |file|
+        hasher.update(file.read(32768)) until file.eof
+      end
+
+      result = hasher.hexdigest
     end
 
     def fixup_msg(msg, que)
