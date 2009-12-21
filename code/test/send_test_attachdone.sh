@@ -30,7 +30,7 @@ if [ "${result1[0]}" != "ok" ]; then
     exit 1
 fi
 
-expected="ok Attachment added successfully for Message: ${result[1]} attachment"
+expected="ok 14a1a7845cc7f981977fbba6a60f0e42-Attached successfully for Message: ${result[1]} attachment"
 if [ "${out1}" != "${expected}" ]; then
     echo "Attach operation didn't get proper resulting message"
     echo "Got:"
