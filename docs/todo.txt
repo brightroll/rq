@@ -134,19 +134,19 @@ Have a local queue script deliver message to a local queue
  + Queue status message should be updated for fail, pause, done, err
 
 
- - Test file upload 
+ + Test file upload 
    + Hand run curl script
    + Code to put file as attachment into system
    + Attach returns md5 of attachment
-   - Test script to upload a file (aka curl) and verify md5
+   + Test script to upload a file (aka curl) and verify md5
 
 *milestone 2*
  - Have relay queue script deliver message to a remote queue
- - Require relay script to do multi-part form upload
+ - Require relay script to do multi-part form upload? (nope, curl)
  - Have a test script test this end to end
 
 *milestone 3*
- - Have a series of test scripts
+ - Have a master test script to run the series of test scripts
  - Have a versioning system
  - DONE
 
