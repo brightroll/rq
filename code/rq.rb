@@ -194,9 +194,9 @@ if args[:cmd] == 'statusmesg'
   mesg = {'msg_id' => msg_id }
   result = qc.get_message(mesg)
   if result[0] == 'ok'
-    print "#{result[0]} #{result[1]['status']}"
+    print "#{result[0]} #{result[1]['status']}\n"
   else
-    print "#{result[0]} #{result[1]}"
+    print "#{result[0]} #{result[1]}\n"
   end
 end
 
@@ -216,9 +216,41 @@ if args[:cmd] == 'statuscountmesg'
   mesg = {'msg_id' => msg_id }
   result = qc.get_message(mesg)
   if result[0] == 'ok'
-    print "#{result[0]} #{result[1].fetch('count', '0')}"
+    print "#{result[0]} #{result[1].fetch('count', '0')}\n"
   else
-    print "#{result[0]} #{result[1]}"
+    print "#{result[0]} #{result[1]}\n"
   end
 end
 
+if args[:cmd] == 'attachstatusmesg'
+  full_mesg_id = args['msg_id']
+
+  q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
+  msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found"]
+  end
+
+  # Construct message for queue mgr
+  mesg = {'msg_id' => msg_id }
+  result = qc.get_message(mesg)
+  if result[0] == 'ok'
+    ents = []
+    if result[1].has_key?('_attachments')
+      result[1]['_attachments'].each do
+        |k,v|
+        ents << [k, v['md5']]
+      end
+    end
+    print "#{result[0]} #{ents.length}\n"
+    ents.each do
+      |ent|
+      print "#{ent[0]} #{ent[1]}\n"
+    end
+  else
+    print "#{result[0]} #{result[1]}\n"
+  end
+end
