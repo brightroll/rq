@@ -140,10 +140,12 @@ Have a local queue script deliver message to a local queue
    + Attach returns md5 of attachment
    + Test script to upload a file (aka curl) and verify md5
 
-*milestone 2*
+* milestone 2 *
+ - Have a test script test this end to end
+   + test script uses rq cmd so we need a way to get the list of attachments
+   + the list should have the md5
  - Have relay queue script deliver message to a remote queue
  - Require relay script to do multi-part form upload? (nope, curl)
- - Have a test script test this end to end
 
 *milestone 3*
  - Have a master test script to run the series of test scripts
@@ -164,6 +166,7 @@ Implement CDB push system
  - test delete message
 
 Later...
+ - Test two phase properly
  - Code to return md5s of attachments
  - Code to return md5s and mime/types of attachments
  - Store due dates for jobs in que
