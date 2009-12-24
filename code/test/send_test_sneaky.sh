@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Send the test queue a test message that should end up in done
 

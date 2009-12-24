@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # SETUP THE QUEUES FOR A VALID TEST
 # we are using bash now since Ruby pthreads just don't
