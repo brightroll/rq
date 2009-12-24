@@ -63,7 +63,7 @@ msg_id = result[1][/\/q\/[^\/]+\/([^\/]+)/, 1]
 
 print "Msg ID: #{msg_id}\n"
 
-4.times.each do
+4.times do
 
   ## Verify that script goes to done state
 
