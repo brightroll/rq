@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Send a relay-able message 
 
