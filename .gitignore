@@ -2,7 +2,9 @@ config
 queue
 queue.noindex
 .#*
-code/vendor/gems/json_pure-1.1.6/
-code/vendor/gems/rack-1.0.0/
-code/vendor/gems/sinatra-0.9.4/
-
+bin/*
+!bin/rq
+!bin/server.rb
+!bin/web_server.sh
+gems/*
+!gems/cache

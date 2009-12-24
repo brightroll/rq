@@ -1,6 +1,6 @@
 
 
 while true; do
-  ruby ./code/server.rb 
+  ./bin/server.rb
   sleep 1                  # For safety
 done
