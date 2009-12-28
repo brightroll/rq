@@ -26,6 +26,11 @@ Since there is only one, no locks are required in the filesystem to manage the q
 It handles all communication and 
 
 
+REST API Influences
+http://wiki.developer.myspace.com/index.php?title=RESTful_API
+Couch DB
+http://wiki.apache.org/couchdb/HTTP_Document_API
+
 
 BIN Dir
 
