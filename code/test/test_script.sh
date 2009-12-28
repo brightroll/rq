@@ -40,6 +40,13 @@ if [ "$RQ_PARAM1" == "sneaky" ]; then
   exit 1
 fi
 
+if [ "$RQ_PARAM1" == "slow" ]; then
+  echo "This script should execute slowly"
+  write_status 'run' "start sleeping for 30"
+  sleep 30
+  write_status 'run' "done sleeping for 30"
+fi
+
 if [ "$RQ_PARAM1" == "resend1" ]; then
     if [ "$RQ_COUNT" == "0" ]; then
         echo "This script should resend the current job at a new time"
