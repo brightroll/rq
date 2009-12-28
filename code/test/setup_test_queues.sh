@@ -20,7 +20,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "Your app is not setup\." _home.txt
+egrep "Your app is not setup\." _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is still in an installed state"
   exit 1
@@ -33,7 +33,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "Your app is now setup\." _install.txt
+egrep "Your app is now setup\." _install.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is still in an installed state"
   exit 1
@@ -51,7 +51,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "QUEUE MGR is OPERATIONAL" _home.txt
+egrep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is not running the queue mgr"
   exit 1
@@ -67,7 +67,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_relay.txt
+egrep "successqueue created" _install_relay.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create relay queue"
   exit 1
@@ -81,7 +81,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_test.txt
+egrep "successqueue created" _install_test.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test queue"
   exit 1
