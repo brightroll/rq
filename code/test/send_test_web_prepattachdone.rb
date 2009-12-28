@@ -128,7 +128,7 @@ print "Committed message: #{msg_id}\n"
 
 # verify done message
 
-4.times.each do
+4.times do
 
   ## Verify that script goes to done state
 
