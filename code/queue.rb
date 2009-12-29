@@ -890,6 +890,9 @@ module RQ
 
                 if completion
                   log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} completion [#{completion.inspect}]")
+                else
+                  log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} NO COMPLETION")
+                  completion = [nil, nil, nil]
                 end
 
                 new_state = nil
