@@ -2,7 +2,7 @@
 
 # Send a relay-able message 
 
-out=`./bin/rq prepmesg  --dest http://127.0.0.2:3333/q/test --src dru4 --relay-ok --param1=done`
+out=`./bin/rq prepmesg  --dest http://127.0.0.1:3333/q/test --src dru4 --relay-ok --param1=done`
 if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't create test message properly"
     exit 1
