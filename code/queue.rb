@@ -194,6 +194,7 @@ module RQ
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
           ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
+          ENV["RQ_MSG_DIR"] = job_path
           ENV["RQ_PIPE"] = "3"
           ENV["RQ_COUNT"] = msg.fetch('count', 0).to_s
           ENV["RQ_PARAM1"] = msg['param1']

@@ -15,6 +15,9 @@ ENV["RQ_DEST_QUEUE"] = Queue Name (Ex. 'test')
 
 ENV["RQ_MSG_ID"]     = Short msg id (Ex. "20091109.0558.57.780")
 
+ENV["RQ_MSG_DIR"]    = Dir for msg (Should be Current Dir unless dir is changed
+                       by script)
+
 ENV["RQ_PIPE"]       = Pipe FD to Queue management process
 
 ENV["RQ_COUNT"]      = Number of times message has been relayed or processed
