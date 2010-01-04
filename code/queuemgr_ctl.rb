@@ -1,4 +1,4 @@
-
+require 'gems/environment'
 
 
 Dir.glob(File.join("code", "vendor", "gems", "*", "lib")).each do |lib|
