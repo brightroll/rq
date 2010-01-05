@@ -468,7 +468,9 @@ module RQ
             ents.each do
               |ent|
               msg['_attachments'][ent] = { }
-              msg['_attachments'][ent]['md5'] = file_md5("#{basename}/attach/#{ent}")
+              md5, size = file_md5("#{basename}/attach/#{ent}")
+              msg['_attachments'][ent]['md5'] = md5
+              msg['_attachments'][ent]['size'] = size
             end
           end
         end
@@ -559,7 +561,7 @@ module RQ
         File.link(msg['pathname'], tmp_new_path)
         #       Second, do a rename, that will overwrite
 
-        md5 = file_md5(tmp_new_path)
+        md5, size = file_md5(tmp_new_path)
 
         File.rename(tmp_new_path, new_path)
         # DONE
@@ -577,11 +579,14 @@ module RQ
     def file_md5(path)
       hasher = Digest::MD5.new
 
+      size = nil
       File.open(path, 'r') do |file|
+        size = file.stat.size
         hasher.update(file.read(32768)) until file.eof
       end
 
       result = hasher.hexdigest
+      [result, size]
     end
 
     def fixup_msg(msg, que)
