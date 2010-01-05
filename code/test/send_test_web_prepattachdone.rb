@@ -158,9 +158,38 @@ print "Committed message: #{msg_id}\n"
       exit 1
     end
 
+    if msg['_attachments']['studio3.jpg']['size'] != 96007
+      print "Message doesn't contain correct file size for attachment studio3.jpg.\n"
+      exit 1
+    end
+
     if msg['status'] == 'done - done sleeping'
-        print "Message went into proper state. ALL DONE\n"
-        exit 0
+
+      # Message in done state, all following tests should be ready
+
+      bad_attach_uri = "http://localhost:3333/q/test/#{msg_id}/Xstudio54.jpgX"
+      res = Net::HTTP.get_response(URI.parse(bad_attach_uri))
+      if res.code != '404'
+        print "Invalid attach retrieve not responding with 404 code.\n"
+        exit 1
+      end
+
+      attach_uri = "http://localhost:3333/q/test/#{msg_id}/studio3.jpg"
+      res = Net::HTTP.get_response(URI.parse(attach_uri))
+      if res.code != '200'
+        print "Invalid attach retrieve - request for studio3.jpg should have responded with 200 code.\n"
+        exit 1
+      end
+
+      if res.body.length != 96007
+        print "Invalid attach retrieve - request for studio3.jpg should have responded with proper body size.\n"
+        exit 1
+      end
+
+      # TODO: verify md5
+
+      print "Message went into proper state. ALL DONE\n"
+      exit 0
     end
   end
 

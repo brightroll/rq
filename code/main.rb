@@ -181,6 +181,19 @@ module RQ
       end
     end
 
+    get '/q/:name/:msg_id/:attach_name' do
+
+      path = "./queue/#{params['name']}/done/#{params['msg_id']}/attach/#{params['attach_name']}"
+
+      # send_file does this check, but we provide a much more contextually relevant error
+      # TODO: finer grained checking (que, msg_id exists, etc.)
+      if not File.exists? path
+        throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
+      end
+
+      send_file(path)
+    end
+
     post '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
