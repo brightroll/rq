@@ -1045,6 +1045,7 @@ module RQ
         status['pause']  = []
         status['done']   = Dir.entries(@queue_path + "/done/").reject {|i| i.index('.') == 0 }
         status['relayed']  = Dir.entries(@queue_path + "/relayed/").reject {|i| i.index('.') == 0 }
+        status['err']  = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
         log("RESP [ #{resp} ]")

@@ -7,7 +7,7 @@ load 'code/queueclient.rb'
 
 module RQ
   class Main < Sinatra::Base
-    def self.views 
+    def self.views
       './code/views'
     end
 
@@ -34,6 +34,11 @@ module RQ
     end
 
     get '/q/:name' do
+      if params[:name].index(".txt")
+        content_type 'text/plain', :charset => 'utf-8'
+        return erb :queue_txt, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split(".txt").first) }
+      end
+
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])

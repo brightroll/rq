@@ -1,11 +1,3 @@
-
-
-
-# Figure out what directory I'm running from
-
-# Figure out directory I belong in to run
-
-# Make it happen
-
-ruby ./code/rq.rb "$@"
-
+#!/usr/bin/env ruby
+$:.unshift(File.join(File.dirname(__FILE__), ".."))
+require 'code/rq'

@@ -1,5 +1,7 @@
 #!/usr/bin/ruby
 
+$:.unshift(File.join(File.dirname(__FILE__), ".."))
+
 Dir.glob(File.join("gems", "gems", "*", "lib")).each do |lib|
   $LOAD_PATH.unshift(File.expand_path(lib))
 end
