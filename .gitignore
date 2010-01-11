@@ -5,6 +5,7 @@ queue.noindex
 bin/*
 !bin/rq
 !bin/server.rb
+!bin/server_daemon.rb
 !bin/web_server.sh
 !bin/queuemgr_ctl
 gems/*
