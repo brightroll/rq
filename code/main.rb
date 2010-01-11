@@ -33,6 +33,11 @@ module RQ
       "We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr"
     end
 
+    get '/q.txt' do
+      content_type 'text/plain', :charset => 'utf-8'
+      erb :queue_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues}
+    end
+    
     get '/q/:name' do
       if params[:name].index(".txt")
         content_type 'text/plain', :charset => 'utf-8'
