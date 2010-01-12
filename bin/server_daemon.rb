@@ -24,6 +24,7 @@ pid = fork do
 
   STDIN.reopen("/dev/null")
   STDOUT.reopen("log/server.log", "a+")
+  STDOUT.sync = true
   $stderr = STDOUT
 
   Rack::Handler::WEBrick.run(builder, :Port => 3333)
