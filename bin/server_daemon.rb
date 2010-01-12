@@ -19,9 +19,12 @@ builder = MiniRouter.new
 
 pid = fork do
   Signal.trap('HUP', 'IGNORE') # Don't die upon logout
+  
+  FileUtils.mkdir_p("log")
+
   STDIN.reopen("/dev/null")
-  STDOUT.reopen("/dev/null", "w")
-  STDERR.reopen("/dev/null", "w")
+  STDOUT.reopen("log/server.log", "w")
+  $stderr = STDOUT
 
   Rack::Handler::WEBrick.run(builder, :Port => 3333)
 end

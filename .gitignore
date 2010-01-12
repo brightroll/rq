@@ -2,6 +2,7 @@ config
 queue
 queue.noindex
 .#*
+log/*
 bin/*
 !bin/rq
 !bin/server.rb
