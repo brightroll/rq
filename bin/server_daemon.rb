@@ -23,7 +23,7 @@ pid = fork do
   FileUtils.mkdir_p("log")
 
   STDIN.reopen("/dev/null")
-  STDOUT.reopen("log/server.log", "w")
+  STDOUT.reopen("log/server.log", "a+")
   $stderr = STDOUT
 
   Rack::Handler::WEBrick.run(builder, :Port => 3333)
