@@ -14,7 +14,13 @@ rm -rf './queue'
 rm -rf './config'
 
 echo "Checking that system is ready for install..."
-curl -sL -o _home.txt http://127.0.0.1:3333/
+if [ "x${RQ_PORT}" = "x" ] ; then
+  rq_port=3333
+else
+  rq_port=${RQ_PORT}
+fi
+
+curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running"
   exit 1
@@ -27,7 +33,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Starting install..."
-curl http://127.0.0.1:3333/install -sL -F dummy=dummy  -o _install.txt
+curl http://127.0.0.1:${rq_port}/install -sL -F dummy=dummy  -o _install.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -45,7 +51,7 @@ sleep 1
 echo "Started queuemgr..."
 
 echo "Checking that system is operational..."
-curl -sL -o _home.txt http://127.0.0.1:3333/
+curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running"
   exit 1
@@ -61,7 +67,7 @@ fi
 # CREATE THE RELAY QUE
 
 echo "Creating the relay queue..."
-curl http://127.0.0.1:3333/new_queue -sL -F queue[url]=http://localhost:3333/ -F queue[name]=relay -F queue[script]=./code/relay_script.rb -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_relay.txt
+curl http://127.0.0.1:${rq_port}/new_queue -sL -F queue[url]=http://localhost:${rq_port}/ -F queue[name]=relay -F queue[script]=./code/relay_script.rb -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_relay.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -75,7 +81,7 @@ fi
 
 
 echo "Creating the test queue..."
-curl http://127.0.0.1:3333/new_queue -sL -F queue[url]=http://localhost:3333/ -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
+curl http://127.0.0.1:${rq_port}/new_queue -sL -F queue[url]=http://localhost:${rq_port}/ -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1

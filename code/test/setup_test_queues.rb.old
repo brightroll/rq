@@ -42,8 +42,14 @@ def post(uri_str, limit = 10)
   end
 end
 
+if ENV["RQ_PORT"].nil?
+  rq_port = 3333
+else
+  rq_port = ENV["RQ_PORT"].to_s
+end
+
 # See if we are in a Clean State
-resp = fetch("http://127.0.0.1:3333/")
+resp = fetch("http://127.0.0.1:#{rq_port}/")
 
 p resp
 if resp.body =~ /Your app is not setup\./
@@ -55,7 +61,7 @@ end
 
 # Start the Install
 p 'Starting install'
-resp = Net::HTTP.post_form(URI.parse('http://127.0.0.1:3333/install'), {})
+resp = Net::HTTP.post_form(URI.parse("http://127.0.0.1:#{rq_port}/install"), {})
 
 if resp.body =~ /Your app is now setup\./
   p "System is in a clean state for creating queues"
@@ -74,7 +80,7 @@ p "Startup result: #{r}"
 
 is_up = false
 5.times do
-  resp = fetch("http://127.0.0.1:3333/")
+  resp = fetch("http://127.0.0.1:#{rq_port}/")
   if resp.body =~ /QUEUE MGR is OPERATIONAL/
     is_up = true
     break
@@ -91,8 +97,8 @@ else
 end
 
 # Create the relay queue
-resp = Net::HTTP.post_form(URI.parse('http://127.0.0.1:3333/new_queue'), {
-                             'queue[url]' => 'http://localhost:3333/',  # TODO: hardcoded for now
+resp = Net::HTTP.post_form(URI.parse("http://127.0.0.1:#{rq_port}/new_queue"), {
+                             'queue[url]' => "http://localhost:#{rq_port}/",  # TODO: hardcoded for now
                              'queue[name]' => 'relay',
                              'queue[script]' => './code/relay_script.rb',
                              'queue[ordering]' => 'ordered',
@@ -108,8 +114,8 @@ else
 end
 
 # Create the test1 queue
-resp = Net::HTTP.post_form(URI.parse('http://127.0.0.1:3333/new_queue'), {
-                             'queue[url]' => 'http://localhost:3333/',  # TODO: hardcoded for now
+resp = Net::HTTP.post_form(URI.parse("http://127.0.0.1:#{rq_port}/new_queue"), {
+                             'queue[url]' => "http://localhost:#{rq_port}/",  # TODO: hardcoded for now
                              'queue[name]' => 'test',
                              'queue[script]' => './code/test/test_script.rb',
                              'queue[ordering]' => 'ordered',

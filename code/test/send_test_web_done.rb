@@ -32,7 +32,14 @@ require 'json'
 
 ## TEST SECTION
 
-mesg = { 'dest' => 'http://localhost:3333/q/test',
+if ENV["RQ_PORT"].nil?
+  rq_port = 3333
+else
+  rq_port = ENV["RQ_PORT"].to_s
+end
+
+
+mesg = { 'dest' => "http://localhost:#{rq_port}/q/test",
          'src'  => 'test',
          'count'  => '2',
          'param1'  => 'done',
@@ -41,7 +48,7 @@ mesg = { 'dest' => 'http://localhost:3333/q/test',
 form = { :x_format => 'json', :mesg => mesg.to_json }
 
 # Get the URL
-remote_q_uri = "http://localhost:3333/q/test"
+remote_q_uri = "http://localhost:#{rq_port}/q/test"
 res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"), form)
 
 
@@ -67,7 +74,7 @@ print "Msg ID: #{msg_id}\n"
 
   ## Verify that script goes to done state
 
-  remote_q_uri = "http://localhost:3333/q/test/#{msg_id}.json"
+  remote_q_uri = "http://localhost:#{rq_port}/q/test/#{msg_id}.json"
   res = Net::HTTP.get_response(URI.parse(remote_q_uri))
 
   if res.code == '200'

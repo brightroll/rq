@@ -2,7 +2,13 @@
 
 # Send a relay-able message 
 
-out=`./bin/rq prepmesg  --dest http://localhost:3333/q/test --src dru4 --relay-ok --param1=done`
+if [ "x${RQ_PORT}" = "x" ] ; then
+    rq_port=3333
+else
+    rq_port=${RQ_PORT}
+fi
+
+out=`./bin/rq prepmesg  --dest http://localhost:${rq_port}/q/test --src dru4 --relay-ok --param1=done`
 if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't create test message properly"
     exit 1

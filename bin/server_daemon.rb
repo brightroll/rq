@@ -17,6 +17,12 @@ require 'code/router.rb'
 
 builder = MiniRouter.new
 
+if ENV["RQ_PORT"].nil?
+  rq_port = 3333
+else
+  rq_port = ENV["RQ_PORT"].to_i
+end
+
 pid = fork do
   Signal.trap('HUP', 'IGNORE') # Don't die upon logout
   
@@ -27,7 +33,7 @@ pid = fork do
   STDOUT.sync = true
   $stderr = STDOUT
 
-  Rack::Handler::WEBrick.run(builder, :Port => 3333)
+  Rack::Handler::WEBrick.run(builder, :Port => rq_port)
 end
 
 Process.detach(pid)
