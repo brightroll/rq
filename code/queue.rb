@@ -202,11 +202,15 @@ module RQ
           ENV["RQ_PARAM3"] = msg['param3']
           ENV["RQ_PARAM4"] = msg['param4']
 
+          # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
+          ENV.delete("RUBYOPT")
+
 #          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
 
           RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
-          exec(script_path)
+          # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
+          exec("bash -lc #{script_path}")
         rescue
           RQ::Queue.log(job_path, $!)
           RQ::Queue.log(job_path, $!.backtrace)
