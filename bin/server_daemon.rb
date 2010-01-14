@@ -25,13 +25,16 @@ end
 
 pid = fork do
   Signal.trap('HUP', 'IGNORE') # Don't die upon logout
-  
   FileUtils.mkdir_p("log")
 
   STDIN.reopen("/dev/null")
   STDOUT.reopen("log/server.log", "a+")
   STDOUT.sync = true
   $stderr = STDOUT
+
+  Signal.trap("TERM") do 
+    Process.kill("KILL", Process.pid)
+  end
 
   Rack::Handler::WEBrick.run(builder, :Port => rq_port)
 end
