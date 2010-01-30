@@ -1,0 +1,19 @@
+
+<h1>RQ</h1>
+
+<h3>New Message Result</h3>
+
+<p>
+Queue: <a href="/q/<%= q_name %>"><%= q_name %></a> <br />
+</p>
+
+<p>
+<% if result[0] == 'ok' %>
+   OK - <a href='<%= result[1] %>'><%= result[1] %></a> <br />
+<% else %>
+   <%= result[0] %> - <%= result[1] %> <br />
+<% end %>
+</p>
+
+
+

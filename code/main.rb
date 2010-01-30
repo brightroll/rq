@@ -103,7 +103,7 @@ module RQ
       if api_call == 'json'
         "#{result.to_json}"
       else
-        "We got <pre> #{prms.inspect} </pre> from form, and #{result} from Queue #{q_name}"
+        erb :new_message_post, :layout => true, :locals => {:result => result, :q_name => q_name }
       end
     end
 
