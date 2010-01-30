@@ -1,13 +1,15 @@
 
-# Setup ENV
-Dir.glob(File.join("code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
+require 'gems/environment'
 require 'rubygems'
-gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
+
+## Setup ENV
+#Dir.glob(File.join("code", "vendor", "gems", "*", "lib")).each do |lib|
+#  $LOAD_PATH.unshift(File.expand_path(lib))
+#end
+#
+#gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default_dir]
+#Gem.clear_paths
+#Gem.send :set_paths, gem_paths.join(":")
 
 #p ARGV.inspect
 
