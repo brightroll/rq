@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'gems/environment'
+
 require 'net/http'
 require 'uri'
 require 'fileutils'
@@ -10,18 +12,18 @@ def log(mesg)
 end
 
 
-Dir.glob(File.join( "code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-#Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
+#Dir.glob(File.join( "code", "vendor", "gems", "*", "lib")).each do |lib|
 #  $LOAD_PATH.unshift(File.expand_path(lib))
 #end
+##Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
+##  $LOAD_PATH.unshift(File.expand_path(lib))
+##end
 
 
 require 'rubygems'
-gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
+#gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default_dir]
+#Gem.clear_paths
+#Gem.send :set_paths, gem_paths.join(":")
 
 #log($LOAD_PATH.inspect)
 #log(Dir.pwd.inspect)
