@@ -1,5 +1,5 @@
 <% q = params[:name] %>
-<h1>RQ : Queue [ <%= q %> ] : Mesg: [ <%= locals['msg_id'] %> ] </h1>
+<h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Mesg: [ <%= locals['msg_id'] %> ] </h1>
 
 <ul>
 
