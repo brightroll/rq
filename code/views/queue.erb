@@ -1,5 +1,5 @@
 <% q = params[:name] %>
-<h1>RQ : Queue [ <%= q %> ]</h1>
+<h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> </h1>
 
 <ul>
 <%  qc = RQ::QueueClient.new(q) %>
@@ -27,6 +27,37 @@
 <br />
 <% if RQ::QueueMgrClient.running? %>
 <%   msgs = qc.messages %>
+
+<span><%= msgs['que'].length %> items in que</span>
+<br />
+<ul>
+<%   msgs['que'].reverse.each do |msg| %>
+<%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
+<li>
+  <span class="">
+    <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
+  </span>
+  <br />
+  id: <span class=""> <%= msg[0] %></span>
+  <% if q == 'relay' %>
+    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
+    <% if ok == 'ok' %>
+      dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+    <% end %>
+  <% end %>
+  : <span class="green"> <%= msg[1] %></span>
+  <span class="">
+    <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
+    <input name="_method" type="hidden" value="delete" />
+    <button type="submit">Destroy it</button>
+    </form>
+  </span>
+</form>
+</li>
+<%   end %>
+<% end %>
+</ul>
+
 <span><%= msgs['prep'].length %> items in prep</span>
 <br />
 <span><%= msgs['run'].length %> items in run</span>
@@ -59,12 +90,20 @@
 </li>
 <%   end %>
 </ul>
-<span><%= msgs['pause'].length %> items in pause</span>
 <br />
 <span><%= msgs['done'].length %> items in done</span>
 <br />
-<span> <%= msgs['done'].inspect %> items in done</span>
-<br />
+<ul>
+<%   msgs['done'].reverse.each do |msg| %>
+<%     msg_id = "#{url}q/#{q}/#{msg}" %>
+<li>
+  <span class="">
+    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{msg}" %></a>
+  </span>
+</li>
+<%   end %>
+</ul>
+
 <span><%= msgs['relayed'].length %> items in relayed</span>
 <br />
 <span> <%= msgs['relayed'].inspect %> items in relayed</span>
@@ -93,34 +132,4 @@
 <%   end %>
 </ul>
 
-<span><%= msgs['que'].length %> items in que</span>
-<br />
-<ul>
-<%   msgs['que'].reverse.each do |msg| %>
-<%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
-<li>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
-  </span>
-  <br />
-  id: <span class=""> <%= msg[0] %></span>
-  <% if q == 'relay' %>
-    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
-    <% if ok == 'ok' %>
-      dest: <span class="yellow"> <%= msg_full['dest'] %></span>
-    <% end %>
-  <% end %>
-  : <span class="green"> <%= msg[1] %></span>
-  <span class="">
-    <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
-    <input name="_method" type="hidden" value="delete" />
-    <button type="submit">Destroy it</button>
-    </form>
-  </span>
-</form>
-</li>
-<%   end %>
-<% end %>
-</ul>
-
-The bomb... <%= Time.now %> - <%= Dir.pwd %>
+<%= Time.now %> - <%= Dir.pwd %>
