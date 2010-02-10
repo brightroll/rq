@@ -45,8 +45,9 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-# wait for queue manager to properly startup
-sleep 10
+while [ ! -f ./queue/relay/queue.pid ] ; do
+  sleep 1
+done
 
 echo "Checking that system is operational..."
 curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
