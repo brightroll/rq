@@ -45,6 +45,9 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+# wait for queue manager to properly startup
+sleep 10
+
 echo "Checking that system is operational..."
 curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
