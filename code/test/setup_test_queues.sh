@@ -45,11 +45,6 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-echo "Starting queuemgr..."
-ruby ./code/queuemgr_ctl.rb start
-sleep 1
-echo "Started queuemgr..."
-
 echo "Checking that system is operational..."
 curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
@@ -57,25 +52,11 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+sleep 1
+
 egrep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is not running the queue mgr"
-  exit 1
-fi
-
-
-# CREATE THE RELAY QUE
-
-echo "Creating the relay queue..."
-curl http://127.0.0.1:${rq_port}/new_queue -sL -F queue[url]=http://localhost:${rq_port}/ -F queue[name]=relay -F queue[script]=./code/relay_script.rb -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_relay.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "successqueue created" _install_relay.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system didn't create relay queue"
   exit 1
 fi
 
@@ -95,7 +76,6 @@ fi
 
 rm _home.txt
 rm _install.txt
-rm _install_relay.txt
 rm _install_test.txt
 
 echo "ALL DONE SUCCESSFULLY"
