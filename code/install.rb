@@ -3,17 +3,16 @@
 require 'sinatra/base'
 require 'erb'
 
+load 'code/queuemgrclient.rb'
+
 #require 'sinatra'
 #    set :root, File.dirname('code')
 #set :root, File.dirname('code'__FILE__)
 
 def start_backend
-  fork do
-    exec "ruby ./code/queuemgr_ctl.rb start"
-  end
-  p "Waiting on start..."
-  Process.wait
-  p "Done Waiting..."
+  `./bin/queuemgr_ctl start`
+  p $?
+  p "Kicked off process start..."
 end
 
 
@@ -37,8 +36,27 @@ module RQ
       FileUtils.ln_sf('queue.noindex', 'queue')
       p "Starting..."
       # This isn't working in WEBrick
-      #start_backend
+      start_backend
       p "Started..."
+
+      # Wait for sock file
+      i = 0
+      while not File.exist? 'config/queuemgr.sock'
+        i = i + 1
+        sleep 0.10
+      end
+
+      queue = {}
+      queue['url'] = "http://localhost:#{request.port}/"
+      queue['name'] = "relay"
+      queue['script'] = "./code/relay_script.rb"
+      queue['ordering'] = "ordered"
+      queue['num_workers'] = "1"
+      queue['fsync'] = 'fsync'
+      result = RQ::QueueMgrClient.create_queue(queue)
+
+      # TODO: set install state as bad if any of this fails
+
       erb :installed
     end
   end
