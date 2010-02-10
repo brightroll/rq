@@ -78,7 +78,7 @@ def daemonize()
 
   # Make sure all file descriptors are closed
   ObjectSpace.each_object(IO) do |io|
-    unless [STDIN, STDOUT, STDERR].include?(io)
+#    unless [STDIN, STDOUT, STDERR].include?(io)
       begin
         unless io.closed?
           io.close
@@ -86,7 +86,7 @@ def daemonize()
       rescue ::Exception
         log('daemonize io close exception')
       end
-    end
+#    end
   end
 
   #return oldmode ? sess_id : 0   # Return value is mostly irrelevant
