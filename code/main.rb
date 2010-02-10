@@ -107,6 +107,28 @@ module RQ
       end
     end
 
+    get '/q/:name/restart' do
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      qc.shutdown
+
+      <<-HERE
+        <script type="text/javascript">
+        <!--
+        function delayer(){
+            history.back();
+        }
+        setTimeout('delayer()', 1000);
+        //-->
+        </script>
+        Queue restarted... (returning in 1 sec)
+      HERE
+    end
+
     get '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
@@ -228,28 +250,6 @@ module RQ
       else
         "Post #{params[:name]}/#{params[:msg_id]}"
       end
-    end
-
-    get '/q/:name/restart' do
-      qc = RQ::QueueClient.new(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
-
-      qc.shutdown
-
-      <<-HERE
-        <script type="text/javascript">
-        <!--
-        function delayer(){
-            history.back();
-        }
-        setTimeout('delayer()', 1000);
-        //-->
-        </script>
-        Queue restarted... (returning in 1 sec)
-      HERE
     end
 
   end
