@@ -8,8 +8,10 @@ module RQ
     attr_accessor :name
     attr_accessor :pid
 
-    def initialize(name, path=File.join(File.dirname(__FILE__), ".."))
+    def initialize(name, path=".") 
       @name = name
+     
+      path = File.join(File.dirname(__FILE__), "..")
 
       @queue_path = "#{path}/queue/#{@name}"
       @queue_sock_path = "#{path}/queue/#{@name}/queue.sock"
