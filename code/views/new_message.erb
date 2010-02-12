@@ -6,6 +6,8 @@
 <fieldset>
 <legend>Message Options</legend>  
 
+<input type="hidden" name="x_format" value="html" />
+
 <div class="field">
 <label class="field_label" for="mesg_dest">Destination Queue</label>
 <input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}q/#{params['name']}" %>" />
@@ -43,9 +45,9 @@
 <div class="field">
 <label class="field_label" for="mesg_status">Status</label>
 <label for="mesg_status">ready</label>
-<input type="radio" name="mesg[status]" value="ready" checked />
+<input type="radio" name="mesg[_method]" value="commit" checked />
 <label for="mesg_status">prep</label>
-<input type="radio" name="mesg[status]" value="prep" />
+<input type="radio" name="mesg[_method]" value="prep" />
 <p class="note">Ready gets queued now. Prep stays in prep state until commited (allows attachments/modification/etc.)</p>
 </div>
 

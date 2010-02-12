@@ -71,11 +71,11 @@ module RQ
       # check for queue
       this_queue = "http://#{request.host}:#{request.port}/q/#{params[:name]}"
 
-      api_call = params.fetch('x_format', 'html')
-      if api_call == 'json'
-        prms = JSON.parse(params['mesg'])
-      else
+      api_call = params.fetch('x_format', 'json')
+      if api_call == 'html'
         prms = params['mesg']
+      else
+        prms = JSON.parse(params['mesg'])
       end
 
       if this_queue == prms['dest']
