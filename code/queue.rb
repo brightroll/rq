@@ -1176,7 +1176,7 @@ module RQ
 
         if lookup_msg(options, '*')
           delete_msg!(options)
-          resp = [ "ok", "msg commited" ].to_json
+          resp = [ "ok", "msg deleted" ].to_json
         else
           resp = [ "fail", "msg not found" ].to_json
         end
