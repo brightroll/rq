@@ -225,6 +225,33 @@ if args[:cmd] == 'statuscountmesg'
   end
 end
 
+if args[:cmd] == 'single_que'
+  q_name = args['dest']
+
+  #if (q_name.index('http:') == 0) && args.has_key?('relay-ok')
+  #  q_name = 'relay'
+  #else
+  #  throw :halt, [404, 'Sorry - cannot relay message']
+  #end
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found"]
+  end
+
+  # Construct message
+  mesg = {}
+  keys = %w(dest src param1 param2 param3 param3)
+  keys.each do
+    |key|
+    next unless args.has_key?(key)
+    mesg[key] = args[key]
+  end
+  result = qc.single_que(mesg)
+  print "#{result[0]} #{result[1]}\n"
+end
+
 if args[:cmd] == 'attachstatusmesg'
   full_mesg_id = args['msg_id']
 

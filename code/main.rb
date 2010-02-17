@@ -78,10 +78,12 @@ module RQ
         prms = JSON.parse(params['mesg'])
       end
 
+      the_method = prms.fetch("_method", 'commit')
+
       if this_queue == prms['dest']
         q_name = params[:name]
       else
-        if prms['relay_ok'] == 'yes'
+        if (prms['relay_ok'] == 'yes') && (the_method != 'single_que')
           q_name = 'relay' # Relay is the special Q
         else
           throw :halt, [404, "404 - Not this Queue. Relaying not allowed"]
@@ -94,10 +96,14 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      if prms.fetch("_method", 'commit') == 'prep'
+      if the_method == 'prep'
         result = qc.prep_message(prms)
-      else
+      elsif the_method == 'single_que'
+        result = qc.single_que(prms)
+      elsif the_method == 'commit'
         result = qc.create_message(prms)
+      else
+        throw :halt, [404, "404 - Queue not found"]
       end
 
       if api_call == 'json'

@@ -1041,6 +1041,29 @@ module RQ
         return
       end
 
+      if data[0].index('single_que') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        msg = { }
+
+        if not @que.empty?
+          msg_id = gen_full_msg_id(@que[0])
+          resp = [ "ok", msg_id ].to_json
+        elsif alloc_id(msg) and check_msg(msg, options)
+          store_msg(msg)
+          que(msg)
+          msg_id = gen_full_msg_id(msg)
+          resp = [ "ok", msg_id ].to_json
+        else
+          resp = [ "fail", "unknown reason"].to_json
+        end
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
       if data[0].index('messages') == 0
         status = { }
         status['prep']   = @prep

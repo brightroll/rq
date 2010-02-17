@@ -44,11 +44,15 @@
 
 <div class="field">
 <label class="field_label" for="mesg_status">Status</label>
-<label for="mesg_status">ready</label>
+<label for="mesg_status">commit</label>
 <input type="radio" name="mesg[_method]" value="commit" checked />
 <label for="mesg_status">prep</label>
 <input type="radio" name="mesg[_method]" value="prep" />
-<p class="note">Ready gets queued now. Prep stays in prep state until commited (allows attachments/modification/etc.)</p>
+<label for="mesg_status">single_que</label>
+<input type="radio" name="mesg[_method]" value="single_que" />
+<p class="note">'commit' gets queued now.</p>
+<p class="note">'prep' stays in prep state until commited (allows attachments/modification/etc.)</p>
+<p class="note">'single_que' only creates a message in 'que' state if that state is empty, otherwise it returns a msg_id of what is there. used for event coalescing.</p>
 </div>
 
 <div class="field">
