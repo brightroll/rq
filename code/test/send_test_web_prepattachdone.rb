@@ -184,7 +184,7 @@ print "Committed message: #{msg_id}\n"
         exit 1
       end
 
-      attach_uri = "http://localhost:#{rq_port}/q/test/#{msg_id}/studio3.jpg"
+      attach_uri = "http://localhost:#{rq_port}/q/test/#{msg_id}/attach/studio3.jpg"
       res = Net::HTTP.get_response(URI.parse(attach_uri))
       if res.code != '200'
         print "Invalid attach retrieve - request for studio3.jpg should have responded with 200 code.\n"
