@@ -55,6 +55,14 @@ module RQ
       queue['fsync'] = 'fsync'
       result = RQ::QueueMgrClient.create_queue(queue)
 
+      queue = {}
+      queue['url'] = "http://localhost:#{request.port}/"
+      queue['name'] = "webhook"
+      queue['script'] = "./code/webhook_script.rb"
+      queue['ordering'] = "ordered"
+      queue['num_workers'] = "1"
+      queue['fsync'] = 'fsync'
+      result = RQ::QueueMgrClient.create_queue(queue)
       # TODO: set install state as bad if any of this fails
 
       erb :installed

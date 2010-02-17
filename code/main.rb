@@ -74,6 +74,12 @@ module RQ
       api_call = params.fetch('x_format', 'json')
       if api_call == 'html'
         prms = params['mesg']
+
+        # clean webhook input of any spaces
+        # Ruby split..... so good!
+        if prms.include? 'post_run_webhook'
+          prms['post_run_webhook'] = prms['post_run_webhook'].split ' '
+        end
       else
         prms = JSON.parse(params['mesg'])
       end
