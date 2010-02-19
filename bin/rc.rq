@@ -1,0 +1,30 @@
+#!/bin/sh
+
+PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
+export PATH
+
+if [ ! -d /rq ] ; then
+	# RQ not installed
+	exit 0 
+fi
+
+me=`id -u`
+
+if [ $me -eq 0 ] ; then
+	exec setuidgid br /etc/init.d/rq $*
+fi
+
+case $1 in
+	start)
+		/rq/current/bin/server_daemon.rb
+		/rq/current/bin/queuemgr_ctl start
+	;;
+	stop)
+		/rq/current/bin/queuemgr_ctl stop
+		ps ax | grep '\[rq' | grep -v grep | \
+		    awk '{print $1}' | xargs kill
+		ps ax | grep 'server_daemon.rb' | grep -v grep | \
+		    awk '{print $1}' | xargs kill
+	;;
+esac
+

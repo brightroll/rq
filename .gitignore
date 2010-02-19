@@ -4,6 +4,7 @@ queue.noindex
 .#*
 log/*
 bin/*
+!bin/rc.rq
 !bin/rq
 !bin/server.rb
 !bin/server_daemon.rb
