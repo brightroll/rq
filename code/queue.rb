@@ -267,6 +267,7 @@ module RQ
       return true
     end
 
+    # It is called right before check_msg
     def alloc_id(msg)
       # Simple time insertion system - should work since single threaded
       times = 0
@@ -293,10 +294,17 @@ module RQ
       nil  # fail
     end
 
+    # This copies certain fields over and insures consistency in a new
+    # message
+    # It is called right after alloc_id
     def check_msg(msg, input)
       # Required parameter
       return false unless input.has_key?('dest')
       msg['dest'] = input['dest']
+
+      # If orig_msg_id is set already, then use it
+      # otherwise we initialize it with this msg
+      msg['orig_msg_id'] = input['orig_msg_id'] || gen_full_msg_id(msg)
 
       # Copy only these keys from input message
       keys = %w(src count param1 param2 param3 param3 post_run_webhook)
@@ -890,6 +898,7 @@ module RQ
                 log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{msg['child_pid']} exit with status #{res.inspect}")
 
                 msg_id = msg['msg_id']
+                orig_msg_id = msg['orig_msg_id']
 
                 # Ok, close the pipe on our end
                 msg['child_read_pipe'].close
@@ -950,7 +959,7 @@ module RQ
                   if msg.include? 'post_run_webhook'
                     msg['post_run_webhook'].each do
                       |wh|
-                      webhook_message(wh, msg_id, new_state)
+                      webhook_message(wh, msg_id, new_state, orig_msg_id)
                     end
                   end
                 end
@@ -988,7 +997,7 @@ module RQ
     end
 
     # Inject a message into 'que' state
-    def webhook_message(url, msg_id, new_state)
+    def webhook_message(url, msg_id, new_state, orig_msg_id)
       require 'code/queueclient'
       qc = RQ::QueueClient.new('webhook')
 
@@ -1001,7 +1010,7 @@ module RQ
       mesg = {}
       mesg['dest'] = 'webhook'
       mesg['param1'] = url
-      mesg['param2'] = { 'msg_id' => msg_id, 'state' => new_state }.to_json
+      mesg['param2'] = { 'msg_id' => msg_id, 'state' => new_state, 'orig_msg_id' => gen_full_msg_id(orig_msg_id) }.to_json
       result = qc.create_message(mesg)
       if result[0] != 'ok'
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
