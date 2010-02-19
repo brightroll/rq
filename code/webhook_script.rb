@@ -25,12 +25,14 @@ def log(mesg)
   STDOUT.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
 end
 
+# Setup a global binding so the GC doesn't close the file
+$RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
+
 # Had to use \n
 # I tried to use \000 but bash barfed on me
 def write_status(state, mesg = '')
-  io = IO.for_fd(ENV['RQ_PIPE'].to_i)
   msg = "#{state} #{mesg}\n"
-  io.syswrite(msg)
+  $RQ_IO.syswrite(msg)
   log("#{state} #{mesg}")
 end
 

@@ -34,13 +34,15 @@ log(Dir.pwd.inspect)
 
 require 'json'
 
+# Setup a global binding so the GC doesn't close the file
+$RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
+
 # Had to use \n
 # I tried to use \000 but bash barfed on me
 def write_status(state, mesg = '')
-  io = IO.for_fd(ENV['RQ_PIPE'].to_i)
   msg = "#{state} #{mesg}\n"
+  $RQ_IO.syswrite(msg)
   log("#{state} #{mesg}")
-  io.syswrite(msg)
 end
 
 def soft_fail(mesg = 'soft fail')
