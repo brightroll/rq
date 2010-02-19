@@ -6,6 +6,8 @@
 <fieldset>
 <legend>Message Options</legend>  
 
+<input type="hidden" name="x_format" value="html" />
+
 <div class="field">
 <label class="field_label" for="mesg_dest">Destination Queue</label>
 <input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}q/#{params['name']}" %>" />
@@ -42,11 +44,15 @@
 
 <div class="field">
 <label class="field_label" for="mesg_status">Status</label>
-<label for="mesg_status">ready</label>
-<input type="radio" name="mesg[status]" value="ready" checked />
+<label for="mesg_status">commit</label>
+<input type="radio" name="mesg[_method]" value="commit" checked />
 <label for="mesg_status">prep</label>
-<input type="radio" name="mesg[status]" value="prep" />
-<p class="note">Ready gets queued now. Prep stays in prep state until commited (allows attachments/modification/etc.)</p>
+<input type="radio" name="mesg[_method]" value="prep" />
+<label for="mesg_status">single_que</label>
+<input type="radio" name="mesg[_method]" value="single_que" />
+<p class="note">'commit' gets queued now.</p>
+<p class="note">'prep' stays in prep state until commited (allows attachments/modification/etc.)</p>
+<p class="note">'single_que' only creates a message in 'que' state if that state is empty, otherwise it returns a msg_id of what is there. used for event coalescing.</p>
 </div>
 
 <div class="field">
@@ -56,6 +62,12 @@
 <label for="mesg_relay_ok">no</label>
 <input type="radio" name="mesg[relay_ok]" value="no" />
 <p class="note">Determine if relaying is ok for this message, if not destined for this queue.</p>
+</div>
+
+<div class="field">
+<label class="field_label" for="mesg_post_run_webhook">post_run_hook</label>
+<input type="text" name="mesg[post_run_webhook]" value="" size="100" />
+<p class="note">URL to receive webhook POST after a message transitions from 'run' state</p>
 </div>
 
 

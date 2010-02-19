@@ -299,7 +299,7 @@ module RQ
       msg['dest'] = input['dest']
 
       # Copy only these keys from input message
-      keys = %w(src count param1 param2 param3 param3)
+      keys = %w(src count param1 param2 param3 param3 post_run_webhook)
       keys.each do
         |key|
         next unless input.has_key?(key)
@@ -945,6 +945,16 @@ module RQ
                   next
                 end
 
+                if ['err', 'done', 'relayed'].include? new_state
+                  # Send a webhook if there is a web hook
+                  if msg.include? 'post_run_webhook'
+                    msg['post_run_webhook'].each do
+                      |wh|
+                      webhook_message(wh, msg_id, new_state)
+                    end
+                  end
+                end
+
                 log("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
                 # Remove from completion
                 @completed.delete(completion)
@@ -977,6 +987,26 @@ module RQ
       end
     end
 
+    # Inject a message into 'que' state
+    def webhook_message(url, msg_id, new_state)
+      require 'code/queueclient'
+      qc = RQ::QueueClient.new('webhook')
+
+      if not qc.exists?
+        log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
+        return
+      end
+
+      # Construct message
+      mesg = {}
+      mesg['dest'] = 'webhook'
+      mesg['param1'] = url
+      mesg['param2'] = { 'msg_id' => msg_id, 'state' => new_state }.to_json
+      result = qc.create_message(mesg)
+      if result[0] != 'ok'
+        log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
+      end
+    end
 
     def handle_request(sock)
       data = sock.recvfrom(1024)
@@ -1028,6 +1058,29 @@ module RQ
 
         msg = { }
         if alloc_id(msg) and check_msg(msg, options)
+          store_msg(msg)
+          que(msg)
+          msg_id = gen_full_msg_id(msg)
+          resp = [ "ok", msg_id ].to_json
+        else
+          resp = [ "fail", "unknown reason"].to_json
+        end
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('single_que') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        msg = { }
+
+        if not @que.empty?
+          msg_id = gen_full_msg_id(@que[0])
+          resp = [ "ok", msg_id ].to_json
+        elsif alloc_id(msg) and check_msg(msg, options)
           store_msg(msg)
           que(msg)
           msg_id = gen_full_msg_id(msg)
@@ -1176,7 +1229,7 @@ module RQ
 
         if lookup_msg(options, '*')
           delete_msg!(options)
-          resp = [ "ok", "msg commited" ].to_json
+          resp = [ "ok", "msg deleted" ].to_json
         else
           resp = [ "fail", "msg not found" ].to_json
         end

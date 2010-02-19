@@ -8,8 +8,11 @@ module RQ
     attr_accessor :name
     attr_accessor :pid
 
-    def initialize(name, path=".")
+    def initialize(name, path=".") 
       @name = name
+     
+      path = File.join(File.dirname(__FILE__), "..")
+
       @queue_path = "#{path}/queue/#{@name}"
       @queue_sock_path = "#{path}/queue/#{@name}/queue.sock"
     end
@@ -90,6 +93,15 @@ module RQ
       json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
       client.send("create_message #{json_params}", 0)
+      result = client.recvfrom(1024)
+      client.close
+      result ? JSON.parse(result[0]) : nil
+    end
+
+    def single_que(params)
+      json_params = params.to_json
+      client = UNIXSocket.open(@queue_sock_path)
+      client.send("single_que #{json_params}", 0)
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil

@@ -71,17 +71,25 @@ module RQ
       # check for queue
       this_queue = "http://#{request.host}:#{request.port}/q/#{params[:name]}"
 
-      api_call = params.fetch('x_format', 'html')
-      if api_call == 'json'
-        prms = JSON.parse(params['mesg'])
-      else
+      api_call = params.fetch('x_format', 'json')
+      if api_call == 'html'
         prms = params['mesg']
+
+        # clean webhook input of any spaces
+        # Ruby split..... so good!
+        if prms.include? 'post_run_webhook'
+          prms['post_run_webhook'] = prms['post_run_webhook'].split ' '
+        end
+      else
+        prms = JSON.parse(params['mesg'])
       end
+
+      the_method = prms.fetch("_method", 'commit')
 
       if this_queue == prms['dest']
         q_name = params[:name]
       else
-        if prms['relay_ok'] == 'yes'
+        if (prms['relay_ok'] == 'yes') && (the_method != 'single_que')
           q_name = 'relay' # Relay is the special Q
         else
           throw :halt, [404, "404 - Not this Queue. Relaying not allowed"]
@@ -94,10 +102,14 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      if prms.fetch("_method", 'commit') == 'prep'
+      if the_method == 'prep'
         result = qc.prep_message(prms)
-      else
+      elsif the_method == 'single_que'
+        result = qc.single_que(prms)
+      elsif the_method == 'commit'
         result = qc.create_message(prms)
+      else
+        throw :halt, [404, "404 - Queue not found"]
       end
 
       if api_call == 'json'
@@ -213,7 +225,20 @@ module RQ
       end
     end
 
-    get '/q/:name/:msg_id/:attach_name' do
+    get '/q/:name/:msg_id/log/:log_name' do
+
+      path = "./queue/#{params['name']}/done/#{params['msg_id']}/job/#{params['log_name']}"
+
+      # send_file does this check, but we provide a much more contextually relevant error
+      # TODO: finer grained checking (que, msg_id exists, etc.)
+      if not File.exists? path
+        throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
+      end
+
+      send_file(path)
+    end
+
+    get '/q/:name/:msg_id/attach/:attach_name' do
 
       path = "./queue/#{params['name']}/done/#{params['msg_id']}/attach/#{params['attach_name']}"
 

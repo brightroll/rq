@@ -49,7 +49,7 @@ mesg = { 'dest' => "http://localhost:#{rq_port}/q/test",
          '_method'  => 'prep',
        }
 
-form = { :x_format => 'json', :mesg => mesg.to_json }
+form = { :mesg => mesg.to_json }
 
 # Get the URL
 remote_q_uri = "http://localhost:#{rq_port}/q/test"
@@ -57,6 +57,7 @@ res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"), form)
 
 if res.code != '200'
   print "Sorry, system didn't create test message properly\n"
+  print "#{res.inspect}\n"
   exit 1
 end
 

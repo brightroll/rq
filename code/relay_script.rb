@@ -95,7 +95,9 @@ this_system = ENV['RQ_HOST']
 dest = ENV['RQ_DEST']
 
 log("dest - #{dest}")
-# If host different, stick in err for now
+
+
+# If host different, this is a remote queue delivery
 if dest.index(this_system) != 0
 
   # Get the URL
@@ -149,7 +151,7 @@ if dest.index(this_system) != 0
 
     # Construct message
     mesg = {}
-    keys = %w(dest src count param1 param2 param3 param3)
+    keys = %w(dest src count param1 param2 param3 param3 post_run_webhook)
     keys.each do
       |key|
       next unless curr_msg.has_key?(key)
@@ -283,7 +285,7 @@ if nil == new_msg_id          # No, do prep, and store id
 
   # Construct message
   mesg = {}
-  keys = %w(dest src count param1 param2 param3 param3)
+  keys = %w(dest src count param1 param2 param3 param3 post_run_webhook)
   keys.each do
     |key|
     next unless curr_msg.has_key?(key)
