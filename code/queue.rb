@@ -466,6 +466,7 @@ module RQ
         data = File.read(basename + "/msg")
         msg = JSON.parse(data)
         msg['status'] = state
+        msg['state'] = state
         if File.exists?(basename + "/status")
           xtra_data = File.read(basename + "/status")
           xtra_status = JSON.parse(xtra_data)
