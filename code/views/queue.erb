@@ -106,8 +106,6 @@
 
 <span><%= msgs['relayed'].length %> items in relayed</span>
 <br />
-<span> <%= msgs['relayed'].inspect %> items in relayed</span>
-<br />
 <ul>
 <%   msgs['relayed'].reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
@@ -127,6 +125,21 @@
   : - <span class="green"> <%= status %></span> -&gt;
    <a href="<%= new_location %>"><%= new_location %></a>
   </span>
+</form>
+</li>
+<%   end %>
+</ul>
+
+<span><%= msgs['err'].length %> items in err</span>
+<br />
+<ul>
+<%   msgs['err'].reverse.each do |msg| %>
+<%     msg_id = "#{url}q/#{q}/#{msg}" %>
+<li>
+  <span class="">
+    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{msg}" %></a>
+  </span>
+  <br />
 </form>
 </li>
 <%   end %>
