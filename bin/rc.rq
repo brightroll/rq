@@ -16,10 +16,12 @@ fi
 
 case $1 in
 	start)
+		cd /rq/current
 		/rq/current/bin/server_daemon.rb
 		/rq/current/bin/queuemgr_ctl start
 	;;
 	stop)
+		cd /rq/current
 		/rq/current/bin/queuemgr_ctl stop
 		ps ax | grep '\[rq' | grep -v grep | \
 		    awk '{print $1}' | xargs kill
