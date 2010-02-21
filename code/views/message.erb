@@ -10,7 +10,7 @@
 <%    next unless locals['msg'].has_key?(key) %>
 <li>
   <span class="">
-    <%= key %> : <%= locals['msg'][key] %>
+    <%= key %> : <%= Rack::Utils::escape_html locals['msg'][key] %>
   </span>
 </li>
 <% end %>
