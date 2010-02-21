@@ -207,6 +207,9 @@ module RQ
 
 #          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
 
+          # Setting priority to BATCH mode
+          Process.setpriority(Process::PRIO_PROCESS, 0, 19)
+
           RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
