@@ -21,19 +21,16 @@ Gem.send :set_paths, gem_paths.join(":")
 # would love to get rid of all this garbage
 ##############################
 
-def log(mesg)
-  STDOUT.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-end
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
 
-# Had to use \n
-# I tried to use \000 but bash barfed on me
+# IO tower to RQ mgr process
 def write_status(state, mesg = '')
   msg = "#{state} #{mesg}\n"
+
+  STDOUT.write("#{Process.pid} - #{Time.now} - #{msg}")
   $RQ_IO.syswrite(msg)
-  log("#{state} #{mesg}")
 end
 
 def handle_fail(mesg = 'soft fail')
@@ -47,7 +44,6 @@ def handle_fail(mesg = 'soft fail')
 
   wait_seconds = count * count * 60
   write_status('resend', "#{wait_seconds}-#{mesg}")
-  log("RESEND - #{wait_seconds} - #{count} - #{mesg}")
   exit(0)
 end
 
@@ -57,9 +53,15 @@ def send_post
   mesg['x_format'] = 'json'
   mesg['payload'] = ENV['RQ_PARAM2']
 
-  write_status('run', "Attempting post to url: #{ENV['RQ_PARAM1']}")
+  uri = ENV['RQ_PARAM1']
 
-  res = Net::HTTP.post_form(URI.parse(ENV['RQ_PARAM1']), mesg)
+  write_status('run', "Attempting post to url: #{uri}")
+
+  begin
+    res = Net::HTTP.post_form(URI.parse(uri), mesg)
+  rescue
+    handle_fail("Could not connect to or parse URL: #{uri}")
+  end
 
   if res.code.to_s =~ /2\d\d/
     write_status('done', "successfull post #{res.code.to_s}")
