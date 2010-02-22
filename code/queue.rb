@@ -963,7 +963,7 @@ module RQ
                   if msg.include? 'post_run_webhook'
                     msg['post_run_webhook'].each do
                       |wh|
-                      webhook_message(wh, msg_id, new_state, orig_msg_id)
+                      webhook_message(wh, gen_full_msg_id(msg), new_state, orig_msg_id)
                     end
                   end
                 end
@@ -1014,7 +1014,7 @@ module RQ
       mesg = {}
       mesg['dest'] = 'webhook'
       mesg['param1'] = url
-      mesg['param2'] = { 'msg_id' => msg_id, 'state' => new_state, 'orig_msg_id' => gen_full_msg_id(orig_msg_id) }.to_json
+      mesg['param2'] = { 'msg_id' => msg_id, 'state' => new_state, 'orig_msg_id' => orig_msg_id }.to_json
       result = qc.create_message(mesg)
       if result[0] != 'ok'
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
