@@ -7,7 +7,9 @@ bin/*
 !bin/rc.rq
 !bin/rq
 !bin/server.rb
+!bin/server_daemon.sh
 !bin/server_daemon.rb
+!bin/server_daemon.rb.off
 !bin/web_server.sh
 !bin/queuemgr_ctl
 gems/*
