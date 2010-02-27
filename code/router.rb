@@ -11,8 +11,8 @@ class MiniRouter
 
     # Gotta deal with static stuff first
     if path.index('/css') or path.index('/javascripts') or path.index('/favicon.ico')
-      load 'code/main.rb'
-      return Rack::Static.new(nil, :urls => ["/css", "/javascripts", "/favicon.ico"], :root => 'code/public').call(env)
+#      load 'code/main.rb'
+      return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/css", "/javascripts", "/favicon.ico"], :root => 'code/public')).call(env)
     end
 
     # Is this an install?
