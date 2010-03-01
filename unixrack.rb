@@ -103,7 +103,9 @@ module UnixRack
     def send_response(status, headers, body)
       out = []
 
-      hdr_ary = [ "HTTP/1.0 #{status} STATUS" ]
+      msg = Rack::Utils::HTTP_STATUS_CODES[status.to_i]
+
+      hdr_ary = [ "HTTP/1.0 #{status} #{msg}" ]
 
       headers['Connection'] ||= 'close'
 
@@ -129,6 +131,7 @@ end
 module Rack
   module Handler
     class UnixRack
+
       def self.run(app, options=nil)
 
         require 'socket'
