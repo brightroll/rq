@@ -881,7 +881,7 @@ module RQ
               client_socket.fcntl(Fcntl::F_SETFL, flag)
               handle_request(client_socket)
               next
-            elsif io.fileno == @parent_pipe
+            elsif io.fileno == @parent_pipe.fileno
               log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
               shutdown!
               next
