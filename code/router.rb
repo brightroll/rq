@@ -3,7 +3,7 @@ require 'rack'
 class MiniRouter
   def call(env)
     path = env["PATH_INFO"].to_s.squeeze("/")
-    p "PATH: #{path}"
+    #p "PATH: #{path}"
 
     ## Notice the chaining here, if a path below has a dependency,
     ## that dependency must be handled prior, otherwhise an infinite
@@ -11,7 +11,6 @@ class MiniRouter
 
     # Gotta deal with static stuff first
     if path.index('/css') or path.index('/javascripts') or path.index('/favicon.ico')
-#      load 'code/main.rb'
       return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/css", "/javascripts", "/favicon.ico"], :root => 'code/public')).call(env)
     end
 
@@ -29,10 +28,9 @@ class MiniRouter
     end
 
     # Everything else goes into main
-    if true #path == '/'
-      load 'code/main.rb'
-      #return Rack::Static.new(RQ::Main.new, :urls => ["/css", "/javascripts"], :root => 'code/public').call(env)
-      return RQ::Main.new.call(env)
-    end
+    load 'code/main.rb'
+    status, headers, body = RQ::Main.new.call(env)
+    headers['Cache-Control'] = 'no-cache, no-store'
+    [status, headers, body]
   end
 end
