@@ -8,7 +8,7 @@ module Alarm
   if RUBY_PLATFORM =~ /darwin/
     so_ext = 'dylib'
   else
-    so_ext = 'so'
+    so_ext = 'so.6'
   end
   dlload "libc.#{so_ext}"
   extern "unsigned int alarm(unsigned int)"
