@@ -1,29 +1,30 @@
 
 <h1>RQ</h1>
+<h5></h5>
 
+<h3>QueueMgr Status</h3>
 <ul>
 <li>
 <%if  RQ::QueueMgrClient.running? %>
   <span class="green">QUEUE MGR is OPERATIONAL</span>
   <span class="green"> <%=  RQ::QueueMgrClient.ping %> </span>
-  <span class="green"> <%=  RQ::QueueMgrClient.read_pid %> </span>
-  up for <%= RQ::QueueMgrClient.uptime %> seconds
+  <span class="green"> <%=  RQ::QueueMgrClient.read_pid %></span>
+  uptime <%= RQ::QueueMgrClient.uptime %> seconds
+  <h5><%= RQ::QueueMgrClient.environment %></h5>
   <% else %>
   <span class="red">QUEUE MGR is DOWN</span>
 <%end %>
 </li>
 <li>
-are we running
-</li>
-<li>
-show queue status
 </li>
 </ul>
 
 
 <h3>Queue List</h3>
-<a href="new_queue">New Queue</a>
 <ul>
+<p>
+<a href="new_queue">New Queue</a>
+</p>
 <% if RQ::QueueMgrClient.running? %>
 <%   queues = RQ::QueueMgrClient.queues %>
 <%   queues.each do |q| %>
@@ -36,16 +37,18 @@ show queue status
   <span class="green">queue is administratively: <%= admin_stat %> </span>
   <span class="green">queue is operationally: <%= oper_stat %> </span>
   <span class="green"> <%=  qc.ping %> </span>
-  <span class="green"> <%=  qc.read_pid %> </span>
+  <span class="green"> <%=  qc.read_pid %></span>
   up for <%= qc.uptime %> seconds
   <% else %>
   <span class="red">queue is DOWN</span>
 <%end %>
   <br />
 <span class=""> <a href="<%= "#{url}q/#{q}/restart" %>">Restart</a> </span>
+  <br />
+  <br />
 </li>
 <%   end %>
 <% end %>
 </ul>
 
-The bomb... <%= Time.now %> - <%= Dir.pwd %>
+<%= Time.now %> - <%= Dir.pwd %>

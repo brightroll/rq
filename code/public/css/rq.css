@@ -4,6 +4,7 @@
 .yellow { background-color: yellow; color: black; }
 
 ul { list-style: none; }
+h1 { margin-bottom: 2px; }
 
 #new_queue_form label.field_label {
     display: block;

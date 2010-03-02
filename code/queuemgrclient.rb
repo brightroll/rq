@@ -43,6 +43,14 @@ module RQ
       client.close
       return result ? result[0] : nil
     end
+
+    def self.environment
+      client = UNIXSocket.open('config/queuemgr.sock')
+      client.send("environment", 0)
+      result = client.recvfrom(1024)
+      client.close
+      return result ? result[0] : nil
+    end
     
     def self.queues
       client = UNIXSocket.open('config/queuemgr.sock')

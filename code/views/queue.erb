@@ -1,31 +1,29 @@
 <% q = params[:name] %>
 <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> </h1>
+<h5><%= RQ::QueueMgrClient.environment %></h5>
 
+<h3>Queue Status</h3>
 <ul>
 <%  qc = RQ::QueueClient.new(q) %>
 <li>
-<span class=""> <a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a> </span>
-<br />
 <% if qc.running? %>
 <% admin_status, oper_status = qc.status %>
-  Status:
-  Admin Status: <span class="<%= admin_status == "UP" ? "green" : "red" %>"> <%= admin_status %> </span>
-  Oper Status: <span class="<%= oper_status == "UP" ? "green" : "red" %>"> <%= oper_status %> </span>
-  <span class=""> <%=  qc.ping %> </span>
-  <span class=""> <%=  qc.read_pid %> </span>
+  Admin Status: <span class="<%= admin_status == "UP" ? "green" : "red" %>"> <%= admin_status %></span>
+  Oper Status: <span class="<%= oper_status == "UP" ? "green" : "red" %>"> <%= oper_status %></span>
+  <span class=""> <%=  qc.ping %></span>
+  <span class=""> <%=  qc.read_pid %></span>
   up for <%= qc.uptime %> seconds
 <% else %>
   Status: <span class="red">queue is COMPLETELY DOWN</span>
   <br />
-  TODO: Display options, restarts
 <% end %>
 </li>
 </ul>
 
 <h3>Message List</h3>
+<ul>
 <a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a>
 <br />
-<% if RQ::QueueMgrClient.running? %>
 <%   msgs = qc.messages %>
 
 <span><%= msgs['que'].length %> items in que</span>
@@ -55,7 +53,6 @@
 </form>
 </li>
 <%   end %>
-<% end %>
 </ul>
 
 <span><%= msgs['prep'].length %> items in prep</span>
@@ -122,7 +119,7 @@
       dest: <span xclass="yellow"> <%= msg_full['dest'] %></span>
     <% end %>
   <% end %>
-  : - <span class="green"> <%= status %></span> -&gt;
+  : - <span class="green"><%= status %></span> -&gt;
    <a href="<%= new_location %>"><%= new_location %></a>
   </span>
 </form>
@@ -143,6 +140,8 @@
 </form>
 </li>
 <%   end %>
+</ul>
+
 </ul>
 
 <%= Time.now %> - <%= Dir.pwd %>

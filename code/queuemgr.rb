@@ -38,6 +38,15 @@ module RQ
         end
         return
       end
+      if data[0].index('environment') == 0
+        sock.send(ENV['RQ_ENV'], 0)
+        sock.close
+        File.open('config/queuemgr.log', "a") do
+          |f|
+          f.write("#{Process.pid} - #{Time.now} - RESP [ environment - #{ENV['RQ_ENV']} ]\n")
+        end
+        return
+      end
       if data[0].index('queues') == 0
         data = @queues.map { |q| q.name }.to_json
         File.open('config/queuemgr.log', "a") do
@@ -157,6 +166,16 @@ end
 
 # TODO: Move these codez
 
+def load_env_config
+  ENV["RQ_ENV"] = "development"
+  begin
+    data = File.read('config/queuemgr.env')
+    env = data.split('\n', 2)[0].strip
+    ENV["RQ_ENV"] = env
+  rescue
+  end
+end
+
 def init
   # Show pid
   File.unlink('config/queuemgr.pid') rescue nil
@@ -168,6 +187,8 @@ def init
   # Setup IPC
   File.unlink('config/queuemgr.sock') rescue nil
   $sock = UNIXServer.open('config/queuemgr.sock')
+
+  load_env_config
 end
 
 def log(mesg)

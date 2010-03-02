@@ -1,5 +1,6 @@
 
 <h1>RQ</h1>
+<h5><%= RQ::QueueMgrClient.environment %></h5>
 
 <h3>New Message</h3>
 <form id="new_queue_form" method="post" action="<%= "/q/#{params['name']}/new_message" %>">

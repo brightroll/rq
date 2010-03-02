@@ -1,5 +1,6 @@
 <% q = params[:name] %>
 <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Mesg: [ <%= locals['msg_id'] %> ] </h1>
+<h5><%= RQ::QueueMgrClient.environment %></h5>
 
 
 <h3>Message Attribs</h3>
@@ -29,6 +30,7 @@
 
 <h3>Message Attachments</h3>
 <ul>
+<%  locals['msg']['_attachments'] ||= {} %>
 <%  locals['msg']['_attachments'].keys.sort.each do |key| %>
 <li>
   <span class="">

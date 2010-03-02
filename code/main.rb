@@ -44,6 +44,10 @@ module RQ
         return erb :queue_txt, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split(".txt").first) }
       end
 
+      if not RQ::QueueMgrClient.running? 
+        throw :halt, [503, "503 - QueueMgr not running"]
+      end
+
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
