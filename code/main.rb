@@ -254,7 +254,21 @@ module RQ
 
     get '/q/:name/:msg_id/attach/:attach_name' do
 
-      path = "./queue/#{params['name']}/done/#{params['msg_id']}/attach/#{params['attach_name']}"
+      msg_id = params['msg_id']
+
+      qc = RQ::QueueClient.new(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      ok, msg = qc.get_message({ 'msg_id' => msg_id })
+
+      if ok != 'ok'
+        throw :halt, [404, "404 - Message ID not found"]
+      end
+
+      path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/attach/#{params['attach_name']}"
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
