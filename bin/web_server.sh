@@ -13,6 +13,7 @@ gem_paths = [File.expand_path(File.join("gems")),  Gem.default_dir]
 Gem.clear_paths
 Gem.send :set_paths, gem_paths.join(":")
 
+require 'unixrack.rb'
 require 'code/router.rb'
 
 builder = MiniRouter.new
@@ -23,7 +24,7 @@ else
   rq_port = ENV["RQ_PORT"].to_i
 end
 
-#pid = fork do
+pid = fork do
   Signal.trap('HUP', 'IGNORE') # Don't die upon logout
   FileUtils.mkdir_p("log")
 
@@ -38,7 +39,7 @@ end
 
   Rack::Handler::UnixRack.run(builder, {:port => rq_port})
   p "what"
-#end
+end
 
-#Process.detach(pid)
+Process.detach(pid)
 

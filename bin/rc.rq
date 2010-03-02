@@ -25,7 +25,7 @@ case $1 in
 	stop)
 		cd /rq/current
 		/rq/current/bin/queuemgr_ctl stop
-		ps ax | grep 'unicorn' | grep -v grep | \
+		ps ax | grep 'web_server.sh' | grep -v grep | \
 		    awk '{print $1}' | xargs kill
 	;;
 esac

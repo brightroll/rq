@@ -5,5 +5,5 @@ if [ "X$RQ_PORT" = "X" ] ; then
   export RQ_PORT
 fi
 
-./bin/unicorn -D -l $RQ_PORT
+exit 1
 
