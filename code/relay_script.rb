@@ -8,10 +8,12 @@ require 'digest'
 
 # 
 def log(mesg)
+  m = "#{Process.pid} - #{Time.now} - #{mesg}\n"
   File.open('relay.log', "a") do
     |f|
-    f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
+    f.write(m)
   end
+  print m
 end
 
 
@@ -96,11 +98,18 @@ end
 this_system = ENV['RQ_HOST']
 dest = ENV['RQ_DEST']
 
+log("this - #{this_system}")
 log("dest - #{dest}")
 
+force = false
+
+if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') && 
+  (ENV['RQ_PARAM2'] == 'the_mighty_rq_force')
+  force = true
+end
 
 # If host different, this is a remote queue delivery
-if dest.index(this_system) != 0
+if (dest.index(this_system) != 0) || force
 
   # Get the URL
   remote_q_uri = dest[/(.*?\/q\/[^\/]+)/, 1]
@@ -147,7 +156,6 @@ if dest.index(this_system) != 0
       soft_fail("Couldn't read message data from file")
     end
 
-
     # Increment count
     curr_msg['count'] = curr_msg.fetch('count', 0) + 1
 
@@ -162,6 +170,7 @@ if dest.index(this_system) != 0
 
     mesg['_method'] = 'prep'
 
+    log("attempting remote #{remote_q_uri}")
     # Connect to that site for that queue and submit the message
     # Net::HTTP.get_response(URI.parse(remote_q_uri))
     res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"),
@@ -177,6 +186,7 @@ if dest.index(this_system) != 0
         soft_fail("Couldn't queue message: #{json_result.inspect}")
       end
     else
+      puts res.body
       soft_fail("Couldn't queue message: #{res.inspect}")
     end
   end
@@ -187,15 +197,18 @@ if dest.index(this_system) != 0
 
   # Idempotently attach any attachments
   if File.exists?('../attach')
+    log("attempting sending attach")
     entries = Dir.entries('../attach').reject { |e| e.index('.') == 0 }
 
     fnames =  entries.select { |e| File.file?("../attach/#{e}") }
     fnames.each do
       |fname|
 
+      log("attempting sending attach #{fname}")
+
       md5 = file_md5("../attach/#{fname}")
 
-      pipe_res = `curl -s -F filedata=@../attach/#{fname} -F pathname=#{fname} -F msg_id=#{new_short_msg_id} -F x_format=json #{remote_q_uri}/#{new_short_msg_id}/attach/new`
+      pipe_res = `curl -0 -s -F filedata=@../attach/#{fname} -F pathname=#{fname} -F msg_id=#{new_short_msg_id} -F x_format=json #{remote_q_uri}/#{new_short_msg_id}/attach/new`
       #p $?
       #p pipe_res
       # Get the URL
@@ -257,7 +270,7 @@ end
 require 'code/queueclient'
 qc = RQ::QueueClient.new(destq, "../../../../..")
 
-log("Attempting connect with #{destq}")
+log("Attempting connect with local queue #{destq}")
 
 if not qc.exists?
   soft_fail("#{destq} does not exist")
@@ -308,16 +321,19 @@ end
 #q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
 new_short_msg_id = new_msg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-# Idempotently attach any attachments
-if File.exists?('attach')
-  entries = Dir.entries('attach').reject { |e| e.index('.') == 0 }
+log("attempting local send attach")
 
-  fnames =  entries.select { |e| File.file?("attach/#{e}") }
+# Idempotently attach any attachments
+if File.exists?('../attach')
+  entries = Dir.entries('../attach').reject { |e| e.index('.') == 0 }
+
+  fnames =  entries.select { |e| File.file?("../attach/#{e}") }
   fnames.each do
     |fname|
-
+ 
+    log("attempting local send attach #{fname}")
     mesg = {'msg_id' => new_short_msg_id,
-      'pathname' => File.expand_path(fname)
+      'pathname' => File.expand_path("../attach/#{fname}")
     }
     result = qc.attach_message(mesg)
 

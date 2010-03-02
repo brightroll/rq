@@ -42,7 +42,7 @@ else
   rq_port = ENV["RQ_PORT"].to_i
 end
 
-mesg = { 'dest' => "http://localhost:#{rq_port}/q/test",
+mesg = { 'dest' => "http://127.0.0.1:#{rq_port}/q/test",
          'src'  => 'test',
          'count'  => '2',
          'param1'  => 'done',
@@ -52,7 +52,7 @@ mesg = { 'dest' => "http://localhost:#{rq_port}/q/test",
 form = { :mesg => mesg.to_json }
 
 # Get the URL
-remote_q_uri = "http://localhost:#{rq_port}/q/test"
+remote_q_uri = "http://127.0.0.1:#{rq_port}/q/test"
 res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"), form)
 
 if res.code != '200'
@@ -103,7 +103,7 @@ print "Committed message: #{msg_id}\n"
 
   ## Verify that script goes to done state
 
-  remote_q_uri = "http://localhost:#{rq_port}/q/test/#{msg_id}.json"
+  remote_q_uri = "http://127.0.0.1:#{rq_port}/q/test/#{msg_id}.json"
   res = Net::HTTP.get_response(URI.parse(remote_q_uri))
 
   if res.code == '200'

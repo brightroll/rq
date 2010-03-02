@@ -20,7 +20,7 @@ else
   rq_port=${RQ_PORT}
 fi
 
-curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
+curl -0 -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running"
   exit 1
@@ -33,7 +33,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Starting install..."
-curl http://127.0.0.1:${rq_port}/install -sL -F dummy=dummy  -o _install.txt
+curl -0 http://127.0.0.1:${rq_port}/install -sL -F dummy=dummy  -o _install.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -50,7 +50,7 @@ while [ ! -f ./queue/relay/queue.pid ] ; do
 done
 
 echo "Checking that system is operational..."
-curl -sL -o _home.txt http://127.0.0.1:${rq_port}/
+curl -0 -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running"
   exit 1
@@ -66,7 +66,7 @@ fi
 
 
 echo "Creating the test queue..."
-curl http://127.0.0.1:${rq_port}/new_queue -sL -F queue[url]=http://localhost:${rq_port}/ -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
+curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[url]=http://127.0.0.1:${rq_port}/ -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1

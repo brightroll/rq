@@ -47,7 +47,7 @@ module RQ
       end
 
       queue = {}
-      queue['url'] = "http://localhost:#{request.port}/"
+      queue['url'] = "http://127.0.0.1:#{request.port}/"
       queue['name'] = "relay"
       queue['script'] = "./code/relay_script.rb"
       queue['ordering'] = "ordered"
@@ -56,7 +56,7 @@ module RQ
       result = RQ::QueueMgrClient.create_queue(queue)
 
       queue = {}
-      queue['url'] = "http://localhost:#{request.port}/"
+      queue['url'] = "http://127.0.0.1:#{request.port}/"
       queue['name'] = "webhook"
       queue['script'] = "./code/webhook_script.rb"
       queue['ordering'] = "ordered"

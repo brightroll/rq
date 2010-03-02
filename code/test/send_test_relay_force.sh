@@ -8,7 +8,7 @@ else
     rq_port=${RQ_PORT}
 fi
 
-out=`./bin/rq prepmesg  --dest http://127.0.0.1:${rq_port}/q/test --src dru4 --relay-ok --param1=done`
+out=`./bin/rq prepmesg  --dest http://127.0.0.1:${rq_port}/q/test --src dru4 --relay-ok --param1=done --param2=the_mighty_rq_force`
 if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't create test message properly"
     exit 1

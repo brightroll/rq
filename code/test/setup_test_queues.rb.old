@@ -98,7 +98,7 @@ end
 
 # Create the relay queue
 resp = Net::HTTP.post_form(URI.parse("http://127.0.0.1:#{rq_port}/new_queue"), {
-                             'queue[url]' => "http://localhost:#{rq_port}/",  # TODO: hardcoded for now
+                             'queue[url]' => "http://127.0.0.1:#{rq_port}/",  # TODO: hardcoded for now
                              'queue[name]' => 'relay',
                              'queue[script]' => './code/relay_script.rb',
                              'queue[ordering]' => 'ordered',
@@ -115,7 +115,7 @@ end
 
 # Create the test1 queue
 resp = Net::HTTP.post_form(URI.parse("http://127.0.0.1:#{rq_port}/new_queue"), {
-                             'queue[url]' => "http://localhost:#{rq_port}/",  # TODO: hardcoded for now
+                             'queue[url]' => "http://127.0.0.1:#{rq_port}/",  # TODO: hardcoded for now
                              'queue[name]' => 'test',
                              'queue[script]' => './code/test/test_script.rb',
                              'queue[ordering]' => 'ordered',
