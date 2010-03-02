@@ -28,7 +28,7 @@ module UnixRack
       len = buff.length
       nwritten = 0
 
-      out_buff = buff.dup
+      out_buff = buff
 
       while true
         nw = io.syswrite(out_buff)
@@ -40,26 +40,30 @@ module UnixRack
     def error_reply(num, txt)
       puts "Error: #{num} #{txt}"
 
-      bod_txt = <<-END
-      <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
-      <html><head>
-      <title>#{num} #{txt}</title>
-      </head><body>
-      <h1>#{txt}</h1>
-      <hr>
-      </body></html>
-      END
+      bod = [
+      "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
+      "<html><head>",
+      "<title>#{num} #{txt}</title>",
+      "</head><body>",
+      "<h1>#{num} - #{txt}</h1>",
+      "<hr>",
+      "</body></html>",
+      ]
 
-      hdr_txt = <<-END
-      HTTP/1.1 #{num} #{txt}
-      Date: #{Time.now.httpdate}
-      Server: UnixRack
-      Content-Length: #{bod_txt.length}
-      Connection: close
-      Content-Type: text/html; charset=iso-8859-1
-      END
+      bod_txt = bod.join("\r\n")
 
-      res = hdr_txt + bod_txt
+      hdr = [
+      "HTTP/1.1 #{num} #{txt}",
+      "Date: #{Time.now.httpdate}",
+      "Server: UnixRack",
+      "Content-Length: #{bod_txt.length}",
+      "Connection: close",
+      "Content-Type: text/html; charset=iso-8859-1",
+      ]
+
+      hdr_txt = hdr.join("\r\n")
+
+      res = hdr_txt + "\r\n\r\n" + bod_txt
 
       write_buff(@sock, res)
 
@@ -78,6 +82,52 @@ module UnixRack
       end
       @buff = @buff + dat
       return @buff
+    end
+
+    def read_content
+      cont_len = @headers['Content-Length'].to_i
+
+      #if cont_len < (8 * 1024 * 1024)
+      if cont_len < (1024 * 1024)
+        # Small file, just use mem
+        while true
+          if @buff.length == cont_len
+            f = StringIO.new(@buff)
+            @buff = ""
+            return f
+          end
+          return nil if not do_read
+        end
+      else
+        # Large file, use disk
+        f = nil
+        tmpname = "./.__tmp__unixrack_upload__#{$$}.tmp"
+        begin
+          tmpfd = IO.sysopen(tmpname, File::RDWR | File::CREAT | File::EXCL, 0600)
+          f = IO.new(tmpfd, "w+")
+          File.unlink(tmpname)
+        rescue
+          p $!
+          return nil
+        end
+
+        # Write what we already have
+        len = @buff.length
+        if len > 0
+          f.syswrite(@buff)
+          @buff = ""
+        end
+
+        while true
+          return f if len == cont_len
+
+          return nil if not do_read
+
+          len += @buff.length
+          f.syswrite(@buff)
+          @buff = ""
+        end
+      end
     end
 
     def read_headers
@@ -170,6 +220,7 @@ module Rack
           pid = fork
 
           if pid == nil
+            # We are in child
             server.close
             trap("ALRM") { p "Child took too long. Goodbye"; exit! 2  }
             trap(:TERM)  { p "TERM. Time to go... Goodbye"; exit! 0  }
@@ -182,14 +233,38 @@ module Rack
             puts "Request: #{sock.hdr_method.inspect}"
             Alarm.alarm(60)               # if command not handled in 60 seconds 
 
-            if sock.hdr_method[0] == "GET"
-              # setup env for RACK
-              #serve app
-              #p app
+            if ["GET", "POST"].include?(sock.hdr_method[0])
+
+              env = {}
+
+              if sock.hdr_method[0] == "GET"
+                content = StringIO.new("")
+              elsif sock.hdr_method[0] == "POST"
+                if not sock.headers.include?('Content-Length')
+                  sock.error_reply(400, "Bad Request no content-length")
+                end
+                if not sock.headers.include?('Content-Type')
+                  sock.error_reply(400, "Bad Request no content-type")
+                end
+
+                env["CONTENT_LENGTH"] = sock.headers['Content-Length']
+                env["CONTENT_TYPE"] = sock.headers['Content-Type']
+
+                # F the 1.1
+                if sock.headers.include?('Expect')
+                  sock.error_reply(417, "Expectation Failed")
+                end
+
+                # It is required that we read all of the content prior to responding
+                content = sock.read_content
+
+                if content == nil
+                  sock.error_reply(400, "Bad Request not enough content")
+                end
+              end
 
               app = ContentLength.new(app)
 
-              env = {}
 
               env["REQUEST_METHOD"] = sock.hdr_method[0]
 
@@ -210,15 +285,13 @@ module Rack
                 env["HTTP_IF_MODIFIED_SINCE"] = sock.headers['If-Modified-Since']
               end
 
-              #p env
-
               env.update({"rack.version" => [1,1],
-                          "rack.input" => StringIO.new(""),
-                          "rack.errors" => $stderr,
-                          "rack.multithread" => false,
-                          "rack.multiprocess" => true,
-                          "rack.run_once" => true,
-                          "rack.url_scheme" => "http"
+                         "rack.input" => content,
+                         "rack.errors" => $stderr,
+                         "rack.multithread" => false,
+                         "rack.multiprocess" => true,
+                         "rack.run_once" => true,
+                         "rack.url_scheme" => "http"
               })
 
               status, headers, body = app.call(env)
@@ -229,98 +302,40 @@ module Rack
               exit! 0
             end
 
+            sock.error_reply(500, "Server Error")
             conn.close
-            exit! 0
-
-            conn.print "HTTP/1.1 200/OK\r\nContent-type: text/html\r\n\r\n"
-            conn.print "<html><body><h1>#{Time.now}</h1>\r\n"
-            conn.print "<ul>\r\n"
-            conn.print "<li>#{RUBY_PLATFORM}</li>\r\n"
-            ENV.keys.sort.each do
-              |k|
-              conn.print "<li>#{k} - #{ENV[k]}</li>\r\n"
-            end
-            conn.print "</ul>\r\n"
-
-            conn.print "<ul>\r\n"
-            conn.print "<li>#{sock.hdr_method.inspect}</li>\r\n"
-            sock.headers.keys.sort.each do
-              |k|
-              conn.print "<li>#{k} - #{sock.headers[k]}</li>\r\n"
-            end
-            conn.print "</ul>\r\n"
-
-            conn.print "</body></html>\r\n"
-            conn.close
-            #serve app
             exit! 0
           end
-
+          # We are in parent
           conn.close
         end
-
       end
 
-      def self.serve(app)
-        app = ContentLength.new(app)
-
-        env = ENV.to_hash
-        env.delete "HTTP_CONTENT_LENGTH"
-
-        env["SCRIPT_NAME"] = ""  if env["SCRIPT_NAME"] == "/"
-
-        env.update({"rack.version" => [0,1],
-                     "rack.input" => $stdin,
-                     "rack.errors" => $stderr,
-
-                     "rack.multithread" => false,
-                     "rack.multiprocess" => true,
-                     "rack.run_once" => true,
-
-                     "rack.url_scheme" => ["yes", "on", "1"].include?(ENV["HTTPS"]) ? "https" : "http"
-                   })
-
-        env["QUERY_STRING"] ||= ""
-        env["HTTP_VERSION"] ||= env["SERVER_PROTOCOL"]
-        env["REQUEST_PATH"] ||= "/"
-
-        status, headers, body = app.call(env)
-        begin
-          send_headers status, headers
-          send_body body
-        ensure
-          body.close  if body.respond_to? :close
+      def old_debug
+        # Old Debug Codes
+        conn.print "HTTP/1.1 200/OK\r\nContent-type: text/html\r\n\r\n"
+        conn.print "<html><body><h1>#{Time.now}</h1>\r\n"
+        conn.print "<ul>\r\n"
+        conn.print "<li>#{RUBY_PLATFORM}</li>\r\n"
+        ENV.keys.sort.each do
+          |k|
+          conn.print "<li>#{k} - #{ENV[k]}</li>\r\n"
         end
+        conn.print "</ul>\r\n"
+
+        conn.print "<ul>\r\n"
+        conn.print "<li>#{sock.hdr_method.inspect}</li>\r\n"
+        sock.headers.keys.sort.each do
+          |k|
+          conn.print "<li>#{k} - #{sock.headers[k]}</li>\r\n"
+        end
+        conn.print "</ul>\r\n"
+
+        conn.print "</body></html>\r\n"
+        conn.close
+        exit! 0
       end
 
-      def self.old_send_headers(status, headers)
-        STDOUT.print "Status: #{status}\r\n"
-        headers.each { |k, vs|
-          vs.split("\n").each { |v|
-            STDOUT.print "#{k}: #{v}\r\n"
-          }
-        }
-        STDOUT.print "\r\n"
-        STDOUT.flush
-      end
-
-      def self.old_send_headers(status, headers)
-        STDOUT.print "Status: #{status}\r\n"
-        headers.each { |k, vs|
-          vs.split("\n").each { |v|
-            STDOUT.print "#{k}: #{v}\r\n"
-          }
-        }
-        STDOUT.print "\r\n"
-        STDOUT.flush
-      end
-
-      def self.old_send_body(body)
-        body.each { |part|
-          STDOUT.print part
-          STDOUT.flush
-        }
-      end
     end
   end
 end
