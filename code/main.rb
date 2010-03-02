@@ -246,7 +246,7 @@ module RQ
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
       if not File.exists? path
-        throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
+        throw :halt, [404, "404 - Message ID log '#{params['log_name']}' not found"]
       end
 
       send_file(path)
