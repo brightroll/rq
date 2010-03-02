@@ -11,6 +11,7 @@ bin/*
 !bin/server_daemon.rb
 !bin/server_daemon.rb.off
 !bin/web_server.sh
+!bin/web_server.rb
 !bin/queuemgr_ctl
 gems/*
 !gems/cache
