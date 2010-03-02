@@ -1,22 +1,40 @@
 <% q = params[:name] %>
 <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Mesg: [ <%= locals['msg_id'] %> ] </h1>
 
-<ul>
 
 <h3>Message Attribs</h3>
-<br />
 <ul>
-<%  ['src', 'dest', 'msg_id', 'status', 'count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id'].each do |key| %>
+<%  ['src', 'dest', 'msg_id', 'status', 'state', 'count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id'].each do |key| %>
 <%    next unless locals['msg'].has_key?(key) %>
 <li>
   <span class="">
-    <%= key %> : <%= Rack::Utils::escape_html locals['msg'][key] %>
+    <% if key == 'status' && locals['msg']['state'] == 'relayed' %>
+       <% stuff, url = locals['msg']['status'].split(' - ', 2) %>
+       <%= key %> : relayed - <a href="<%= url %>"><%= url %></a>
+    <% elsif key == 'orig_msg_id' %>
+       <%= key %> : <a href="<%= locals['msg'][key] %>"><%= locals['msg'][key] %></a>
+    <% else %>
+       <%= key %> : <%= Rack::Utils::escape_html locals['msg'][key] %>
+    <% end %>
   </span>
 </li>
 <% end %>
 </ul>
+<ul>
+<li>
+<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">log</a> -
+<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">json</a>
+</li>
+</ul>
 
-<p>
-<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">log</a>
-</p>
+<h3>Message Attachments</h3>
+<ul>
+<%  locals['msg']['_attachments'].keys.sort.each do |key| %>
+<li>
+  <span class="">
+    <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/attach/#{key}" %>"><%= key %></a>
+  </span>
+</li>
+<% end %>
+</ul>
 
