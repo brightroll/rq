@@ -37,8 +37,9 @@ pid = fork do
     Process.kill("KILL", Process.pid)
   end
 
-  Rack::Handler::UnixRack.run(builder, {:port => rq_port})
-  p "what"
+  Rack::Handler::UnixRack.run(builder, {:port => rq_port,
+                                        :host => 'your.host.here',
+                                        :listen => '0.0.0.0'})
 end
 
 Process.detach(pid)

@@ -155,6 +155,7 @@ module UnixRack
 
       msg = Rack::Utils::HTTP_STATUS_CODES[status.to_i]
 
+      puts "Response: #{status} #{msg}"
       hdr_ary = [ "HTTP/1.0 #{status} #{msg}" ]
 
       headers['Connection'] ||= 'close'
@@ -187,7 +188,8 @@ module Rack
         require 'socket'
         port = options[:port] || 8080
         host = options[:host] || '127.0.0.1'
-        server = TCPServer.new(host, port)
+        listen = options[:listen] || '127.0.0.1'
+        server = TCPServer.new(listen, port)
 
         trap(:CHLD) do
           begin
@@ -271,6 +273,12 @@ module Rack
               uri_parts = sock.hdr_method[1].split("?", 2)
               if uri_parts.length != 2
                 uri_parts << ""
+              end
+
+              # If somebody wants to send me the big absoluteURI...
+              # fine... what is wasting a few more cycles to chop it off
+              if uri_parts[0].index('http://') == 0
+                uri_parts[0] = uri_parts[0].sub(/http:\/\/[^\/]+/, '')
               end
 
               env["SCRIPT_NAME"] = uri_parts[0]
