@@ -1118,7 +1118,7 @@ module RQ
         status['err']  = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
-        log("RESP [ #{resp} ]")
+        log("RESP [ messages resp ]")
         sock.send(resp, 0)
         sock.close
         return
