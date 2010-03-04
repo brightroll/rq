@@ -26,10 +26,12 @@
 <br />
 <%   msgs = qc.messages %>
 
+<span><%= msgs['prep'].length %> items in prep</span>
+<ul></ul>
 <span><%= msgs['que'].length %> items in que</span>
-<br />
+<ul></ul>
 <ul>
-<%   msgs['que'].reverse.each do |msg| %>
+<%   msgs['que'].sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
@@ -55,12 +57,9 @@
 <%   end %>
 </ul>
 
-<span><%= msgs['prep'].length %> items in prep</span>
-<br />
 <span><%= msgs['run'].length %> items in run</span>
-<br />
 <ul>
-<%   msgs['run'].reverse.each do |msg| %>
+<%   msgs['run'].sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
@@ -87,11 +86,9 @@
 </li>
 <%   end %>
 </ul>
-<br />
 <span><%= msgs['done'].length %> items in done</span>
-<br />
 <ul>
-<%   msgs['done'].reverse.each do |msg| %>
+<%   msgs['done'].sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
@@ -102,9 +99,8 @@
 </ul>
 
 <span><%= msgs['relayed'].length %> items in relayed</span>
-<br />
 <ul>
-<%   msgs['relayed'].reverse.each do |msg| %>
+<%   msgs['relayed'].sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
@@ -128,9 +124,8 @@
 </ul>
 
 <span><%= msgs['err'].length %> items in err</span>
-<br />
 <ul>
-<%   msgs['err'].reverse.each do |msg| %>
+<%   msgs['err'].sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
@@ -144,4 +139,4 @@
 
 </ul>
 
-<%= Time.now %> - <%= Dir.pwd %>
+<%= Time.now %>
