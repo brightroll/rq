@@ -107,13 +107,32 @@ module RQ
       result ? JSON.parse(result[0]) : nil
     end
 
+    def do_read(client)
+      begin
+        dat = client.sysread(16384)
+      rescue EOFError
+        puts "Got an EOF from socket read"
+        return nil
+      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+        puts "Got an #{$!} from socket read"
+        exit! 0
+      end
+    end
+
     def messages
       client = UNIXSocket.open(@queue_sock_path)
       client.send("messages", 0)
-      # TODO - deal with larger packet sizes
-      result = client.recvfrom(16384)
+      result = []
+      while true
+         r = do_read(client)
+         if r != nil
+           result << r
+         else
+           break
+         end
+      end
       client.close
-      result ? JSON.parse(result[0]) : nil
+      result ? JSON.parse(result.join('')) : nil
     end
 
     def prep_message(params)
