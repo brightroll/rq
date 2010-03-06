@@ -275,6 +275,9 @@ module RQ
       begin
         data = File.read(@queue_path + '/config.json')
         @config = JSON.parse(data)
+        # Fix for old rqs
+        @config["admin_status"] ||= "UP"
+        @config["oper_status"]  ||= "UP"
       rescue
         return false
       end
