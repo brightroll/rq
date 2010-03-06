@@ -6,7 +6,7 @@
 ul { list-style: none; }
 h1 { margin-bottom: 2px; }
 
-#new_queue_form label.field_label {
+form label.field_label {
     display: block;
     float: left;	
     width: 18%;
@@ -15,7 +15,7 @@ h1 { margin-bottom: 2px; }
     clear: left;
 }
 
-#new_queue_form .field {
+form .field {
     margin: 0;
     padding: 0 0 1em 0;
     clear: both;
@@ -24,7 +24,7 @@ h1 { margin-bottom: 2px; }
 }
 
 
-#new_queue_form .note {
+form .note {
     font-size: .8em;
     padding: 0 0 0 20%;
     color: #444;

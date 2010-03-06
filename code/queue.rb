@@ -12,6 +12,7 @@ module RQ
       # Read config
       @name = options['name']
       @queue_path = "queue/#{@name}"
+      @rq_config_path = "./config/"
       @parent_pipe = parent_pipe
       init_socket
 
@@ -23,8 +24,16 @@ module RQ
 
       @wait_time = 1
 
+      if load_rq_config() == nil
+        sleep 5
+        log("Invalid main rq config for #{@name}. Exiting." )
+        exit! 1
+      end
+
       if load_config() == false
-        @config = { "opts" => options, "admin_status" => "UP", "oper_status" => "UP" }
+        sleep 5
+        log("Invalid config for #{@name}. Exiting." )
+        exit! 1
       end
 
       load_messages
@@ -42,6 +51,8 @@ module RQ
       FileUtils.mkdir_p(queue_path + '/relayed')
       FileUtils.mkdir_p(queue_path + '/err')
       # Write config to dir
+      options["admin_status"] = "UP"
+      options["oper_status"] = "UP"
       File.open(queue_path + '/config.json', "w") do
         |f|
         f.write(options.to_json)
@@ -117,7 +128,7 @@ module RQ
       Dir.mkdir(job_path) unless File.exists?(job_path)
 
       # TODO: Identify executable to run, if there is no script, go administratively down
-      script_path = File.expand_path(@config['opts']['script'])
+      script_path = File.expand_path(@config['script'])
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
         # Set queue adminitratively down
         log("queue down - script not there or runnable #{script_path}")
@@ -190,7 +201,7 @@ module RQ
 
           RQ::Queue.log(job_path, "running #{script_path}")
 
-          ENV["RQ_HOST"] = @config['opts']['url']
+          ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
           ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
@@ -248,9 +259,21 @@ module RQ
       @sock = UNIXServer.open(@queue_path + '/queue.sock')
     end
 
+    def load_rq_config
+      begin
+        data = File.read(@rq_config_path + 'config.json')
+        js_data = JSON.parse(data)
+        @host = js_data['host']
+        @port = js_data['port']
+      rescue
+        return nil
+      end
+      return js_data
+    end
+
     def load_config
       begin
-        data = File.read(@queue_path + '/queue.config')
+        data = File.read(@queue_path + '/config.json')
         @config = JSON.parse(data)
       rescue
         return false
@@ -261,8 +284,8 @@ module RQ
     def write_config
       begin
         data = @config.to_json
-        File.open(@queue_path + '/queue.config.tmp', 'w') { |f| f.write(data) }
-        File.rename(@queue_path + '/queue.config.tmp', @queue_path + '/queue.config')
+        File.open(@queue_path + '/config.json.tmp', 'w') { |f| f.write(data) }
+        File.rename(@queue_path + '/config.json.tmp', @queue_path + '/config.json')
       rescue
         log("FATAL - couldn't write config")
         return false
@@ -501,13 +524,15 @@ module RQ
     end
 
     def gen_full_msg_id(msg)
-      full_name = "#{@config['opts']['url']}q/#{@name}/#{msg['msg_id']}"
+      full_name = "http://#{@host}:#{@port}/q/#{@name}/#{msg['msg_id']}"
       return full_name
     end
 
     def gen_full_dest(msg)
-      res = { 'dest' => "#{@config['opts']['url']}q/#{msg['dest']}/",
-        'queue' => msg['dest'] }
+      res = {
+        'dest' => "http://#{@host}:#{@port}/q/#{msg['dest']}/",
+        'queue' => msg['dest']
+      }
 
       # IF message already has full remote dest...
       if msg['dest'].index('http:') == 0
@@ -793,8 +818,8 @@ module RQ
         acc
       end
 
-      if active_count >= @config['opts']['num_workers'].to_i
-        #log("Already running #{active_count} config is max: #{@config['opts']['num_workers']}")
+      if active_count >= @config['num_workers'].to_i
+        #log("Already running #{active_count} config is max: #{@config['num_workers']}")
         return
       end
 
@@ -1041,7 +1066,7 @@ module RQ
       end
 
       if data[0].index('options') == 0
-        resp = @config["opts"].to_json
+        resp = @config.to_json
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close

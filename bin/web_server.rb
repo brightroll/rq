@@ -15,14 +15,31 @@ Gem.send :set_paths, gem_paths.join(":")
 
 require 'code/router.rb'
 
+require 'json'
+
 require 'unixrack.rb'
 
 router = MiniRouter.new
 
-if ENV["RQ_PORT"].nil?
-  rq_port = 3333
+def load_config
+  begin
+    data = File.read('config/config.json')
+    config = JSON.parse(data)
+    $host = config['host']
+    $port = config['port']
+    $addr = config['addr']
+  rescue
+    puts "Couldn't read config/config.json file properly. Exiting"
+    exit! 1
+  end
+end
+
+if ARGV[0] == "install"
+  $host = "127.0.0.1"
+  $port = "3333"
+  $addr = "0.0.0.0"
 else
-  rq_port = ENV["RQ_PORT"].to_i
+  load_config
 end
 
 #pid = fork do
@@ -38,7 +55,9 @@ end
 #    Process.kill("KILL", Process.pid)
 #  end
 
-  Rack::Handler::UnixRack.run(router, {:port => rq_port, :host => '127.0.0.1'})
+  Rack::Handler::UnixRack.run(router, {:port => $port,
+                                       :host => $host,
+                                       :listen => $addr})
 #end
 
 #Process.detach(pid)

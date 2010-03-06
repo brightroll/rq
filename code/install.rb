@@ -5,9 +5,7 @@ require 'erb'
 
 load 'code/queuemgrclient.rb'
 
-#require 'sinatra'
-#    set :root, File.dirname('code')
-#set :root, File.dirname('code'__FILE__)
+require 'json'
 
 def start_backend
   `./bin/queuemgr_ctl start`
@@ -23,12 +21,32 @@ module RQ
       './code/views'
     end
 
+    def write_file(fname, data)
+      File.open(fname + ".tmp", "w") do
+        |f|
+        f.write(data)
+      end
+      File.rename(fname + ".tmp", fname)
+    end
+
     get '/install' do
       erb :install
     end
 
     post '/install' do
+      if File.exists? 'config'
+        return "Already installed"
+      end
       FileUtils.mkdir('config')
+
+      # Setup the network config file
+
+      # TODO: do error/sanity checking
+
+      # Clean up any whitespace
+      prms = params['install'].keys.inject( {} ) { |acc, k| acc[k] = params['install'][k].strip; acc }
+
+      write_file("config/config.json", prms.to_json)
 
       # After watching my mds process go nuts
       # http://support.apple.com/kb/TA24975?viewlocale=en_US
@@ -47,22 +65,29 @@ module RQ
       end
 
       queue = {}
-      queue['url'] = "http://127.0.0.1:#{request.port}/"
       queue['name'] = "relay"
       queue['script'] = "./code/relay_script.rb"
       queue['ordering'] = "ordered"
       queue['num_workers'] = "1"
-      queue['fsync'] = 'fsync'
+      queue['fsync'] = 'no-fsync'
       result = RQ::QueueMgrClient.create_queue(queue)
 
       queue = {}
-      queue['url'] = "http://127.0.0.1:#{request.port}/"
       queue['name'] = "webhook"
       queue['script'] = "./code/webhook_script.rb"
       queue['ordering'] = "ordered"
       queue['num_workers'] = "1"
-      queue['fsync'] = 'fsync'
+      queue['fsync'] = 'no-fsync'
       result = RQ::QueueMgrClient.create_queue(queue)
+
+      queue = {}
+      queue['name'] = "cleaner"
+      queue['script'] = "./code/cleaner_script.rb"
+      queue['ordering'] = "ordered"
+      queue['num_workers'] = "1"
+      queue['fsync'] = 'no-fsync'
+      result = RQ::QueueMgrClient.create_queue(queue)
+
       # TODO: set install state as bad if any of this fails
 
       erb :installed

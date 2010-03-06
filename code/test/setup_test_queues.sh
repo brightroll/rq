@@ -26,14 +26,14 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "Your app is not setup\." _home.txt > /dev/null
+egrep "Please fill out this form in order to setup this RQ\." _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is still in an installed state"
   exit 1
 fi
 
 echo "Starting install..."
-curl -0 http://127.0.0.1:${rq_port}/install -sL -F dummy=dummy  -o _install.txt
+curl -0 http://127.0.0.1:${rq_port}/install -sL -F install[host]=127.0.0.1 -F install[port]=3333 -F install[addr]=0.0.0.0 -F install[env]=test -o _install.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -66,7 +66,7 @@ fi
 
 
 echo "Creating the test queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[url]=http://127.0.0.1:${rq_port}/ -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
+curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1

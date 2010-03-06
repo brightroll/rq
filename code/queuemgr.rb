@@ -5,6 +5,13 @@ require 'json'
 require 'code/queue'
 require 'code/queueclient'
 
+def log(mesg)
+  File.open('config/queuemgr.log', "a") do
+    |f|
+    f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
+  end
+end
+
 module RQ
 
   class Worker < Struct.new(:qc, :status, :child_write_pipe, :name,
@@ -15,36 +22,63 @@ module RQ
 
     attr_accessor :queues
     attr_accessor :status
+    attr_accessor :host
+    attr_accessor :port
+    attr_accessor :environment
 
     def initialize
       @queues = []
       @start_time = Time.now
       @status = "RUNNING"
       # Read config
+      @host = ""
+      @port = ""
+    end
+
+    def load_config
+      ENV["RQ_ENV"] = "development"
+      begin
+        data = File.read('config/config.json')
+        options = JSON.parse(data)
+        ENV["RQ_ENV"] = options['env']
+        @host = options['host']
+        @port = options['port']
+      rescue
+        puts ""
+        puts "Bad config file. Exiting"
+        puts ""
+        exit! 1
+      end
+    end
+
+    def init
+      # Show pid
+      File.unlink('config/queuemgr.pid') rescue nil
+      File.open('config/queuemgr.pid', "w") do
+        |f|
+        f.write("#{Process.pid}\n")
+      end
+
+      # Setup IPC
+      File.unlink('config/queuemgr.sock') rescue nil
+      $sock = UNIXServer.open('config/queuemgr.sock')
+
+      load_config
     end
 
     def handle_request(sock)
       data = sock.recvfrom(1024)
-      File.open('config/queuemgr.log', "a") do
-        |f|
-        f.write("#{Process.pid} - #{Time.now} - REQ [ #{data[0]} ]\n")
-      end
+      log("REQ [ #{data[0]} ]");
       if data[0].index('ping') == 0
         sock.send("pong", 0)
         sock.close
-        File.open('config/queuemgr.log', "a") do
-          |f|
-          f.write("#{Process.pid} - #{Time.now} - RESP [ pong ]\n")
-        end
+        log("RESP [ pong ]");
         return
       end
       if data[0].index('environment') == 0
         sock.send(ENV['RQ_ENV'], 0)
         sock.close
-        File.open('config/queuemgr.log', "a") do
-          |f|
-          f.write("#{Process.pid} - #{Time.now} - RESP [ environment - #{ENV['RQ_ENV']} ]\n")
-        end
+        log("RESP [ environment - #{ENV['RQ_ENV']} ]")
         return
       end
       if data[0].index('queues') == 0
@@ -72,7 +106,7 @@ module RQ
       if data[0].index('create_queue') == 0
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
-        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", "url"=>"http://localhost:3333/"}} 
+        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }} 
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
         else
@@ -96,10 +130,7 @@ module RQ
             resp = ['success', 'queue created - awesome'].to_json
           end
         end
-        File.open('config/queuemgr.log', "a") do
-          |f|
-          f.write("#{Process.pid} - #{Time.now} - RESP [ #{data} ]\n")
-        end
+        log("RESP [ #{data} ]")
         sock.send(resp, 0)
         sock.close
         return
@@ -107,10 +138,7 @@ module RQ
 
       sock.send("ERROR", 0)
       sock.close
-      File.open('config/queuemgr.log', "a") do
-        |f|
-        f.write("#{Process.pid} - #{Time.now} - RESP [ ERROR ] - Unhandled message\n")
-      end
+      log("RESP [ ERROR ] - Unhandled message")
     end
 
     def shutdown
@@ -166,41 +194,11 @@ end
 
 # TODO: Move these codez
 
-def load_env_config
-  ENV["RQ_ENV"] = "development"
-  begin
-    data = File.read('config/queuemgr.env')
-    env = data.split('\n', 2)[0].strip
-    ENV["RQ_ENV"] = env
-  rescue
-  end
-end
-
-def init
-  # Show pid
-  File.unlink('config/queuemgr.pid') rescue nil
-  File.open('config/queuemgr.pid', "w") do
-    |f|
-    f.write("#{Process.pid}\n")
-  end
-
-  # Setup IPC
-  File.unlink('config/queuemgr.sock') rescue nil
-  $sock = UNIXServer.open('config/queuemgr.sock')
-
-  load_env_config
-end
-
-def log(mesg)
-  File.open('config/queuemgr.log', "a") do
-    |f|
-    f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-  end
-end
-
 def run_loop
 
   qmgr = RQ::QueueMgr.new
+
+  qmgr.init
 
   Signal.trap("TERM") do
     log("received TERM signal")
@@ -289,5 +287,4 @@ def run_loop
   end
 end
 
-init
 run_loop
