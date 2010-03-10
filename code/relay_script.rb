@@ -172,10 +172,12 @@ if (dest.index(this_system) != 0) || force
 
     log("attempting remote #{remote_q_uri}")
     # Connect to that site for that queue and submit the message
-    # Net::HTTP.get_response(URI.parse(remote_q_uri))
-    res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"),
-                              {:x_format => 'json', :mesg => mesg.to_json })
-
+    uri = remote_q_uri + "/new_message"
+    begin
+      res = Net::HTTP.post_form(URI.parse(uri), {:x_format => 'json', :mesg => mesg.to_json })
+    rescue
+      soft_fail("Could not connect to or parse URL: #{uri}")
+    end
 
     if res.code == '200'
       json_result = JSON.parse(res.body)
@@ -237,7 +239,12 @@ if (dest.index(this_system) != 0) || force
   form = { :x_format => 'json', '_method' => 'commit', :msg_id => new_short_msg_id }
 
   # Get the URL
-  res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/#{new_short_msg_id}"), form)
+  uri = remote_q_uri + "/#{new_short_msg_id}"
+  begin
+    res = Net::HTTP.post_form(URI.parse(uri), form)
+  rescue
+    soft_fail("Could not connect to or parse URL: #{uri}")
+  end
 
   if res.code != '200'
     soft_fail("Couldn't commit message: #{res.inspect}")
