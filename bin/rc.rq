@@ -13,7 +13,7 @@ me=`id -u`
 if [ $me -eq 0 ] ; then
 	HOME=/home/br
 	export HOME
-	exec setuidgid br /etc/init.d/rq $*
+	exec sudo -u br -i /etc/init.d/rq $*
 fi
 
 case $1 in
