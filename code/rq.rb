@@ -76,10 +76,12 @@ end
 if args[:cmd] == 'sendmesg'
   q_name = args['dest']
 
-  if (q_name.index('http:') == 0) && args.has_key?('relay-ok')
-    q_name = 'relay'
-  else
-    throw :halt, [404, 'Sorry - cannot relay message']
+  if (q_name.index('http:') == 0)
+    if args.has_key?('relay-ok')
+      q_name = 'relay'
+    else
+      throw :halt, [404, 'Sorry - cannot relay message']
+    end
   end
 
   qc = RQ::QueueClient.new(q_name)
