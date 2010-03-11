@@ -1,60 +1,58 @@
-#!/usr/bin/env ruby
+#!/bin/bash
 
-require 'fileutils'
-require 'fcntl'
+set -e
 
+function write_status {
+  echo $1 $2 >&3
+  echo $1 $2
+}
 
-def log(mesg)
-  m = "#{Process.pid} - #{Time.now} - #{mesg}\n"
-  File.open('relay.log', "a") do
-    |f|
-    f.write(m)
-  end
-  print m
-end
+write_status 'run'  "starting clean"
 
+if [ "X$RQ_PARAM1" == "X" ]; then
+  echo "Empty queue name for cleaner script"
+  write_status 'err' "empty RQ_PARAM1"
+  exit 0
+fi
 
-Dir.glob(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
+cd "../../../../$RQ_PARAM1" 
+write_status 'run'  "changed dir"
+pwd
+date '+%Y%m%d.%H:%M'
 
+write_status 'run'  "rotating log files"
 
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
+set +e
+mv queue.log queue.log.`date '+%Y%m%d.%H:%M'`
+set -e
+find . -maxdepth 1 -name 'queue.log*' -type f -mtime +2 -printf "old log - %f\n"
+find . -maxdepth 1 -name 'queue.log*' -type f -mtime +2 -exec /bin/rm -rf {} \;
 
-#log($LOAD_PATH.inspect)
-log(Dir.pwd.inspect)
-#log(gem_paths.inspect)
+write_status 'run'  "cleaning err"
+cd err
+find . -maxdepth 1 -type d -mtime +3 -name '??*' | wc -l
+find . -maxdepth 1 -type d -mtime +3 -name '??*' -exec /bin/rm -rf {} \;
+cd ..
 
-require 'json'
+write_status 'run'  "cleaning done"
+cd done
+find . -maxdepth 1 -type d -mtime +2 -name '??*' | wc -l
+find . -maxdepth 1 -type d -mtime +2 -name '??*' -exec /bin/rm -rf {} \;
+cd ..
 
-# Setup a global binding so the GC doesn't close the file
-$RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
+write_status 'run'  "cleaning prep"
+cd prep
+find . -maxdepth 1 -type d -mtime +1 -name '??*' | wc -l
+find . -maxdepth 1 -type d -mtime +1 -name '??*' -exec /bin/rm -rf {} \;
+cd ..
 
-# Had to use \n
-# I tried to use \000 but bash barfed on me
-def write_status(state, mesg = '')
-  msg = "#{state} #{mesg}\n"
-  $RQ_IO.syswrite(msg)
-  log("#{state} #{mesg}")
-end
+write_status 'run'  "cleaning relayed"
+cd relayed
+find . -maxdepth 1 -type d -mtime +1 -name '??*' | wc -l
+find . -maxdepth 1 -type d -mtime +1 -name '??*' -exec /bin/rm -rf {} \;
+cd ..
 
-def soft_fail(mesg = 'soft fail')
-  count = ENV['RQ_COUNT'].to_i
-  wait_seconds = count * count * 10
-  write_status('resend', "#{wait_seconds}-#{mesg}")
-  log("RESEND - #{wait_seconds} - #{count} - #{mesg}")
-  exit(0)
-end
-
-
-
-
-write_status('done', 'to be implemented')
-
+date '+%Y%m%d.%H:%M'
+echo "FINISHED"
+write_status 'done' "done cleaning"
 
