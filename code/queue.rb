@@ -991,7 +991,7 @@ module RQ
                   if msg.include? 'post_run_webhook'
                     msg['post_run_webhook'].each do
                       |wh|
-                      webhook_message(wh, gen_full_msg_id(msg), new_state, orig_msg_id)
+                      webhook_message(wh, msg, new_state)
                     end
                   end
                 end
@@ -1029,20 +1029,29 @@ module RQ
     end
 
     # Inject a message into 'que' state
-    def webhook_message(url, msg_id, new_state, orig_msg_id)
+    def webhook_message(url, msg, new_state)
       require 'code/queueclient'
       qc = RQ::QueueClient.new('webhook')
+
+      msg_id = gen_full_msg_id(msg)
 
       if not qc.exists?
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
         return
       end
 
+      # Copy orig message
+      msg_copy = msg.clone
+      msg_copy['msg_id'] = msg_id
+      msg_copy['state'] = new_state
+      msg_copy.delete 'status'
+      msg_copy.delete '_attachments'
+
       # Construct message
       mesg = {}
       mesg['dest'] = 'webhook'
       mesg['param1'] = url
-      mesg['param2'] = { 'msg_id' => msg_id, 'state' => new_state, 'orig_msg_id' => orig_msg_id }.to_json
+      mesg['param2'] = msg_copy.to_json
       result = qc.create_message(mesg)
       if result[0] != 'ok'
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
