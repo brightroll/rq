@@ -1,4 +1,4 @@
-desc  'Increment the version.h file with a new version number'
+desc  'Increment the version.rb file with a new version number'
 task  :increment_ver do
     version_file = "version.rb"
     mydate = Time.now.strftime("%Y%m%d")
@@ -30,6 +30,6 @@ end
 desc  'Check the updated version number back into git'
 task  :update_version do
   #need to git push the new version number back to the repo 
-  sh %{ git commit version.h -m "increment VERSION_NUMBER" && git push }
+  sh %{ git commit version.rb -m "increment VERSION_NUMBER" && git push }
 end
 
