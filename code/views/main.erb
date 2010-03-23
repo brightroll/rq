@@ -10,6 +10,14 @@
   <span class="green"> <%=  RQ::QueueMgrClient.ping %> </span>
   <span class="green"> <%=  RQ::QueueMgrClient.read_pid %></span>
   uptime <%= RQ::QueueMgrClient.uptime %> seconds
+  <br />
+  <% vver = RQ::QueueMgrClient.version %>
+  <% if vver == VERSION_NUMBER %>
+    server ver: <%= vver %>
+  <% else %>
+    <b><span class="red"> sever ver: <%=  vver %> != web ver: <%= VERSION_NUMBER %></span></b>
+  <% end %>
+  <br />
   <h5><%= RQ::QueueMgrClient.environment %></h5>
   <% else %>
   <span class="red">QUEUE MGR is DOWN</span>
@@ -51,4 +59,3 @@
 <% end %>
 </ul>
 
-<%= Time.now %> - <%= Dir.pwd %>

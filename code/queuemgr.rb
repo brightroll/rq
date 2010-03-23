@@ -4,6 +4,7 @@ require 'json'
 
 require 'code/queue'
 require 'code/queueclient'
+require 'version'
 
 def log(mesg)
   File.open('config/queuemgr.log', "a") do
@@ -36,6 +37,7 @@ module RQ
     end
 
     def load_config
+      ENV["RQ_VER"] = VERSION_NUMBER
       ENV["RQ_ENV"] = "development"
       begin
         data = File.read('config/config.json')
@@ -79,6 +81,12 @@ module RQ
         sock.send(ENV['RQ_ENV'], 0)
         sock.close
         log("RESP [ environment - #{ENV['RQ_ENV']} ]")
+        return
+      end
+      if data[0].index('version') == 0
+        sock.send(ENV['RQ_VER'], 0)
+        sock.close
+        log("RESP [ version - #{ENV['RQ_VER']} ]")
         return
       end
       if data[0].index('queues') == 0

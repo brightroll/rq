@@ -30,6 +30,7 @@ ENV["RQ_PARAM4"]     = param4 for message
 ENV["RQ_PORT"]       = port number for RQ web server, default = 3333
 
 ENV["RQ_ENV"]        = 'production', 'development', 'test', 'stage'
+ENV["RQ_VER"]        = version of rq
 
 --------------
 

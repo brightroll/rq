@@ -1,4 +1,5 @@
 require 'rack'
+require 'version'
 
 class MiniRouter
   def call(env)

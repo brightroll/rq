@@ -13,6 +13,8 @@
       <br />
     <%#= message[:notice] %>
     <%= yield %>
+    <i><%= Time.now %>
+    <br />ver: <%= VERSION_NUMBER %></i>
     </div>
   </body>
 </html>

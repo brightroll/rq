@@ -52,6 +52,14 @@ module RQ
       return result ? result[0] : nil
     end
     
+    def self.version
+      client = UNIXSocket.open('config/queuemgr.sock')
+      client.send("version", 0)
+      result = client.recvfrom(1024)
+      client.close
+      return result ? result[0] : nil
+    end
+
     def self.queues
       client = UNIXSocket.open('config/queuemgr.sock')
       client.send("queues", 0)
