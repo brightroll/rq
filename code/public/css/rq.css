@@ -4,7 +4,15 @@
 .yellow { background-color: yellow; color: black; }
 
 ul { list-style: none; }
-h1 { margin-bottom: 2px; }
+h1 {
+  margin-bottom: 2px;
+  font-weight: bold;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  color: #444;
+}
+
+a { text-decoration: none; color: #333; }
+a:hover { text-decoration: underline; color: #777; }
 
 form label.field_label {
     display: block;
