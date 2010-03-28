@@ -130,7 +130,6 @@ if args[:cmd] == 'prepmesg'
   end
   result = qc.prep_message(mesg)
   print "#{result[0]} #{result[1]}\n"
-  #p "Message: #{result} inserted into queue: #{q_name}"
 end
 
 if args[:cmd] == 'attachmesg'
@@ -286,3 +285,21 @@ if args[:cmd] == 'attachstatusmesg'
     print "#{result[0]} #{result[1]}\n"
   end
 end
+
+if args[:cmd] == 'clone'
+  full_mesg_id = args['msg_id']
+
+  q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
+  msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+  qc = RQ::QueueClient.new(q_name)
+
+  if not qc.exists?
+    throw :halt, [404, "404 - Queue not found. Only local messages for cloning."]
+  end
+
+  mesg = {'msg_id' => msg_id }
+  result = qc.clone_message(mesg)
+  print "#{result[0]} #{result[1]}\n"
+end
+

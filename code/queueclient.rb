@@ -179,6 +179,15 @@ module RQ
       client.close
       result ? JSON.parse(result[0]) : nil
     end
+
+    def clone_message(params)
+      json_params = params.to_json
+      client = UNIXSocket.open(@queue_sock_path)
+      client.send("clone_message #{json_params}", 0)
+      result = client.recvfrom(1024)
+      client.close
+      result ? JSON.parse(result[0]) : nil
+    end
   end
 end
 

@@ -487,6 +487,54 @@ module RQ
       # done
     end
 
+    def clone_msg(msg)
+      resp = nil
+
+      state = lookup_msg(msg, '*')
+      return resp unless state
+      return resp unless ['err', 'relayed', 'done'].include? state
+
+
+      old_msg = get_message(msg, state)
+
+      new_msg = { }
+      if alloc_id(new_msg) and check_msg(new_msg, old_msg)
+        # check_msg copies only required fields, but still copies count
+        # so we delete that as well
+        new_msg.delete 'count'
+        new_msg['cloned_from'] = old_msg['msg_id']
+
+        # Now check for, and copy attachments
+        # Assumes that original message guaranteed attachment integrity
+        old_basename = @queue_path + "/#{state}/" + msg['msg_id']
+        new_basename = @queue_path + "/prep/" + new_msg['msg_id']
+
+        if File.directory?(old_basename + "/attach/")
+          ents = Dir.entries(old_basename + "/attach/").reject {|i| i.index('.') == 0 }
+          if not ents.empty?
+            # simple check for attachment dir
+            old_attach_path = old_basename + '/attach/'
+            new_attach_path = new_basename + '/attach/'
+            Dir.mkdir(new_attach_path)
+
+            ents.each do
+              |ent|
+              # Now clone attachments by hard_linking to them in new message
+              new_path = new_attach_path + ent
+              old_path = old_attach_path + ent
+              File.link(old_path, new_path)
+            end
+          end
+        end
+
+        store_msg(new_msg)
+        que(new_msg)
+        msg_id = gen_full_msg_id(new_msg)
+        resp = msg_id
+      end
+      resp
+    end
+
     def get_message(params, state)
       basename = @queue_path + "/#{state}/" + params['msg_id']
 
@@ -1280,6 +1328,42 @@ module RQ
         if lookup_msg(options, '*')
           delete_msg!(options)
           resp = [ "ok", "msg deleted" ].to_json
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('clone_message') == 0
+        json = data[0].split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          log("RESP [ #{resp} ]")
+          sock.send(resp, 0)
+          sock.close
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        state = lookup_msg(options, '*')
+        if state
+          if ['err', 'relayed', 'done'].include? state
+            msg_id = clone_msg(options)
+            if msg_id
+              resp = [ "ok", msg_id ].to_json
+            else
+              resp = [ "fail", "msg couldn't be cloned" ].to_json
+            end
+          else
+            resp = [ "fail", "cannot clone message in #{state} state" ].to_json
+          end
         else
           resp = [ "fail", "msg not found" ].to_json
         end

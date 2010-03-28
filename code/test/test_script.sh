@@ -1,8 +1,5 @@
 #!/bin/bash
 
-
-# 
-
 function write_status {
   echo $1 $2 >&3
 }
@@ -10,7 +7,7 @@ function write_status {
 write_status 'run'  "just started"
 echo "TESTTESTTEST"
 write_status 'run' "a little after just started"
-sleep 1
+#sleep 1
 
 pwd
 
@@ -20,11 +17,11 @@ lsof -p $$
 
 write_status 'run' "post lsof"
 
-write_status 'run' "sleeping 1"
-sleep 1
+#write_status 'run' "sleeping 1"
+#sleep 1
 
 
-write_status 'run' "done sleeping"
+#write_status 'run' "done sleeping"
 
 
 
@@ -47,11 +44,18 @@ if [ "$RQ_PARAM1" == "slow" ]; then
   write_status 'run' "done sleeping for 30"
 fi
 
-if [ "$RQ_PARAM1" == "slow3" ]; then
+if [ "$RQ_PARAM1" == "slow1" ]; then
   echo "This script should execute slowly"
   write_status 'run' "start sleeping for 1"
-  sleep 3
+  sleep 1
   write_status 'run' "done sleeping for 1"
+fi
+
+if [ "$RQ_PARAM1" == "slow3" ]; then
+  echo "This script should execute slowly"
+  write_status 'run' "start sleeping for 3"
+  sleep 3
+  write_status 'run' "done sleeping for 3"
 fi
 
 if [ "$RQ_PARAM1" == "resend1" ]; then

@@ -14,6 +14,7 @@ for test in \
    send_test_web_prepattachdone.rb \
    send_test_web_prepattachdone_large.rb \
    send_test_attachdone.sh \
+   send_test_cloneattachdone.sh \
    send_test_web_prepdone.rb \
    send_test_done.sh \
    send_test_err.sh  \
