@@ -601,7 +601,7 @@ module RQ
         #       if new name already exists in dir
         new_path = attach_path + name
         tmp_new_path = attach_path + name + '.tmp'
-        File.unlink(tmp_new_path) rescue nil
+        File.unlink(tmp_new_path) rescue nil       # Insure tmp_new_path is clear
         File.link(msg['pathname'], tmp_new_path)
         #       Second, do a rename, that will overwrite
 
