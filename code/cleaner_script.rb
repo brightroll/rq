@@ -4,7 +4,7 @@ set -e
 
 function write_status {
   echo $1 $2 >&3
-  echo $1 $2
+  echo `/bin/date` $1 $2
 }
 
 write_status 'run'  "starting clean"
