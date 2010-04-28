@@ -146,6 +146,16 @@ module RQ
       HERE
     end
 
+    get '/q/:name/config.json' do
+      path = "./queue/#{params['name']}/config.json"
+
+      if not File.exists? path
+        throw :halt, [404, "404 - Queue config for '#{params['name']}' not found"]
+      end
+
+      send_file(path)
+    end
+
     get '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
