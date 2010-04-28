@@ -29,6 +29,7 @@ module RQ
       # TODO: validation
 
       # This creates and starts a queue
+      params['queue']['url'] = url
       result = RQ::QueueMgrClient.create_queue(params['queue'])
       "We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr"
     end
