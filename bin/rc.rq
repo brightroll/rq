@@ -11,21 +11,22 @@ fi
 me=`id -u`
 
 if [ $me -eq 0 ] ; then
-	HOME=/home/br
-	export HOME
+	#exec setuidgid br /etc/init.d/rq $*
 	exec sudo -u br -i /etc/init.d/rq $*
 fi
 
 case $1 in
 	start)
 		cd /rq/current
-		/rq/current/bin/server_daemon.sh
+		/rq/current/bin/web_server.sh
 		/rq/current/bin/queuemgr_ctl start
 	;;
 	stop)
 		cd /rq/current
 		/rq/current/bin/queuemgr_ctl stop
-		ps ax | grep 'web_server.sh' | grep -v grep | \
+		ps ax | grep '\[rq' | grep -v grep | \
+		    awk '{print $1}' | xargs kill
+		ps ax | grep 'web_server' | grep -v grep | \
 		    awk '{print $1}' | xargs kill
 	;;
 esac
