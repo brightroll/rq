@@ -5,6 +5,7 @@
 
 ul { list-style: none; }
 h1 {
+  font-size: 2.5em;
   margin-bottom: 2px;
   font-weight: bold;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
