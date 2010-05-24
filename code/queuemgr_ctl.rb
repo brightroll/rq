@@ -114,7 +114,7 @@ $0 = '[rq-mgr]'
 
 begin
   load 'code/queuemgr.rb'
-rescue
+rescue Exception
   File.open("log/queuemgr.log", "a") do
     |f|
     f.write("#{Process.pid} - #{Time.now} - EXCEPTION [ #{$!} ]\n")
