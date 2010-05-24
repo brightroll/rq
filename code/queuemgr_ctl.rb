@@ -1,22 +1,11 @@
-$:.unshift(File.join(File.dirname(__FILE__), ".."))
 
-require 'gems/environment'
-
-Dir.glob(File.join("code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
-
+require 'vendor/environment.rb'
 require 'code/queuemgrclient'
 
 Dir.chdir(File.join(File.dirname(__FILE__), ".."))
 
 def log(mesg)
-  File.open("config/queuemgr.log", "a") do
+  File.open("log/queuemgr.log", "a") do
     |f|
     f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
   end
@@ -126,7 +115,7 @@ $0 = '[rq-mgr]'
 begin
   load 'code/queuemgr.rb'
 rescue
-  File.open("config/queuemgr.log", "a") do
+  File.open("log/queuemgr.log", "a") do
     |f|
     f.write("#{Process.pid} - #{Time.now} - EXCEPTION [ #{$!} ]\n")
     f.write("#{Process.pid} - #{Time.now} - EXCEPTION [ #{$!.backtrace} ]\n")

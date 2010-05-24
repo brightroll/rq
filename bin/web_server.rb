@@ -1,27 +1,43 @@
 #!/usr/bin/ruby
 
-$:.unshift(File.join(File.dirname(__FILE__), ".."))
-
-Dir.glob(File.join("gems", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
 Dir.chdir(File.join(File.dirname(__FILE__), ".."))
 
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
-
+require 'vendor/environment.rb'
+require 'code/unixrack.rb'
 require 'code/router.rb'
-
 require 'json'
 
-require 'unixrack.rb'
 
-router = MiniRouter.new
+def run
+  Signal.trap('HUP', 'IGNORE') # Don't die upon logout
+  FileUtils.mkdir_p("log")
 
-def load_config
+  exit(1) unless File.directory?("log")
+
+  STDIN.reopen("/dev/null")
+  STDOUT.reopen("log/web_server.log", "a")
+  #STDOUT.sync = true
+  $stderr = STDOUT
+
+  Signal.trap("TERM") do 
+    Process.kill("KILL", Process.pid)
+  end
+
+  router = MiniRouter.new
+  Rack::Handler::UnixRack.run(router, {:port => $port,
+                                       :host => $host,
+                                       :listen => $addr})
+end
+
+
+#
+# HANDLE CONFIG
+
+if ARGV[0] == "install"
+  $host = "127.0.0.1"
+  $port = "3333"
+  $addr = "0.0.0.0"
+else
   begin
     data = File.read('config/config.json')
     config = JSON.parse(data)
@@ -34,31 +50,19 @@ def load_config
   end
 end
 
-if ARGV[0] == "install"
-  $host = "127.0.0.1"
-  $port = "3333"
-  $addr = "0.0.0.0"
+
+#
+# HANDLE ARGV
+
+if ARGV[0] == "server"
+  puts "Starting in background..."
+  pid = fork do
+    run()
+  end
+
+  Process.detach(pid)
 else
-  load_config
+  puts "Staying in foreground..."
+  run()
 end
-
-#pid = fork do
-#  Signal.trap('HUP', 'IGNORE') # Don't die upon logout
-#  FileUtils.mkdir_p("log")
-
-#  STDIN.reopen("/dev/null")
-#  STDOUT.reopen("log/server.log", "a+")
-#  STDOUT.sync = true
-#  $stderr = STDOUT
-
-#  Signal.trap("TERM") do 
-#    Process.kill("KILL", Process.pid)
-#  end
-
-  Rack::Handler::UnixRack.run(router, {:port => $port,
-                                       :host => $host,
-                                       :listen => $addr})
-#end
-
-#Process.detach(pid)
 

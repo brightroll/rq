@@ -7,7 +7,7 @@ require 'code/queueclient'
 require 'version'
 
 def log(mesg)
-  File.open('config/queuemgr.log', "a") do
+  File.open('log/queuemgr.log', "a") do
     |f|
     f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
   end
@@ -91,10 +91,7 @@ module RQ
       end
       if data[0].index('queues') == 0
         data = @queues.map { |q| q.name }.to_json
-        File.open('config/queuemgr.log', "a") do
-          |f|
-          f.write("#{Process.pid} - #{Time.now} - RESP [ #{data} ]\n")
-        end
+        log("RESP [ queues - #{data} ]")
         sock.send(data, 0)
         sock.close
         return
@@ -102,10 +99,7 @@ module RQ
 
       if data[0].index('uptime') == 0
         data = [(Time.now - @start_time).to_i, ].to_json #['local','brserv_push'].to_json
-        File.open('config/queuemgr.log', "a") do
-          |f|
-          f.write("#{Process.pid} - #{Time.now} - RESP [ #{data} ]\n")
-        end
+        log("RESP [ uptime - #{data} ]")
         sock.send(data, 0)
         sock.close
         return
@@ -120,10 +114,7 @@ module RQ
         else
           resp = ['fail', 'queue not created'].to_json
           results = RQ::Queue.create(options)
-          File.open('config/queuemgr.log', "a") do
-            |f|
-            f.write("#{Process.pid} - #{Time.now} - STARTED [ #{options['name']}#{results[0]} ]\n")
-          end
+          log("create_queue STARTED [ #{options['name']}#{results[0]} ]")
           if results
             qc = QueueClient.new(options['name'])
             worker = Worker.new

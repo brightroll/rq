@@ -2,16 +2,4 @@ config
 queue
 queue.noindex
 .#*
-log/*
-bin/*
-!bin/rc.rq
-!bin/rq
-!bin/server.rb
-!bin/server_daemon.sh
-!bin/server_daemon.rb
-!bin/server_daemon.rb.off
-!bin/web_server.sh
-!bin/web_server.rb
-!bin/queuemgr_ctl
-gems/*
-!gems/cache
+log/*.log

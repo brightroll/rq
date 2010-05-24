@@ -3,6 +3,7 @@ require 'socket'
 require 'json'
 require 'fcntl'
 require 'digest'
+require 'fileutils'
 
 module RQ
   class Queue

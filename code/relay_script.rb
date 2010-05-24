@@ -6,7 +6,6 @@ require 'fileutils'
 require 'fcntl'
 require 'digest'
 
-# 
 def log(mesg)
   m = "#{Process.pid} - #{Time.now} - #{mesg}\n"
   File.open('relay.log', "a") do
@@ -16,24 +15,10 @@ def log(mesg)
   print m
 end
 
-
-Dir.glob(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
-
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
-
-#log($LOAD_PATH.inspect)
 log(Dir.pwd.inspect)
-#log(gem_paths.inspect)
 
+$LOAD_PATH.unshift(File.expand_path("../../../../../code"))
+$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/json_pure-1.1.6/lib"))
 require 'json'
 
 # Setup a global binding so the GC doesn't close the file
@@ -274,7 +259,7 @@ if destq == 'relay'
 end
 
 # If valid queue, attempt to relay message
-require 'code/queueclient'
+require 'queueclient'
 qc = RQ::QueueClient.new(destq, "../../../../..")
 
 log("Attempting connect with local queue #{destq}")

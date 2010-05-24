@@ -3,25 +3,6 @@
 require 'net/http'
 require 'uri'
 
-##############################
-# would love to get rid of all this garbage
-
-Dir.glob(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
-
-# would love to get rid of all this garbage
-##############################
-
-
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
 
