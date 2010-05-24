@@ -33,7 +33,7 @@ module UnixRack
 
       while true
         nw = io.syswrite(out_buff)
-        break if new = out_buff.length
+        break if nw == out_buff.length
         out_buff = out_buff.slice(nw..-1)
       end
     end
