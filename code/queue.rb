@@ -4,6 +4,7 @@ require 'json'
 require 'fcntl'
 require 'digest'
 require 'fileutils'
+require 'code/unixrack'
 
 module RQ
   class Queue
@@ -1205,8 +1206,8 @@ module RQ
         status['err']  = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
-        log("RESP [ messages resp ]")
-        sock.send(resp, 0)
+        log("RESP [ messages resp #{resp.length}]")
+        UnixRack::Socket.write_buff(sock, resp)
         sock.close
         return
       end
