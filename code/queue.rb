@@ -1309,7 +1309,7 @@ module RQ
         end
 
         log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
+        UnixRack::Socket.write_buff(sock, resp)
         sock.close
         return
       end

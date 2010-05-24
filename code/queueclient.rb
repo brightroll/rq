@@ -112,7 +112,8 @@ module RQ
       begin
         dat = client.sysread(16384)
       rescue EOFError
-        puts "Got an EOF from socket read"
+        #TODO: add debug mode
+        #puts "Got an EOF from socket read"
         return nil
       rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
         puts "Got an #{$!} from socket read"
@@ -155,7 +156,7 @@ module RQ
     def attach_message(params)
       json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
-      client.send("attach_message #{json_params}", 0)
+      UnixRack::Socket.write_buff(client, "attach_message #{json_params}")
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil
@@ -183,9 +184,24 @@ module RQ
       json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
       client.send("get_message #{json_params}", 0)
-      result = client.recvfrom(1024)
+      result = []
+      while true
+         r = do_read(client)
+         if r != nil
+           result << r
+         else
+           break
+         end
+      end
       client.close
-      result ? JSON.parse(result[0]) : nil
+      retval = nil
+      if result
+        dat = result.join('')
+        #puts "dat len: #{dat.length}"
+        retval = JSON.parse(dat)
+        #puts "dat parsed"
+      end
+      retval
     end
 
     def clone_message(params)
