@@ -1,6 +1,7 @@
 
 require 'socket'
 require 'json'
+require 'code/unixrack'
 
 module RQ
   class QueueClient
@@ -92,7 +93,7 @@ module RQ
     def create_message(params)
       json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
-      client.send("create_message #{json_params}", 0)
+      UnixRack::Socket.write_buff(client, "create_message #{json_params}")
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil
@@ -101,7 +102,7 @@ module RQ
     def single_que(params)
       json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
-      client.send("single_que #{json_params}", 0)
+      UnixRack::Socket.write_buff(client, "signle_que #{json_params}")
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil
@@ -132,13 +133,20 @@ module RQ
          end
       end
       client.close
-      result ? JSON.parse(result.join('')) : nil
+      retval = nil
+      if result
+        dat = result.join('')
+        puts "dat len: #{dat.length}"
+        retval = JSON.parse(dat)
+        puts "dat parsed"
+      end
+      retval
     end
 
     def prep_message(params)
       json_params = params.to_json
       client = UNIXSocket.open(@queue_sock_path)
-      client.send("prep_message #{json_params}", 0)
+      UnixRack::Socket.write_buff(client, "prep_message #{json_params}")
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil

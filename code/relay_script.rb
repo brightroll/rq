@@ -17,8 +17,9 @@ end
 
 log(Dir.pwd.inspect)
 
-$LOAD_PATH.unshift(File.expand_path("../../../../../code"))
+$LOAD_PATH.unshift(File.expand_path("../../../../.."))
 $LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/json_pure-1.1.6/lib"))
+$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/rack-1.0.0/lib"))
 require 'json'
 
 # Setup a global binding so the GC doesn't close the file
@@ -259,7 +260,7 @@ if destq == 'relay'
 end
 
 # If valid queue, attempt to relay message
-require 'queueclient'
+require 'code/queueclient'
 qc = RQ::QueueClient.new(destq, "../../../../..")
 
 log("Attempting connect with local queue #{destq}")
