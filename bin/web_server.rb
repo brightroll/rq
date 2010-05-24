@@ -8,18 +8,21 @@ require 'code/router.rb'
 require 'json'
 
 
-def run
+def run(daemon = false)
   Signal.trap('HUP', 'IGNORE') # Don't die upon logout
   FileUtils.mkdir_p("log")
 
   exit(1) unless File.directory?("log")
 
-  STDIN.reopen("/dev/null")
-  STDOUT.reopen("log/web_server.log", "a")
-  #STDOUT.sync = true
-  $stderr = STDOUT
+  if daemon
+    STDIN.reopen("/dev/null")
+    STDOUT.reopen("log/web_server.log", "a")
+    STDOUT.sync = true
+    $stderr = STDOUT
+  end
 
   Signal.trap("TERM") do 
+    puts "Got term... doing kill"
     Process.kill("KILL", Process.pid)
   end
 
@@ -56,11 +59,12 @@ end
 
 if ARGV[0] == "server"
   puts "Starting in background..."
-  pid = fork do
-    run()
+  pid = fork
+  if pid
+    Process.detach(pid)
+  else
+    run(true)
   end
-
-  Process.detach(pid)
 else
   puts "Staying in foreground..."
   run()
