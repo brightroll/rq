@@ -1064,6 +1064,7 @@ module RQ
 
               else
                 log("EXITING: queue #{@name} - script msg #{msg['child_pid']} was not ready to be reaped")
+                sleep 0.001
               end
 
             else
