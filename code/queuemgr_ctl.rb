@@ -106,7 +106,7 @@ end
 
 
 
-log("Doing chdir")
+log("Doing chdir to #{cwd}")
 
 Dir.chdir(cwd)
 
