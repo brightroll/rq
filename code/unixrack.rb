@@ -25,7 +25,7 @@ module UnixRack
       @buff = ""
     end
 
-    def write_buff(io, buff)
+    def self.write_buff(io, buff)
       len = buff.length
       nwritten = 0
 
@@ -66,7 +66,7 @@ module UnixRack
 
       res = hdr_txt + "\r\n\r\n" + bod_txt
 
-      write_buff(@sock, res)
+      Socket.write_buff(@sock, res)
 
       exit! 0
     end
@@ -174,7 +174,7 @@ module UnixRack
 
       out_buff = out.join("")
 
-      write_buff(@sock, out_buff)
+      Socket.write_buff(@sock, out_buff)
     end
 
   end
