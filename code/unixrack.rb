@@ -228,6 +228,8 @@ module Rack
             trap("ALRM") { p "Child took too long. Goodbye"; exit! 2  }
             trap(:TERM)  { p "TERM. Time to go... Goodbye"; exit! 0  }
 
+            puts "UR Child started: #{$$}"
+
             Alarm.alarm(5)                # if no command received in 5 secs
 
             sock = ::UnixRack::Socket.new(conn)
