@@ -1153,7 +1153,8 @@ module RQ
     end
 
     def send_packet(sock, resp)
-      log("RESP [ #{resp} ]")
+      log_msg = resp.length > 40 ? "#{resp[0...40]}..." : resp
+      log("RESP [ #{resp.length}  #{log_msg} ]")
       sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
       UnixRack::Socket.write_buff(sock, sock_msg)
       sock.close
