@@ -10,6 +10,7 @@ echo "To clean the system, run this command first: ./code/test/setup_test_queues
 
 for test in \
    send_test_sneaky.sh \
+   send_test_large.sh \
    send_test_web_done.rb \
    send_test_web_prepattachdone.rb \
    send_test_web_prepattachdone_large.rb \
