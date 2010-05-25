@@ -9,7 +9,7 @@ module RQ
     attr_accessor :name
     attr_accessor :pid
 
-    def initialize(name, path=".") 
+    def initialize(name, path=".")
       @name = name
      
       path = File.join(File.dirname(__FILE__), "..")
@@ -49,68 +49,10 @@ module RQ
     def read_pid
       File.read(@queue_path + '/queue.pid').to_i
     end
-    
-    def ping
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("ping", 0)
-      result = client.recvfrom(1024)
-      client.close
-      return result ? result[0] : nil
-    end
-    
-    def uptime
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("uptime", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
-    end
 
-    def options
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("options", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
-    end
-
-    def status
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("status", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
-    end
-
-    def shutdown
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("shutdown", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
-    end
-
-    def create_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      UnixRack::Socket.write_buff(client, "create_message #{json_params}")
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
-    end
-
-    def single_que(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      UnixRack::Socket.write_buff(client, "signle_que #{json_params}")
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
-    end
-
-    def do_read(client)
+    def do_read(client, numr = 32768)
       begin
-        dat = client.sysread(16384)
+        dat = client.sysread(numr)
       rescue EOFError
         #TODO: add debug mode
         #puts "Got an EOF from socket read"
@@ -119,98 +61,99 @@ module RQ
         puts "Got an #{$!} from socket read"
         exit! 0
       end
+      dat
+    end
+
+    # msg is single word, data is assumbed to be content as json
+    def send_recv(msg, data="")
+      client = UNIXSocket.open(@queue_sock_path)
+
+      contents = "#{msg} #{data}"
+      sock_msg = sprintf("rq1 %08d %s", contents.length, contents)
+
+      UnixRack::Socket.write_buff(client, sock_msg)
+
+      protocol = do_read(client, 4)
+
+      if protocol != 'rq1 '
+        raise "Invalid Protocol"
+      end
+
+      size_str = do_read(client, 9)
+
+      if size_str[-1..-1] != " "
+        raise "Invalid Protocol"
+      end
+
+      size = size_str.to_i
+
+      result = UnixRack::Socket.read_sock_num_bytes(client, size, lambda {|s| puts s})
+
+      if result[0] == false
+        return nil
+      end
+
+      client.close
+
+      obj = JSON.parse(result[1])
+
+      obj
+    end
+
+    def ping
+      return send_recv('ping')
+    end
+    
+    def uptime
+      return send_recv('uptime')
+    end
+
+    def options
+      return send_recv('options')
+    end
+
+    def status
+      return send_recv('status')
+    end
+
+    def shutdown
+      return send_recv('shutdown')
+    end
+
+    def create_message(params)
+      return send_recv('create_message', params.to_json)
+    end
+
+    def single_que(params)
+      return send_recv('single_que', params.to_json)
     end
 
     def messages
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("messages", 0)
-      result = []
-      while true
-         r = do_read(client)
-         if r != nil
-           result << r
-         else
-           break
-         end
-      end
-      client.close
-      retval = nil
-      if result
-        dat = result.join('')
-        puts "dat len: #{dat.length}"
-        retval = JSON.parse(dat)
-        puts "dat parsed"
-      end
-      retval
+      return send_recv('messages')
     end
 
     def prep_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      UnixRack::Socket.write_buff(client, "prep_message #{json_params}")
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
+      return send_recv('prep_message', params.to_json)
     end
 
     def attach_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      UnixRack::Socket.write_buff(client, "attach_message #{json_params}")
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
+      return send_recv('attach_message', params.to_json)
     end
 
     def commit_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("commit_message #{json_params}", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
+      return send_recv('commit_message', params.to_json)
     end
 
     def delete_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("delete_message #{json_params}", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
+      return send_recv('delete_message', params.to_json)
     end
 
     def get_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("get_message #{json_params}", 0)
-      result = []
-      while true
-         r = do_read(client)
-         if r != nil
-           result << r
-         else
-           break
-         end
-      end
-      client.close
-      retval = nil
-      if result
-        dat = result.join('')
-        #puts "dat len: #{dat.length}"
-        retval = JSON.parse(dat)
-        #puts "dat parsed"
-      end
-      retval
+      return send_recv('get_message', params.to_json)
     end
 
     def clone_message(params)
-      json_params = params.to_json
-      client = UNIXSocket.open(@queue_sock_path)
-      client.send("clone_message #{json_params}", 0)
-      result = client.recvfrom(1024)
-      client.close
-      result ? JSON.parse(result[0]) : nil
+      return send_recv('clone_message', params.to_json)
     end
   end
 end

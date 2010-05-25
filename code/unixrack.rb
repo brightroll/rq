@@ -33,10 +33,42 @@ module UnixRack
 
       while true
         nw = io.syswrite(out_buff)
+        nwritten = nwritten + nw
         break if nw == out_buff.length
         out_buff = out_buff.slice(nw..-1)
       end
+      nwritten
     end
+
+    def self.read_sock_num_bytes(sock, num, log = lambda {|x| x})
+      retval = [false, '']
+      buff = ""
+      num_left = num
+      while true
+        begin
+          #log("PRE Doing sysread")
+          numr = num_left < 32768 ? num_left : 32768
+          dat = sock.sysread(numr)
+          #log("Doing sysread #{dat.inspect}")
+          buff = buff + dat
+          if buff.length == num
+            retval = [true, buff]
+            break
+          else
+            num_left = num_left - dat.length
+          end
+        rescue EOFError
+          retval = [false, "EOF", buff]
+          break
+        rescue EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+          retval = [false, "Exception occurred on socket read"]
+          #log("Got an #{$!} from socket read")
+          break
+        end
+      end
+      retval
+    end
+
 
     def error_reply(num, txt)
       puts "Error: #{num} #{txt}"

@@ -92,7 +92,8 @@ module RQ
           # but we may wrap this instead
           RQ::Queue.log(queue_path, 'post new')
           q.run_loop
-        rescue
+        rescue Exception
+          self.log(queue_path, "Exception!")
           self.log(queue_path, $!)
           self.log(queue_path, $!.backtrace)
           raise
@@ -1109,52 +1110,96 @@ module RQ
       end
     end
 
+    def do_read(client, numr = 32768)
+      begin
+        dat = client.sysread(numr)
+      rescue EOFError
+        #TODO: add debug mode
+        #puts "Got an EOF from socket read"
+        return nil
+      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+        puts "Got an #{$!} from socket read"
+        exit! 0
+      end
+      dat
+    end
+
+    def read_packet(sock)
+      protocol = do_read(sock, 4)
+
+      if protocol != 'rq1 '
+        log("REQ - Invalid protocol - bad ver")
+        return nil
+      end
+
+      size_str = do_read(sock, 9)
+
+      if size_str[-1..-1] != " "
+        log("REQ - Invalid protocol - bad size #{size_str}")
+        return nil
+      end
+
+      size = size_str.to_i
+      log("REQ - size #{size}")
+
+      result = UnixRack::Socket.read_sock_num_bytes(sock, size)
+
+      if result[0] == false
+        log("REQ - Invalid packet - didn't receive contents")
+        return nil
+      end
+
+      result[1]
+    end
+
+    def send_packet(sock, resp)
+      log("RESP [ #{resp} ]")
+      sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
+      UnixRack::Socket.write_buff(sock, sock_msg)
+      sock.close
+    end
+
     def handle_request(sock)
-      data = sock.recvfrom(1024)
 
-      log("REQ [ #{data[0]} ]")
+      packet = read_packet(sock)
 
-      if data[0].index('ping') == 0
-        log("RESP [ pong ]")
-        sock.send("pong", 0)
-        sock.close
+      return if packet == nil
+
+      log("REQ [ #{packet} ]")
+
+      if packet.index('ping ') == 0
+        resp = [ "pong" ].to_json
+        send_packet(sock, resp)
         return
       end
-      if data[0].index('uptime') == 0
+
+      if packet.index('uptime ') == 0
         resp = [(Time.now - @start_time).to_i, ].to_json
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('options') == 0
+      if packet.index('options') == 0
         resp = @config.to_json
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('status') == 0
+      if packet.index('status') == 0
         resp = [ @config["admin_status"], @config["oper_status"] ].to_json
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('shutdown') == 0
+      if packet.index('shutdown') == 0
         resp = [ 'ok' ].to_json
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         shutdown!
         return
       end
 
-      if data[0].index('create_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('create_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         msg = { }
@@ -1166,14 +1211,12 @@ module RQ
         else
           resp = [ "fail", "unknown reason"].to_json
         end
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('single_que') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('single_que') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         msg = { }
@@ -1189,13 +1232,11 @@ module RQ
         else
           resp = [ "fail", "unknown reason"].to_json
         end
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('messages') == 0
+      if packet.index('messages') == 0
         status = { }
         status['prep']   = @prep
         status['que']    = @que.map { |m| [m['msg_id'], m['due']] }
@@ -1206,14 +1247,12 @@ module RQ
         status['err']  = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
-        log("RESP [ messages resp #{resp.length}]")
-        UnixRack::Socket.write_buff(sock, resp)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('prep_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('prep_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         msg = { }
@@ -1224,21 +1263,17 @@ module RQ
         else
           resp = [ "fail", "unknown reason"].to_json
         end
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('attach_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('attach_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
-          log("RESP [ #{resp} ]")
-          sock.send(resp, 0)
-          sock.close
+          send_packet(sock, resp)
           return
         end
 
@@ -1252,21 +1287,17 @@ module RQ
         else
           resp = [ "fail", "couldn't locate message in prep"].to_json
         end
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('commit_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('commit_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
-          log("RESP [ #{resp} ]")
-          sock.send(resp, 0)
-          sock.close
+          send_packet(sock, resp)
           return
         end
 
@@ -1276,21 +1307,17 @@ module RQ
           resp = [ "ok", "msg commited" ].to_json
         end
 
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('get_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('get_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
-          log("RESP [ #{resp} ]")
-          sock.send(resp, 0)
-          sock.close
+          send_packet(sock, resp)
           return
         end
 
@@ -1308,21 +1335,17 @@ module RQ
           resp = [ "fail", "msg not found" ].to_json
         end
 
-        log("RESP [ #{resp} ]")
-        UnixRack::Socket.write_buff(sock, resp)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('delete_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('delete_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
-          log("RESP [ #{resp} ]")
-          sock.send(resp, 0)
-          sock.close
+          send_packet(sock, resp)
           return
         end
 
@@ -1335,21 +1358,17 @@ module RQ
           resp = [ "fail", "msg not found" ].to_json
         end
 
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-      if data[0].index('clone_message') == 0
-        json = data[0].split(' ', 2)[1]
+      if packet.index('clone_message') == 0
+        json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
-          log("RESP [ #{resp} ]")
-          sock.send(resp, 0)
-          sock.close
+          send_packet(sock, resp)
           return
         end
 
@@ -1371,15 +1390,11 @@ module RQ
           resp = [ "fail", "msg not found" ].to_json
         end
 
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
         return
       end
 
-
-      sock.send('[ "ERROR" ]', 0)
-      sock.close
+      send_packet(sock, '[ "ERROR" ]')
       log("RESP [ ERROR ] - Unhandled message")
     end
 
