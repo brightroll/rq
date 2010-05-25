@@ -11,7 +11,7 @@ fi
 me=`id -u`
 
 if [ $me -eq 0 ] ; then
-	#this needs to get changed on some hosts as they run as user pr
+	#TODO this needs to get changed on some hosts as they run as user pr
 	#will remove pr dependencies in the future
 	exec sudo -u br -i /etc/init.d/rq $*
 fi
