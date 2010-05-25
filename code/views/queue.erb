@@ -22,7 +22,8 @@
 
 <h3>Message List</h3>
 <ul>
-<a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a>
+  <b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b>
+<br />
 <br />
 <%   msgs = qc.messages %>
 
@@ -106,17 +107,14 @@
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{url}q/#{q}/#{msg}" %></a>
   </span>
-  <br />
-  id: <span class=""> <%= msg %></span>
   <% if q == 'relay' %>
     <%  ok, msg_full = qc.get_message({ 'msg_id' => msg}) %>
-    <%  status, new_location = msg_full['status'].split('-', 2) %>
     <% if ok == 'ok' %>
-      dest: <span xclass="yellow"> <%= msg_full['dest'] %></span>
+      <%  status, new_location = msg_full['status'].split(' - ', 2) %>
+      : <span class="green">&nbsp;<%= status %> </span>&nbsp;- &gt;
+      <a href="<%= new_location %>"><%= new_location %></a>
     <% end %>
   <% end %>
-  : - <span class="green"><%= status %></span> -&gt;
-   <a href="<%= new_location %>"><%= new_location %></a>
   </span>
 </form>
 </li>
