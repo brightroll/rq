@@ -215,6 +215,7 @@ module RQ
           ENV["RQ_PARAM2"] = msg['param2']
           ENV["RQ_PARAM3"] = msg['param3']
           ENV["RQ_PARAM4"] = msg['param4']
+          ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id']
 
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
