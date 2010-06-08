@@ -1,2 +1,2 @@
 #any comments go here
-VERSION_NUMBER = "20100601.1"
+VERSION_NUMBER = "20100607.1"
