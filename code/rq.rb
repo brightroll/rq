@@ -88,7 +88,7 @@ if args[:cmd] == 'sendmesg'
     mesg[key] = args[key]
   end
   result = qc.create_message(mesg)
-  p "Message: #{result.inspect} inserted into queue: #{q_name}"
+  print "#{result[0]} #{result[1]}\n"
 
 end
 

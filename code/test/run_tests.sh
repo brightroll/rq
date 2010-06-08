@@ -19,6 +19,7 @@ for test in \
    send_test_web_prepdone.rb \
    send_test_done.sh \
    send_test_err.sh  \
+   send_test_fast_collide.sh  \
    send_test_relay_force.sh \
    send_test_relay.sh \
    send_test_remote_relay_force.sh \

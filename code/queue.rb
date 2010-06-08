@@ -306,17 +306,21 @@ module RQ
       times = 0
       begin
         z = Time.now.getutc
-        name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
+        name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
         #fd = IO::sysopen(@queue_path + '/mesgs/' + name, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT)
         # There we have created a name and inode
         #IO.new(fd).close
 
         Dir.mkdir(@queue_path + "/prep/" + name)
-        @prep << name
-        msg["msg_id"] = name
+        stat = File.stat(@queue_path + "/prep/" + name)
+        new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
+        File.rename(@queue_path + "/prep/" + name, @queue_path + "/prep/" + new_name)
+        @prep << new_name
+        msg["msg_id"] = new_name
         return msg
-      rescue
+      rescue Exception
         times += 1
+        log("FATAL - couldn't ALLOC ID times: #{times} #{$!}")
         if times > 10
           log("FAILED TO ALLOC ID")
           return nil
