@@ -634,9 +634,9 @@ module RQ
           return [false, "Attachment name as a dot-file not allowed: #{name}"]
         end
         # Unsafe char removal
-        name_test = name.tr('~?[]|$&<>', '*')
+        name_test = name.tr('~?[]%|$&<>', '*')
         if name_test.index("*")
-          return [false, "Attachment name has invalid chara dot-file not allowed: #{name}"]
+          return [false, "Attachment name has invalid character. not allowed: #{name}"]
         end
         #  TODO: support directory moves
 
