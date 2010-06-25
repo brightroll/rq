@@ -14,6 +14,7 @@ h1 {
 
 a { text-decoration: none; color: #333; }
 a:hover { text-decoration: underline; color: #777; }
+a:visited { text-decoration: none; color: #060; }
 
 form label.field_label {
     display: block;
