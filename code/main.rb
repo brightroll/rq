@@ -43,6 +43,10 @@ module RQ
       if params[:name].index(".txt")
         content_type 'text/plain', :charset => 'utf-8'
         return erb :queue_txt, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split(".txt").first) }
+      elsif params[:name].index(".json")
+        if '.json' == params[:name][-5..-1]
+          return erb :queue_json, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split(".json").first) }
+        end
       end
 
       if not RQ::QueueMgrClient.running? 

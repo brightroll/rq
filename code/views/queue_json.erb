@@ -1,0 +1,15 @@
+{ "uptime": <%=qc.uptime%>,
+  "admin_status": "<%=qc.status[0]%>",
+  "oper_status": "<%=qc.status[1]%>",
+  "prep_size": <%= qc.messages['prep'].length %>,
+  "que_size": <%= qc.messages['que'].length %>,
+  "que": <%= qc.messages['que'].sort.reverse.take(5).inspect %>,
+  "run_size": <%= qc.messages['run'].length %>,
+  "run": <%= qc.messages['run'].sort.reverse.take(5).inspect %>,
+  "done_size": <%= qc.messages['done'].length %>,
+  "done": <%= qc.messages['done'].sort.reverse.take(5).inspect %>,
+  "err_size": <%= qc.messages['err'].length %>,
+  "err": <%= qc.messages['err'].sort.reverse.take(5).inspect %>,
+  "relayed_size": <%= qc.messages['relayed'].length %>,
+  "relayed": <%= qc.messages['relayed'].sort.reverse.take(5).inspect %>
+}
