@@ -57,6 +57,8 @@ module UnixRack
           else
             num_left = num_left - dat.length
           end
+        rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+          retry
         rescue EOFError
           retval = [false, "EOF", buff]
           break
@@ -106,6 +108,8 @@ module UnixRack
     def do_read
       begin
         dat = @sock.sysread(16384)
+      rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+        retry
       rescue EOFError
         puts "Got an EOF from socket read"
         return nil

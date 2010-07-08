@@ -1118,6 +1118,8 @@ module RQ
     def do_read(client, numr = 32768)
       begin
         dat = client.sysread(numr)
+      rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+        retry
       rescue EOFError
         #TODO: add debug mode
         #puts "Got an EOF from socket read"
