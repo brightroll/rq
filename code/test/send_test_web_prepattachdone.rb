@@ -93,7 +93,14 @@ if result[1] != "14a1a7845cc7f981977fbba6a60f0e42-Attached successfully"
   exit 1
 end
 
-print "Committed message: #{msg_id}\n"
+tmp_files = Dir.glob("/tmp/RackMultipart*")
+if not tmp_files.empty?
+  print "Sorry, system didn't remove tmp attachment files properly : #{tmp_files}\n"
+  exit 1
+end
+
+
+print "Attached message: #{msg_id}\n"
 
 
 # commit message

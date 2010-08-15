@@ -238,7 +238,7 @@ module RQ
       result = qc.attach_message( msg )
 
       # Success - clean up temp file
-      if result[0] == true
+      if result[0] == "ok"
         File.unlink(params['filedata'][:tempfile].path) rescue nil
       end
 
