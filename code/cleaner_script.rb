@@ -50,8 +50,8 @@ for q in $list ; do
 
   write_status 'run'  "$q - cleaning done"
   cd done
-  find . -maxdepth 1 -type d -mtime +2 -name '??*' | wc -l
-  find . -maxdepth 1 -type d -mtime +2 -name '??*' -exec /bin/rm -rf {} \;
+  find . -maxdepth 2 -d -type d -mtime +2 -name '??*' | wc -l
+  find . -maxdepth 2 -d -type d -mtime +2 -name '??*' -exec /bin/rm -rf {} \;
   cd ..
 
   write_status 'run'  "$q - cleaning prep"
@@ -62,8 +62,8 @@ for q in $list ; do
 
   write_status 'run'  "$q - cleaning relayed"
   cd relayed
-  find . -maxdepth 1 -type d -mtime +1 -name '??*' | wc -l
-  find . -maxdepth 1 -type d -mtime +1 -name '??*' -exec /bin/rm -rf {} \;
+  find . -maxdepth 2 -d -type d -mtime +1 -name '??*' | wc -l
+  find . -maxdepth 2 -d -type d -mtime +1 -name '??*' -exec /bin/rm -rf {} \;
   cd ..
 
 done

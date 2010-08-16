@@ -5,6 +5,7 @@ require 'fcntl'
 require 'digest'
 require 'fileutils'
 require 'code/unixrack'
+require 'code/hashdir'
 
 module RQ
   class Queue
@@ -49,8 +50,8 @@ module RQ
       FileUtils.mkdir_p(queue_path + '/que')
       FileUtils.mkdir_p(queue_path + '/run')
       FileUtils.mkdir_p(queue_path + '/pause')
-      FileUtils.mkdir_p(queue_path + '/done')
-      FileUtils.mkdir_p(queue_path + '/relayed')
+      RQ::HashDir.make(queue_path + '/done')
+      RQ::HashDir.make(queue_path + '/relayed')
       FileUtils.mkdir_p(queue_path + '/err')
       # Write config to dir
       options["admin_status"] = "UP"
@@ -378,8 +379,7 @@ module RQ
       msg_id = msg['msg_id']
       begin
         # Read in full message
-        msg = get_message(msg, from_state)
-        basename = @queue_path + "/#{from_state}/" + msg_id
+        msg, basename = get_message(msg, from_state)
         return false unless File.exists? basename
         newname = @queue_path + "/que/" + msg_id
         File.rename(basename, newname)
@@ -422,6 +422,7 @@ module RQ
 
     def lookup_msg(msg, state = 'prep')
       msg_id = msg['msg_id']
+      basename = nil
       if state == 'prep'
         basename = @queue_path + "/#{state}/" + msg_id
         if @prep.include?(msg_id) == false
@@ -442,12 +443,14 @@ module RQ
             state = 'run'
             break
           end
-          if not Dir.glob("#{@queue_path}/done/#{msg_id}").empty?
+          if RQ::HashDir.exist("#{@queue_path}/done", msg_id)
             state = 'done'
+            basename = RQ::HashDir.path_for("#{@queue_path}/done", msg_id)
             break
           end
-          if not Dir.glob("#{@queue_path}/relayed/#{msg_id}").empty?
+          if RQ::HashDir.exist("#{@queue_path}/relayed", msg_id)
             state = 'relayed'
+            basename = RQ::HashDir.path_for("#{@queue_path}/relayed", msg_id)
             break
           end
           if not Dir.glob("#{@queue_path}/err/#{msg_id}").empty?
@@ -463,7 +466,7 @@ module RQ
         end
 
         return false unless state != '*'
-        basename = @queue_path + "/#{state}/" + msg_id
+        basename ||= @queue_path + "/#{state}/" + msg_id
       end
       if not File.exists?(basename)
         log("WARNING - serious queue inconsistency #{msg_id}")
@@ -503,7 +506,7 @@ module RQ
       return resp unless ['err', 'relayed', 'done'].include? state
 
 
-      old_msg = get_message(msg, state)
+      old_msg, old_basename = get_message(msg, state)
 
       new_msg = { }
       if alloc_id(new_msg) and check_msg(new_msg, old_msg)
@@ -514,7 +517,6 @@ module RQ
 
         # Now check for, and copy attachments
         # Assumes that original message guaranteed attachment integrity
-        old_basename = @queue_path + "/#{state}/" + msg['msg_id']
         new_basename = @queue_path + "/prep/" + new_msg['msg_id']
 
         if File.directory?(old_basename + "/attach/")
@@ -544,7 +546,11 @@ module RQ
     end
 
     def get_message(params, state)
-      basename = @queue_path + "/#{state}/" + params['msg_id']
+      if ['done', 'relayed'].include? state
+        basename = RQ::HashDir.path_for("#{@queue_path}/#{state}", params['msg_id'])
+      else
+        basename = @queue_path + "/#{state}/" + params['msg_id']
+      end
 
       msg = nil
       begin
@@ -579,7 +585,7 @@ module RQ
         log("        [ #{$!} ]")
       end
 
-      return msg
+      return [msg, basename]
     end
 
     def gen_full_msg_id(msg)
@@ -1030,14 +1036,19 @@ module RQ
                   new_state = 'err'
                 end
 
+                # Process has exited, so it must change states at this point
                 # Move to relay dir and update in-memory data structure
                 begin
                   basename = "#{@queue_path}/run/#{msg_id}"
                   raise unless File.exists? basename
-                  newname = "#{@queue_path}/#{new_state}/#{msg_id}"
-                  File.rename(basename, newname)
+                  if ['done', 'relayed'].include? new_state
+                    RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
+                  else
+                    newname = "#{@queue_path}/#{new_state}/#{msg_id}"
+                    File.rename(basename, newname)
+                  end
                 rescue
-                  log("FATAL - couldn't move from 'run' to 'relay' #{msg_id}")
+                  log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")
                   log("        [ #{$!} ]")
                   next
                 end
@@ -1246,13 +1257,13 @@ module RQ
 
       if packet.index('messages') == 0
         status = { }
-        status['prep']   = @prep
-        status['que']    = @que.map { |m| [m['msg_id'], m['due']] }
-        status['run']    = @run.map { |m| [m['msg_id'], m['status']] }
-        status['pause']  = []
-        status['done']   = Dir.entries(@queue_path + "/done/").reject {|i| i.index('.') == 0 }
-        status['relayed']  = Dir.entries(@queue_path + "/relayed/").reject {|i| i.index('.') == 0 }
-        status['err']  = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
+        status['prep']     = @prep
+        status['que']      = @que.map { |m| [m['msg_id'], m['due']] }
+        status['run']      = @run.map { |m| [m['msg_id'], m['status']] }
+        status['pause']    = []
+        status['done']     = RQ::HashDir.entries(@queue_path + "/done")
+        status['relayed']  = RQ::HashDir.entries(@queue_path + "/relayed/")
+        status['err']      = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
 
         resp = status.to_json
         send_packet(sock, resp)
@@ -1333,7 +1344,7 @@ module RQ
 
         state = lookup_msg(options, '*')
         if state
-          msg = get_message(options, state)
+          msg, msg_path = get_message(options, state)
           if msg
             resp = [ "ok", msg ].to_json
           else

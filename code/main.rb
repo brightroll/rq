@@ -4,6 +4,7 @@ require 'sinatra/base'
 require 'erb'
 load 'code/queuemgrclient.rb'
 load 'code/queueclient.rb'
+load 'code/hashdir.rb'
 
 module RQ
   class Main < Sinatra::Base
@@ -265,7 +266,12 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
-      path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/job/#{params['log_name']}"
+      if ['done', 'relayed'].include? msg['state']
+        path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
+        path += "/job/#{params['log_name']}"
+      else
+        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/job/#{params['log_name']}"
+      end
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
@@ -292,7 +298,12 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
-      path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/attach/#{params['attach_name']}"
+      if ['done', 'relayed'].include? msg['state']
+        path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
+        path += "/attach/#{params['attach_name']}"
+      else
+        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/job/#{params['log_name']}"
+      end
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
