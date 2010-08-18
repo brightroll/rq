@@ -27,6 +27,12 @@ module RQ
 
       @wait_time = 1
 
+      @config = {}
+
+      @status = {}
+      @status["admin_status"] = "UP"
+      @status["oper_status"]  = "UP"
+
       if load_rq_config() == nil
         sleep 5
         log("Invalid main rq config for #{@name}. Exiting." )
@@ -136,8 +142,8 @@ module RQ
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
         # Set queue adminitratively down
         log("queue down - script not there or runnable #{script_path}")
-        @config['oper_status'] = 'DOWN'
-        write_config
+        @status['oper_status'] = 'DOWN'
+        # TODO: proper oper status - write_status
         return
       end
 
@@ -280,26 +286,23 @@ module RQ
       begin
         data = File.read(@queue_path + '/config.json')
         @config = JSON.parse(data)
-        # Fix for old rqs
-        @config["admin_status"] ||= "UP"
-        @config["oper_status"]  ||= "UP"
       rescue
         return false
       end
       return true
     end
 
-    def write_config
-      begin
-        data = @config.to_json
-        File.open(@queue_path + '/config.json.tmp', 'w') { |f| f.write(data) }
-        File.rename(@queue_path + '/config.json.tmp', @queue_path + '/config.json')
-      rescue
-        log("FATAL - couldn't write config")
-        return false
-      end
-      return true
-    end
+#    def write_status
+#      begin
+#        data = @config.to_json
+#        File.open(@queue_path + '/config.json.tmp', 'w') { |f| f.write(data) }
+#        File.rename(@queue_path + '/config.json.tmp', @queue_path + '/config.json')
+#      rescue
+#        log("FATAL - couldn't write config")
+#        return false
+#      end
+#      return true
+#    end
 
     # It is called right before check_msg
     def alloc_id(msg)
@@ -861,7 +864,8 @@ module RQ
 
     def shutdown!
       log("Received shutdown")
-      write_config
+      # TODO: proper oper status
+      # write_status
       Process.exit! 0
     end
 
@@ -869,8 +873,8 @@ module RQ
       @wait_time = 60
 
       # If oper_status != "UP"
-      if (@config['admin_status'] != "UP") && (@config['oper_status'] != "UP")
-        log("Status != up  admin: #{@config['admin_status']}  oper: #{@config['oper_status']}")
+      if (@status['admin_status'] != "UP") && (@status['oper_status'] != "UP")
+        log("Status != up  admin: #{@status['admin_status']}  oper: #{@status['oper_status']}")
         return
       end
 
@@ -1205,7 +1209,7 @@ module RQ
       end
 
       if packet.index('status') == 0
-        resp = [ @config["admin_status"], @config["oper_status"] ].to_json
+        resp = [ @status["admin_status"], @status["oper_status"] ].to_json
         send_packet(sock, resp)
         return
       end
