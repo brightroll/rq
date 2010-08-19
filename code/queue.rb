@@ -60,8 +60,6 @@ module RQ
       RQ::HashDir.make(queue_path + '/relayed')
       FileUtils.mkdir_p(queue_path + '/err')
       # Write config to dir
-      options["admin_status"] = "UP"
-      options["oper_status"] = "UP"
       File.open(queue_path + '/config.json', "w") do
         |f|
         f.write(options.to_json)
