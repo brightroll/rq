@@ -6,7 +6,7 @@
 RETURN_VAR=      # BASH IS SOOOOOOO AWESOMEST
 
 function send_msg() {
-  local due=`date -v${1}S "+%s"`
+  local due=$((`date +%s` ${1}))
   local out=`./bin/rq sendmesg  --dest test_coalesce --src dru4 --relay-ok --param1=fast  --due=${due}`
   if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't create test message properly"
@@ -27,7 +27,7 @@ function send_msg() {
 }
 
 function send_msg_diff() {
-  local due=`date -v${1}S "+%s"`
+  local due=$((`date +%s` ${1}))
   local out=`./bin/rq sendmesg  --dest test_coalesce --src dru4 --relay-ok --param1=x${due}x --param2=blah --param3=foo --param4=hunoz --due=${due}`
   if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't create test message properly"
@@ -48,7 +48,7 @@ function send_msg_diff() {
 }
 
 function send_msg_err() {
-  local due=`date -v${1}S "+%s"`
+  local due=$((`date +%s` ${1}))
   local out=`./bin/rq sendmesg  --dest test_coalesce --src dru4 --relay-ok --param1=fast  --param2=err --due=${due}`
   if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't create test message properly"
