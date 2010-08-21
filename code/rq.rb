@@ -81,7 +81,7 @@ if args[:cmd] == 'sendmesg'
 
   # Construct message
   mesg = {}
-  keys = %w(dest src param1 param2 param3 param3)
+  keys = %w(dest src param1 param2 param3 param3 due)
   keys.each do
     |key|
     next unless args.has_key?(key)

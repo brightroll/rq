@@ -33,6 +33,8 @@ module RQ
       @status["admin_status"] = "UP"
       @status["oper_status"]  = "UP"
 
+      @temp_que_dups = {}
+
       if load_rq_config() == nil
         sleep 5
         log("Invalid main rq config for #{@name}. Exiting." )
@@ -346,7 +348,7 @@ module RQ
       msg['orig_msg_id'] = input['orig_msg_id'] || gen_full_msg_id(msg)
 
       # Copy only these keys from input message
-      keys = %w(src count param1 param2 param3 param3 post_run_webhook)
+      keys = %w(src count param1 param2 param3 param3 post_run_webhook due)
       keys.each do
         |key|
         next unless input.has_key?(key)
@@ -363,6 +365,7 @@ module RQ
           msg['due'] = Time.now.to_i
         end
         clean = msg.reject { |k,v| k == 'child_read_pipe' }
+        # TODO: dru another to clean 'child_pid'
         data = clean.to_json
         # Need a sysopen style system here TODO
         basename = @queue_path + "/#{que}/" + msg['msg_id']
@@ -384,6 +387,8 @@ module RQ
         return false unless File.exists? basename
         newname = @queue_path + "/que/" + msg_id
         File.rename(basename, newname)
+        msg['state']  = 'que'
+        msg['status'] = 'que'
       rescue
         log("FATAL - couldn't commit message #{msg_id}")
         log("        [ #{$!} ]")
@@ -397,6 +402,75 @@ module RQ
       run_scheduler!
 
       return true
+    end
+
+    def is_duplicate?(msg1, msg2)
+      if @config['coalesce_param1'] == '1'
+        return false if msg1['param1'] != msg2['param1']
+      end
+      if @config['coalesce_param2'] == '1'
+        return false if msg1['param2'] != msg2['param2']
+      end
+      if @config['coalesce_param3'] == '1'
+        return false if msg1['param3'] != msg2['param3']
+      end
+      if @config['coalesce_param4'] == '1'
+        return false if msg1['param4'] != msg2['param4']
+      end
+      true
+    end
+
+    # Handle a message that does succeed
+    # Put all of its dups into the done state
+    def handle_dups_done(msg, new_state)
+      if msg['dups']
+        msg['dups'].each {
+          |i|
+          h = @temp_que_dups.delete(i)
+          new_status = "duplicate #{gen_full_msg_id(msg)}"
+          write_msg_status(i, new_status, 'que')
+          h['status'] = new_state + " - " + new_status
+          h['state'] = new_state
+          store_msg(h, 'que')
+          # TODO: refactor this 
+          basename = "#{@queue_path}/que/#{i}"
+          RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", i)
+        }
+        msg['dups'] = msg['dups'].map { |i| gen_full_msg_id({'msg_id' => i}) }
+      end
+    end
+
+    # Handle a message that doesn't succeed
+    def handle_dups_fail(msg)
+      if msg['dups']
+        msg['dups'].each {
+          |i|
+          h = @temp_que_dups.delete(i)
+          h.delete('dup')
+          @que.unshift(h)
+        }
+        msg.delete('dups')
+      end
+    end
+
+    def handle_dups(msg)
+      return if @config['coalesce'] != 'yes'
+
+      duplicates = @que.select { |i| is_duplicate?(msg, i) } 
+
+      return if duplicates.empty?
+
+      log("#{msg['msg_id']} - found #{duplicates.length} dups ")
+      # Collect all the dups into the msg and remove from the @que
+      # also show parent in each dup
+      msg['dups'] = []
+      duplicates.each { |i|
+        msg['dups'] << i['msg_id']
+        @temp_que_dups[i['msg_id']] = i
+        r = @que.delete(i)               # ordering here is important
+        log("#{r['msg_id']} - removed from @que as dup")
+        i['dup'] = gen_full_msg_id(msg)
+      }
     end
 
     def run_job(msg, from_state = 'que')
@@ -415,6 +489,8 @@ module RQ
       # Put in run queue
       @que.delete(msg)
       @run.unshift(msg)
+
+      handle_dups(msg)
 
       run_queue_script!(msg)
 
@@ -436,7 +512,7 @@ module RQ
             state = 'prep'
             break
           end
-          if @que.find { |o| o['msg_id'] == msg_id }
+          if not Dir.glob("#{@queue_path}/que/#{msg_id}").empty?
             state = 'que'
             break
           end
@@ -792,7 +868,7 @@ module RQ
         parts = child_msg.split(" ", 2)
 
         # Always write message status
-        write_msg_status(msg, parts[1])
+        write_msg_status(msg['msg_id'], parts[1])
 
         # BELOW - changed my mind about moving the message into its new
         # queue. Why? What if the msg says it is done, but the process
@@ -837,15 +913,16 @@ module RQ
       return true
     end
 
-    def write_msg_status(msg, mesg)
+    def write_msg_status(msg_id, mesg, state = 'run')
       # Write message to disk
       begin
         data = { 'job_status' => mesg }.to_json
-        basename = @queue_path + "/run/" + msg['msg_id'] + "/status"
+        basename = @queue_path + "/#{state}/" + msg_id + "/status"
         File.open(basename + '.tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '.tmp', basename)
       rescue
         log("FATAL - couldn't write status message")
+        log("        [ #{$!} ]")
         return false
       end
 
@@ -903,20 +980,22 @@ module RQ
       end
 
       # Ok, locate the next job
-      sorted = @que.sort_by { |e| e['due'] }
+      ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
 
-      delta = sorted[0]['due'].to_i - Time.now.to_i
+      delta = ready_msg['due'].to_f - Time.now.to_f
 
+      log("Delta: #{delta}")
       # If it is time to wait, then run 
-      if delta >= 0
+      if delta > 0
         if delta < 60  # Set timeout to be this, vs default of 60 set above
           @wait_time = delta
         end
         return
       end
 
+      log("Running #{ready_msg['msg_id']} - delta #{delta}")
       # Looks like it is time to run now...
-      run_job(sorted[0])
+      run_job(ready_msg)
       run_scheduler!   # Tail recursion, fail me now, I'm in Ruby
                        # So, lets hope the load isn't too high
                        # If it is, then we will loop like crazy
@@ -1033,8 +1112,8 @@ module RQ
 
                 if new_state == nil
                   # log a message
-                  write_msg_status(msg, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}" )
-                  write_msg_status(msg, "PROCESS EXITED IMPROPERLY" )
+                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}" )
+                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY" )
                   new_state = 'err'
                 end
 
@@ -1044,10 +1123,14 @@ module RQ
                   basename = "#{@queue_path}/run/#{msg_id}"
                   raise unless File.exists? basename
                   if ['done', 'relayed'].include? new_state
+                    msg['state'] = new_state
+                    handle_dups_done(msg, new_state)
+                    store_msg(msg, 'run') # store message since it made it to done and we want the 'dups' field to live
                     RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
                   else
                     newname = "#{@queue_path}/#{new_state}/#{msg_id}"
                     File.rename(basename, newname)
+                    handle_dups_fail(msg)
                   end
                 rescue
                   log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")
@@ -1070,6 +1153,7 @@ module RQ
                 @completed.delete(completion)
                 # Remove from run
                 @run = @run.reject { |i| i['msg_id'] == msg_id }
+                # TODO; a simple delete would suffice here
 
                 if (completion[1] == :resend) && (new_state == 'que')
                   # Re-inject into que
@@ -1173,7 +1257,7 @@ module RQ
     end
 
     def send_packet(sock, resp)
-      log_msg = resp.length > 40 ? "#{resp[0...40]}..." : resp
+      log_msg = resp.length > 80 ? "#{resp[0...80]}..." : resp
       log("RESP [ #{resp.length}  #{log_msg} ]")
       sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
       UnixRack::Socket.write_buff(sock, sock_msg)

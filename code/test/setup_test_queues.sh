@@ -66,7 +66,7 @@ fi
 
 
 echo "Creating the test queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[ordering]=ordered -F queue[num_workers]=1 -F queue[fsync]=fsync -o _install_test.txt
+curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -78,9 +78,23 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+echo "Creating the test coalesce queue..."
+curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -o _install_test_coalesce.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ failed to respond correctly"
+  exit 1
+fi
+
+egrep "successqueue created" _install_test_coalesce.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system didn't create test_coalesce queue"
+  exit 1
+fi
+
 rm _home.txt
 rm _install.txt
 rm _install_test.txt
+rm _install_test_coalesce.txt
 
 echo "ALL DONE SUCCESSFULLY"
 

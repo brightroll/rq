@@ -78,7 +78,7 @@ module RQ
       protocol = do_read(client, 4)
 
       if protocol != 'rq1 '
-        raise "Invalid Protocol"
+        raise "Invalid Protocol - Expecting 'rq1 ' got: #{protocol}"
       end
 
       size_str = do_read(client, 9)

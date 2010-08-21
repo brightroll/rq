@@ -20,28 +20,32 @@
 </div>
 
 <div class="field">
-<label class="field_label" for="queue_ordering">Queue ordering</label>
-<label for="queue_ordering">ordered</label>
-<input type="radio" name="queue[ordering]" value="ordered" checked />
-<label for="queue_ordering">un-ordered</label>
-<input type="radio" name="queue[ordering]" value="unordered" />
-</div>
-
-<div class="field">
 <label class="field_label" for="queue_num_workers">Max number of workers</label>
 <input type="text" name="queue[num_workers]" value="1" size="3" />
-<p class="note">Anything >1 means parallelism</p>
+<p class="note">Anything &gt;1 means parallelism</p>
 </div>
 
 <div class="field">
-<label class="field_label" for="queue_fsync">Queue fsync</label>
-<label for="queue_fsync">fsync</label>
-<input type="radio" name="queue[fsync]" value="fsync" checked/>
-<label for="queue_fsync">no-fsync</label>
-<input type="radio" name="queue[fsync]" value="no-fsync" />
-<p class="note">ignored - always fsync currently</p>
+<label class="field_label" for="queue_fsync">Message coalescing</label>
+<label for="queue_coalesce">coalesce</label>
+<input type="radio" name="queue[coalesce]" value="yes" checked/>
+<label for="queue_coalesce">no-coalesce</label>
+<input type="radio" name="queue[coalesce]" value="no" checked />
 </div>
-
+<div class="field">
+<label class="field_label" for="queue_coalesce_param1"></label>
+<label for="queue_coalesce_param1">param1</label>
+<input type="checkbox" name="queue[coalesce_param1]" value="1" checked/>
+<label for="queue_coalesce_param2">param2</label>
+<input type="checkbox" name="queue[coalesce_param2]" value="1" />
+<label for="queue_coalesce_param3">param3</label>
+<input type="checkbox" name="queue[coalesce_param3]" value="1" />
+<label for="queue_coalesce_param4">param4</label>
+<input type="checkbox" name="queue[coalesce_param4]" value="1" />
+</div>
+<div class="field">
+<label class="field_label" for="none">&nbsp;</label>
+</div>
 <div class="field">
 <label class="field_label" for="queue_fsync">&nbsp;</label>
 <input type="submit" name="queue_name" value="submit" />

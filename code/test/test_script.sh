@@ -58,6 +58,13 @@ if [ "$RQ_PARAM1" == "slow3" ]; then
   write_status 'run' "done sleeping for 3"
 fi
 
+if [ "$RQ_PARAM2" == "err" ]; then
+  echo "This script should end up with err status"
+  write_status 'err' "by design"
+  exit 0
+fi
+
+
 if [ "$RQ_PARAM1" == "resend1" ]; then
     if [ "$RQ_COUNT" == "0" ]; then
         echo "This script should resend the current job at a new time"

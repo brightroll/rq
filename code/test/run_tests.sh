@@ -2,13 +2,28 @@
 
 # Send the test queue a test message that should end up in done
 
+if [ ! -d "./code" ] ; then
+  echo "Must run from 'rq' directory as ./code/test/run_tests.sh"
+  exit 1
+fi
 
-echo "Must run from 'rq' directory as ./code/test/run_tests.sh"
+echo "Running ./code/test/setup_test_queues.sh"
+./code/test/setup_test_queues.sh
+if [ $? -ne 0 ] ; then
+  echo " *** FAILED TO RUN SETUP"
+  exit 1
+fi
 
+echo "Running ./code/test/test_queues_setup.rb"
+./code/test/test_queues_setup.rb
+if [ $? -ne 0 ] ; then
+  echo " *** FAILED TO SETUP QUEUES"
+  exit 1
+fi
 
-echo "To clean the system, run this command first: ./code/test/setup_test_queues.sh"
 
 for test in \
+   send_test_coalesce.sh \
    send_test_sneaky.sh \
    send_test_large.sh \
    send_test_web_done.rb \
@@ -25,14 +40,18 @@ for test in \
    send_test_remote_relay_force.sh \
    send_test_remote_relay_force_large.sh \
    send_test_remote_relay.sh \
-   send_test_resend.sh  ; do
+   send_test_resend.sh ; do
 
+      echo "RUNNING TEST: ${test}"
       output=`./code/test/$test 2>&1`
       status=$?
       echo "$output" | sed "s/^/${test}: /g"
+      echo -n "        TEST: "
       if [ $status -ne 0 ] ; then
+         echo " *** FAILED ***"
          exit 1
       fi
+      echo " PASSED"
 done
 
 
