@@ -161,7 +161,10 @@ if (dest.index(this_system) != 0) || force
     uri = remote_q_uri + "/new_message"
     begin
       res = Net::HTTP.post_form(URI.parse(uri), {:x_format => 'json', :mesg => mesg.to_json })
-    rescue
+    rescue Exception
+      # THIS IS SO BAD, BUT HEY SUCH IS LIFE UNTIL 1.9
+      # WHY?
+      # BEST DESCRIPTION IS HERE http://jerith.livejournal.com/40063.html
       soft_fail("Could not connect to or parse URL: #{uri}")
     end
 
@@ -228,7 +231,10 @@ if (dest.index(this_system) != 0) || force
   uri = remote_q_uri + "/#{new_short_msg_id}"
   begin
     res = Net::HTTP.post_form(URI.parse(uri), form)
-  rescue
+  rescue Exception
+    # THIS IS SO BAD, BUT HEY SUCH IS LIFE UNTIL 1.9
+    # WHY?
+    # BEST DESCRIPTION IS HERE http://jerith.livejournal.com/40063.html
     soft_fail("Could not connect to or parse URL: #{uri}")
   end
 
