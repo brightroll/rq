@@ -1123,14 +1123,15 @@ module RQ
                   basename = "#{@queue_path}/run/#{msg_id}"
                   raise unless File.exists? basename
                   if ['done', 'relayed'].include? new_state
-                    msg['state'] = new_state
                     handle_dups_done(msg, new_state)
                     store_msg(msg, 'run') # store message since it made it to done and we want the 'dups' field to live
                     RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
                   else
+                    handle_dups_fail(msg)
+                    store_msg(msg, 'run') # store message since it failed to make it to done and
+                                          # we want the 'dups' field to be removed
                     newname = "#{@queue_path}/#{new_state}/#{msg_id}"
                     File.rename(basename, newname)
-                    handle_dups_fail(msg)
                   end
                 rescue
                   log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")

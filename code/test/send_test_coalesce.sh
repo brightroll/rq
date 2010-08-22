@@ -68,6 +68,27 @@ function send_msg_err() {
   return
 }
 
+function send_msg_resend() {
+  local due=$((`date +%s` ${1}))
+  local out=`./bin/rq sendmesg  --dest test_coalesce --src dru4 --relay-ok --param1=fast  --param2=resend1 --due=${due}`
+  if [ "$?" -ne "0" ]; then
+    echo "Sorry, system didn't create test message properly"
+    exit 1
+  fi
+
+  local result=(${out})
+
+  if [ "${result[0]}" != "ok" ]; then
+    echo "Sorry, system didn't create test message properly : ${out}"
+    exit 1
+  fi
+
+  echo "Queued message: ${result[1]}"
+
+  RETURN_VAR=${result[1]}
+  return
+}
+
 function verify_msg()
 {
   ## Verify that msg goes to done state
@@ -214,6 +235,25 @@ msg9=$RETURN_VAR
 verify_msg $msg7
 verify_msg $msg8
 verify_msg $msg9
+
+echo "Testing resend coalesce"
+# Test coalesce on a message that ends up being a resend
+# should re-inject dups of itself back into 'que' state
+# and then it should become a dup of another message that is ready
+# to run (msg10)
+
+send_msg +2
+msg10=$RETURN_VAR
+
+send_msg +3
+msg11=$RETURN_VAR
+
+send_msg_resend -2
+msg12=$RETURN_VAR
+
+verify_msg $msg10
+verify_msg_dup $msg11 $msg10
+verify_msg_dup $msg12 $msg10
 
 echo "SUCCESS - system processed all messages properly"
 exit 0
