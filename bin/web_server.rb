@@ -6,6 +6,7 @@ require 'vendor/environment.rb'
 require 'code/unixrack.rb'
 require 'code/router.rb'
 require 'json'
+require 'fileutils'
 
 
 def run(daemon = false)
