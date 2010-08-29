@@ -252,12 +252,13 @@ module RQ
 
       if child_pid == nil
         parent_rd.close
-        log("failed to run child script: queue_path, $!")
+        log("ERROR failed to run child script: queue_path, $!")
         return nil
       end
 
       msg['child_pid'] = child_pid
       msg['child_read_pipe'] = parent_rd
+      write_msg_process_id(msg_id, child_pid)
     end
 
 
@@ -368,8 +369,7 @@ module RQ
         if not msg.has_key?('due')
           msg['due'] = Time.now.to_i
         end
-        clean = msg.reject { |k,v| k == 'child_read_pipe' }
-        # TODO: dru another to clean 'child_pid'
+        clean = msg.reject { |k,v| k == 'child_read_pipe' || k == 'child_pid' }
         data = clean.to_json
         # Need a sysopen style system here TODO
         basename = @queue_path + "/#{que}/" + msg['msg_id']
@@ -794,6 +794,19 @@ module RQ
       @prep = Dir.entries(basename).reject {|i| i.index('.') == 0 }
       @prep.sort!.reverse!
 
+      # run msgs just put back into que
+      basename = @queue_path + '/run/'
+      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+      messages.each do
+        |mname|
+        begin
+          File.rename(basename + mname, @queue_path + '/que/' + mname)
+        rescue
+          log("Bad message in run queue: #{mname}")
+          next
+        end
+      end
+
       # que has actual messages copied
       basename = @queue_path + '/que/'
       messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
@@ -813,23 +826,6 @@ module RQ
         @que << msg
       end
 
-      # run has actual messages copied
-      basename = @queue_path + '/run/'
-      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
-
-      messages.sort!.reverse!
-
-      messages.each do
-        |mname|
-        begin
-          data = File.read(basename + mname + "/msg")
-          msg = JSON.parse(data)
-        rescue
-          log("Bad message in queue: #{mname}")
-          next
-        end
-        @run << msg
-      end
     end
 
     def handle_status_read(msg)
@@ -926,6 +922,21 @@ module RQ
         File.rename(basename + '.tmp', basename)
       rescue
         log("FATAL - couldn't write status message")
+        log("        [ #{$!} ]")
+        return false
+      end
+
+      return true
+    end
+
+    def write_msg_process_id(msg_id, pid, state = 'run')
+      # Write message pid to disk
+      begin
+        basename = @queue_path + "/#{state}/" + msg_id + "/pid"
+        File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
+        File.rename(basename + '.tmp', basename)
+      rescue
+        log("FATAL - couldn't write message pid file")
         log("        [ #{$!} ]")
         return false
       end
