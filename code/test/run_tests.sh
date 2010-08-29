@@ -25,6 +25,7 @@ fi
 for test in \
    send_test_coalesce.sh \
    send_test_sneaky.sh \
+   test_que_create_naming.sh \
    send_test_large.sh \
    send_test_web_done.rb \
    send_test_web_prepattachdone.rb \

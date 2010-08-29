@@ -109,27 +109,36 @@ module RQ
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
         # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }} 
+
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
         else
-          resp = ['fail', 'queue not created'].to_json
-          results = RQ::Queue.create(options)
-          log("create_queue STARTED [ #{options['name']}#{results[0]} ]")
-          if results
-            qc = QueueClient.new(options['name'])
-            worker = Worker.new
-            worker.name = options['name']
-            worker.qc = qc
-            worker.options = options
-            worker.status = "RUNNING"
-            worker.pid = results[0]
-            worker.child_write_pipe = results[1]
-            worker.num_restarts = 0
-            @queues << worker
-            resp = ['success', 'queue created - awesome'].to_json
+          # Validate characters in name
+          # No '.' or '/' since that could change path
+          # Basically it should just be alphanum and '-' or '_'
+          name_test = options['name'].tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*')
+          if name_test.index("*")
+            resp = ['fail', "queue name has invalid characters"].to_json
+          else
+            resp = ['fail', 'queue not created'].to_json
+            results = RQ::Queue.create(options)
+            log("create_queue STARTED [ #{options['name']}#{results[0]} ]")
+            if results
+              qc = QueueClient.new(options['name'])
+              worker = Worker.new
+              worker.name = options['name']
+              worker.qc = qc
+              worker.options = options
+              worker.status = "RUNNING"
+              worker.pid = results[0]
+              worker.child_write_pipe = results[1]
+              worker.num_restarts = 0
+              @queues << worker
+              resp = ['success', 'queue created - awesome'].to_json
+            end
           end
         end
-        log("RESP [ #{data} ]")
+        log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close
         return
