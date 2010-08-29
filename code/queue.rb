@@ -137,14 +137,18 @@ module RQ
       job_path = File.expand_path(basename + '/job/')
       Dir.mkdir(job_path) unless File.exists?(job_path)
 
-      # TODO: Identify executable to run, if there is no script, go administratively down
+      # Identify executable to run, if there is no script, go oper down
       script_path = File.expand_path(@config['script'])
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
-        # Set queue adminitratively down
-        log("queue down - script not there or runnable #{script_path}")
-        @status['oper_status'] = 'DOWN'
-        # TODO: proper oper status - write_status
+        log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
+        if @status['oper_status'] == 'UP'
+          @status['oper_status'] = 'DOWN'
+          log("OPER STATUS is set to DOWN due to ERROR")
+        end
         return
+      elsif @status['oper_status'] == 'DOWN'
+        @status['oper_status'] = 'UP'
+        log("OPER STATUS is set to UP")
       end
 
       log("0 child process prep step for runnable #{script_path}")
@@ -948,9 +952,17 @@ module RQ
       @wait_time = 60
 
       # If oper_status != "UP"
-      if (@status['admin_status'] != "UP") && (@status['oper_status'] != "UP")
-        log("Status != up  admin: #{@status['admin_status']}  oper: #{@status['oper_status']}")
+      if File.exists?("#{@rq_config_path}#{@name}.down")
+        if @status['admin_status'] == "UP"
+          @status['admin_status'] = "DOWN"
+          @status['oper_status'] = "DOWN"
+          log("ADMIN STATUS is set to DOWN")
+        end
         return
+      elsif @status['admin_status'] == "DOWN"
+        @status['admin_status'] = "UP"
+        @status['oper_status'] = "UP"
+        log("ADMIN STATUS is set to UP")
       end
 
       # Are we arleady running max workers

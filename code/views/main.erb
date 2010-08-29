@@ -57,8 +57,8 @@
 <%if  qc.running? %>
   <% admin_stat, oper_stat = qc.status %>
   <td>
-    <span class="green">admin: <%= admin_stat %> </span>
-    <span class="green">oper: <%= oper_stat %> </span>
+    <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %> </span>
+    <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %> </span>
   </td>
   <td>
     <%= qc.ping %>
