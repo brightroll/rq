@@ -151,13 +151,13 @@ module RQ
         log("OPER STATUS is set to UP")
       end
 
-      log("0 child process prep step for runnable #{script_path}")
+      #log("0 child process prep step for runnable #{script_path}")
       # 0 = stdin, 1 = stdout, 2 = stderr, 4 = pipe
       #
       parent_rd, child_wr = IO.pipe
 
       log("1 child process prep step for runnable #{script_path}")
-      log("1 child process prep step for runnable #{job_path}")
+      #log("1 child process prep step for runnable #{job_path}")
 
       child_pid = fork do
         # Setup env
