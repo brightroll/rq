@@ -1,0 +1,168 @@
+#!/usr/bin/env ruby
+
+require 'net/http'
+require 'getoptlong'
+require 'pp'
+
+@server = "localhost"
+@port = 3333
+# thresh [WARNING, CRITICAL, WARNING MAX, CRITICAL MAX, RELAYED WARN, RELAYED MAX]
+thresh = [10, 20, 2000, 2500, 3000, 3500]
+mesg = "OK: RQ is clean"
+rq_errors = {}
+qinfo = {}
+exitcode = 0
+dump = 0
+
+
+
+opts = GetoptLong.new(
+  [ '--help', '-h', GetoptLong::NO_ARGUMENT],
+  [ '--server', '-s', GetoptLong::OPTIONAL_ARGUMENT],
+  [ '--port', '-p', GetoptLong::OPTIONAL_ARGUMENT],
+  [ '--thresh', '-t', GetoptLong::OPTIONAL_ARGUMENT],
+  [ '--dump', '-d', GetoptLong::NO_ARGUMENT]
+)
+
+opts.each do |opt, arg|
+  case opt
+    when '--help'
+      puts "HELP is on the way"
+      exit(0)
+    when '--server'
+      @server = arg
+    when '--dump'
+      dump = 1
+    when '--port'
+      @port = arg.to_i
+    when '--thresh'
+      thresh = arg.split(':').map{|a| a.to_i}
+    end
+  end
+
+
+@http = Net::HTTP.new(@server, @port)
+
+def rq_fetch(thepath) 
+
+  begin
+    response = @http.get(thepath)
+    
+    if response.code != "200"
+      puts "CRITICAL: Could not Fetch " + thepath
+      exit(2)
+    end
+    
+  rescue Timeout::Error
+    puts "CRITICAL: Timed out connecting to " + @server + ":" + @port.to_s
+    exit(2)
+  rescue Errno::ECONNREFUSED
+    puts "CRITICAL: Could not connect to " + @server + ":" + @port.to_s
+    exit(2)
+  rescue Net::HTTPNotFound
+    puts "CRITICAL: Could not fetch"
+    exit(2)
+  end
+  
+  return(response.body)
+
+end
+
+qlist = rq_fetch("/q.txt")
+
+
+qlist.split("\n").each do |rq|
+  rq =~ /q\/(\S+)\.txt/
+  qname = $1
+  qinfo[qname] = {}
+  rq_fetch(sprintf("/%s", rq)).split("\n").each do |stats|
+    if stats =~ /(.*): (\S+)/
+      qinfo[qname][$1] = $2
+    end
+  end
+end
+
+
+qinfo.keys.each do |q|
+  
+  if qinfo[q]["admin_status"] != "UP"
+    rq_errors[q] = "admin_status DOWN"
+    exitcode = 2
+  end
+  if qinfo[q]["oper_status"] != "UP"
+    rq_errors[q] = "oper_status DOWN"
+    exitcode = 2
+  end
+  if (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[1]
+    rq_errors[q] = "%s: prep=>%s run=>%s que=>%s", q, qinfo[q]["prep"], qinfo[q]["run"], qinfo[q]["que"]
+    exitcode = 2
+  end
+  if (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[0]
+    rq_errors[q] = "prep=>#{qinfo[q]['prep']} run=>#{qinfo[q]['run']} que=>#{qinfo[q]['que']}"
+     if exitcode < 2
+       exitcode = 1
+     end
+  end
+  if qinfo[q]["err"].to_i > 0
+    if rq_errors.has_key?q
+	    rq_errors[q] += " errors => #{qinfo[q]['err'].to_s}"
+    else
+	    rq_errors[q] = "errors => #{qinfo[q]['err'].to_s}"
+    end
+    exitcode = 2
+  end
+
+  ["done", "relayed"].each do |k|
+    if qinfo[q][k].to_i >= thresh[5]:
+      if rq_errors.has_key?q
+  	    rq_errors[q] += " #{k} => #{qinfo[q][k]}"
+      else
+  	    rq_errors[q] = "#{k} => #{qinfo[q][k]}"
+        exitcode = 2
+      end
+      exitcode = 2
+    elsif qinfo[q][k].to_i >= thresh[4]:
+      if rq_errors.has_key?q
+  	    rq_errors[q] += " #{k} => #{qinfo[q][k]}"
+      else
+  	    rq_errors[q] = "#{k} => #{qinfo[q][k]}"
+        exitcode = 2
+      end
+      if exitcode < 2
+        exitcode = 1
+      end
+    end
+  end
+  
+end
+
+if dump  == 1
+  qinfo.keys.each do |q|
+    puts q
+    qinfo[q].keys.each do |k|
+      puts "\t" + k + " -> " + qinfo[q][k]
+    end
+  end
+  
+else
+  
+  if rq_errors.length == 0
+    puts "OK: all queue tests normal"
+  else
+    err_string = ""
+    rq_errors.keys.each do |errs|
+      err_string += " " + errs + ": "
+      err_string +=  rq_errors[errs]
+      err_string += ","
+    end
+  
+    if exitcode == 2
+      puts "CRITICAL: " + err_string
+    else
+      puts "WARNING: " + err_string
+    end
+  end
+
+end
+
+exit(exitcode)
