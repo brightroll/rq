@@ -13,6 +13,7 @@ def log(mesg)
     f.write(m)
   end
   print m
+  $stdout.flush
 end
 
 log(Dir.pwd.inspect)
@@ -46,6 +47,7 @@ def get_id()
   File.open('relay_id', "r") do
     |f|
     x = f.read
+    log("Using prior relay_id: #{x}")
     return x
   end
 
@@ -60,6 +62,10 @@ def set_id(msg_id)
   File.rename('relay_id.tmp', 'relay_id')
 
   return true
+end
+
+def erase_id()
+  File.unlink('relay_id') rescue nil
 end
 
 def file_md5(path)
@@ -88,10 +94,17 @@ log("this - #{this_system}")
 log("dest - #{dest}")
 
 force = false
+fake_fail = false
 
 if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') && 
   (ENV['RQ_PARAM2'] == 'the_mighty_rq_force')
   force = true
+  log("TEST MODE force = true")
+
+  if ENV['RQ_PARAM3'] == 'fail' && ENV['RQ_COUNT'] == '0'
+    fake_fail = true
+    log("TEST MODE fake_fail = true")
+  end
 end
 
 # If host different, this is a remote queue delivery
@@ -176,6 +189,10 @@ if (dest.index(this_system) != 0) || force
       else
         soft_fail("Couldn't queue message: #{json_result.inspect}")
       end
+      if fake_fail # We are exiting anyways
+        set_id(new_msg_id + "00110011")
+        soft_fail("FAKE FAIL - Couldn't queue message: #{json_result.inspect}")
+      end
     else
       puts res.body
       soft_fail("Couldn't queue message: #{res.inspect}")
@@ -212,6 +229,10 @@ if (dest.index(this_system) != 0) || force
       result = JSON.parse(pipe_res)
 
       if result[0] != 'ok'
+        if result[0] == 'fail' and result[1] == 'cannot find message'
+          erase_id()
+          soft_fail("Remote message disappeared: #{pipe_res}. Getting new id.")
+        end
         soft_fail("Couldn't attach to test message properly : #{pipe_res}")
       end
 
@@ -245,6 +266,10 @@ if (dest.index(this_system) != 0) || force
   json_result = JSON.parse(res.body)
 
   if json_result[0] != 'ok'
+    if json_result[0] == 'fail' and json_result[1] == 'cannot find message'
+      erase_id()
+      soft_fail("Remote message disappeared: #{json_result.inspect}. Getting new id.")
+    end
     soft_fail("Couldn't commit message: #{json_result.inspect}")
   else
     write_status('relayed', new_msg_id)

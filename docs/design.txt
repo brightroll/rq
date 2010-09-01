@@ -84,4 +84,9 @@ ok, commit
  ok |        <-----
   -> mark job done
 
+* Note - it is possible to have duplicate sends.
+  If a message gets commited, but we feel it is a fail,
+  we may eventually try to resend. If we hit a new machine,
+  then we will restart the process and resend. If the old
+  machine comes back up, it will retart its message handling.
 

@@ -43,6 +43,8 @@ for test in \
    send_test_remote_relay_force.sh \
    send_test_remote_relay_force_large.sh \
    send_test_remote_relay.sh \
+   send_test_relay_relayid_attach.sh \
+   send_test_relay_relayid.sh \
    send_test_resend.sh ; do
 
       echo "RUNNING TEST: ${test}"

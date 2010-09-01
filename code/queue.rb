@@ -1414,7 +1414,7 @@ module RQ
             resp = [ "fail", attach_message ].to_json
           end
         else
-          resp = [ "fail", "couldn't locate message in prep"].to_json
+          resp = [ "fail", "cannot find message"].to_json
         end
         send_packet(sock, resp)
         return
@@ -1432,8 +1432,12 @@ module RQ
 
         resp = [ "fail", "unknown reason"].to_json
 
-        if lookup_msg(options) and que(options)
-          resp = [ "ok", "msg commited" ].to_json
+        if lookup_msg(options)
+          if que(options)
+            resp = [ "ok", "msg commited" ].to_json
+          end
+        else
+          resp = [ "fail", "cannot find message"].to_json
         end
 
         send_packet(sock, resp)
