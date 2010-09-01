@@ -831,8 +831,9 @@ module RQ
     def handle_status_read(msg)
       msg_id = msg['msg_id']
       child_io = msg['child_read_pipe']
+      child_pid = msg['child_pid']
 
-      log("Reading status from child")
+      log("#{child_pid}: Reading status from child")
       # I should just use sysread and syswrite everywhere
       # the ruby IO model removes power from those who know
       # with wrappers written by those who do not know
@@ -879,8 +880,8 @@ module RQ
         # This allows us to notice any processes that have failed to terminate
         # and then kill them down the road.
 
+        log("#{child_pid}: child msg came in: #{child_msg}")
         if (parts[0] != "run")
-          log("Non 'run' status came in: #{parts[0]}")
           if parts[0] == 'done'
             @completed << [msg, :done, Time.now.to_i]
           end
@@ -1196,8 +1197,7 @@ module RQ
               end
 
             else
-              log("QUEUE #{@name} of PID #{Process.pid} noticed fd close on fd #{io.fileno}...")
-
+              log("QUEUE #{@name} of PID #{Process.pid} noticed fd close on fd #{io.fileno}...NO CHILD ON RECORD?")
             end
           end
         end
