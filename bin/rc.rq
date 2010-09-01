@@ -18,6 +18,7 @@ fi
 
 case $1 in
 	start)
+		ulimit -c unlimited
 		cd /rq/current
 		/rq/current/bin/web_server.sh
 		/rq/current/bin/queuemgr_ctl start
