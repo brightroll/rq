@@ -12,6 +12,7 @@ echo "Removing installation dirs"
 rm -rf './queue.noindex'
 rm -rf './queue'
 rm -rf './config'
+rm -rf './test_dirs'
 
 echo "Checking that system is ready for install..."
 if [ "x${RQ_PORT}" = "x" ] ; then

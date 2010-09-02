@@ -28,6 +28,7 @@ for test in \
    test_que_create_naming.sh \
    test_run_admin_down.sh \
    test_run_msgs_moved_on_kill.rb \
+   test_hashdir.rb \
    send_test_large.sh \
    send_test_web_done.rb \
    send_test_web_prepattachdone.rb \
