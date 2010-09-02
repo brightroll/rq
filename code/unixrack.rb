@@ -73,7 +73,8 @@ module UnixRack
 
 
     def error_reply(num, txt)
-      puts "Error: #{num} #{txt}"
+      puts "#{$$}: Error: #{num} #{txt}"
+      $stdout.flush
 
       bod = [
       "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
@@ -111,10 +112,12 @@ module UnixRack
       rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
         retry
       rescue EOFError
-        puts "Got an EOF from socket read"
+        puts "#{$$}: Got an EOF from socket read"
+        $stdout.flush
         return nil
       rescue EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-        puts "Got an #{$!} from socket read"
+        puts "#{$$}: Got an #{$!} from socket read"
+        $stdout.flush
         exit! 0
       end
       @buff = @buff + dat
@@ -145,6 +148,7 @@ module UnixRack
           File.unlink(tmpname)
         rescue
           p $!
+          $stdout.flush
           return nil
         end
 
@@ -192,7 +196,8 @@ module UnixRack
 
       msg = Rack::Utils::HTTP_STATUS_CODES[status.to_i]
 
-      puts "Response: #{status} #{msg}"
+      puts "#{$$}: Response: #{status} #{msg}"
+      $stdout.flush
       hdr_ary = [ "HTTP/1.0 #{status} #{msg}" ]
 
       headers['Connection'] ||= 'close'
@@ -235,24 +240,27 @@ module Rack
               if pid == nil
                 break
               end
-              puts "UR pid #{pid} status #{status} exited"
+              puts "#{pid}: exited - status #{status}"
+              $stdout.flush
             end
           rescue Errno::ECHILD
           end
         end
 
-        trap(:TERM) { puts "Listener received TERM. Exiting."; exit! 0  }
-        trap("SIGINT") { puts "Listener received INT. Exiting."; exit! 0  }
+        trap(:TERM) { puts "#{$$}: Listener received TERM. Exiting."; $stdout.flush; exit! 0  }
+        trap("SIGINT") { puts "#{$$}: Listener received INT. Exiting."; $stdout.flush; exit! 0  }
 
         while true
           begin
             conn = server.accept
           rescue Errno::EAGAIN, Errno::ECONNABORTED
             p "Connection interrupted on accept"
+            $stdout.flush
             next
           rescue
             p "DRU"
             p $!
+            $stdout.flush
             exit
           end
 
@@ -261,17 +269,19 @@ module Rack
           if pid == nil
             # We are in child
             server.close
-            trap("ALRM") { p "Child took too long. Goodbye"; exit! 2  }
-            trap(:TERM)  { p "TERM. Time to go... Goodbye"; exit! 0  }
+            trap("ALRM") { puts "#{$$}: Child took too long. Goodbye"; $stdout.flush; exit! 2  }
+            trap(:TERM)  { puts "#{$$}: TERM. Time to go... Goodbye"; $stdout.flush; exit! 0  }
 
-            puts "UR Child started: #{$$}"
+            puts "#{$$}: child started"
+            $stdout.flush
 
             Alarm.alarm(5)                # if no command received in 5 secs
 
             sock = ::UnixRack::Socket.new(conn)
 
             sock.read_headers()
-            puts "Request: #{sock.hdr_method.inspect}"
+            puts "#{$$}: Request: #{sock.hdr_method.inspect}"
+            $stdout.flush
             Alarm.alarm(60)               # if command not handled in 60 seconds 
 
             if ["GET", "POST"].include?(sock.hdr_method[0])
