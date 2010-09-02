@@ -25,14 +25,15 @@
   <b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b>
 <br />
 <br />
-<%   msgs = qc.messages %>
+<%   num_msgs = qc.num_messages %>
 
-<span><%= msgs['prep'].length %> items in prep</span>
+<span><%= num_msgs['prep'] %> items in prep</span>
 <ul></ul>
-<span><%= msgs['que'].length %> items in que</span>
+<span><%= num_msgs['que'] %> items in que</span>
 <ul></ul>
 <ul>
-<%   msgs['que'].sort.reverse.each do |msg| %>
+<%   msgs = qc.messages({'state' => 'que'}) %>
+<%   msgs.sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
@@ -58,9 +59,10 @@
 <%   end %>
 </ul>
 
-<span><%= msgs['run'].length %> items in run</span>
+<span><%= num_msgs['run'] %> items in run</span>
 <ul>
-<%   msgs['run'].sort.reverse.each do |msg| %>
+<%   msgs = qc.messages({'state' => 'run'}) %>
+<%   msgs.sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
@@ -87,9 +89,10 @@
 </li>
 <%   end %>
 </ul>
-<span><%= msgs['done'].length %> items in done</span>
+<span><%= num_msgs['done'] %> items in done</span>
 <ul>
-<%   msgs['done'].sort.reverse.each do |msg| %>
+<%   msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
+<%   msgs.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
@@ -99,9 +102,10 @@
 <%   end %>
 </ul>
 
-<span><%= msgs['relayed'].length %> items in relayed</span>
+<span><%= num_msgs['relayed'] %> items in relayed</span>
 <ul>
-<%   msgs['relayed'].sort.reverse.each do |msg| %>
+<%   msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
+<%   msgs.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
@@ -121,9 +125,10 @@
 <%   end %>
 </ul>
 
-<span><%= msgs['err'].length %> items in err</span>
+<span><%= num_msgs['err'] %> items in err</span>
 <ul>
-<%   msgs['err'].sort.reverse.each do |msg| %>
+<%   msgs = qc.messages({'state' => 'err'}) %>
+<%   msgs.sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">

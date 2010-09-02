@@ -1365,15 +1365,42 @@ module RQ
         return
       end
 
-      if packet.index('messages') == 0
+      if packet.index('num_messages') == 0
         status = { }
-        status['prep']     = @prep
-        status['que']      = @que.map { |m| [m['msg_id'], m['due']] }
-        status['run']      = @run.map { |m| [m['msg_id'], m['status']] }
+        status['prep']     = @prep.length
+        status['que']      = @que.length
+        status['run']      = @run.length
         status['pause']    = []
-        status['done']     = RQ::HashDir.entries(@queue_path + "/done")
-        status['relayed']  = RQ::HashDir.entries(@queue_path + "/relayed/")
-        status['err']      = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
+        status['done']     = RQ::HashDir.num_entries(@queue_path + "/done")
+        status['relayed']  = RQ::HashDir.num_entries(@queue_path + "/relayed/")
+        status['err']      = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }.length
+
+        resp = status.to_json
+        send_packet(sock, resp)
+        return
+      end
+
+      if packet.index('messages') == 0
+        json = packet.split(' ', 2)[1]
+        options = JSON.parse(json)
+        if not options.has_key?('state')
+          resp = [ "fail", "lacking 'state' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+        if options['state'] == 'que'
+          status = @que.map { |m| [m['msg_id'], m['due']] }
+        elsif options['state'] == 'run'
+          status =  @run.map { |m| [m['msg_id'], m['status']] }
+        elsif options['state'] == 'done'
+          status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
+        elsif options['state'] == 'relayed'
+          status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
+        elsif options['state'] == 'err'
+          status = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
+        else
+          status = [ "fail", "invalid 'state' field (#{options['state']})"]
+        end
 
         resp = status.to_json
         send_packet(sock, resp)

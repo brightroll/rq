@@ -130,8 +130,12 @@ module RQ
       return send_recv('single_que', params.to_json)
     end
 
-    def messages
-      return send_recv('messages')
+    def messages(params)
+      return send_recv('messages', params.to_json)
+    end
+
+    def num_messages
+      return send_recv('num_messages')
     end
 
     def prep_message(params)

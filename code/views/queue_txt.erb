@@ -1,11 +1,13 @@
 <%="uptime: #{qc.uptime}"%>
-<%="admin_status: #{qc.status[0]}"%>
-<%="oper_status: #{qc.status[1]}"%>
+<% status = qc.status %>
+<%="admin_status: #{status[0]}"%>
+<%="oper_status: #{status[1]}"%>
 
-<%="prep: #{qc.messages['prep'].length}"%>
-<%="que: #{qc.messages['que'].length}"%>
-<%="run: #{qc.messages['run'].length}"%>
+<% messages = qc.num_messages %>
+<%="prep: #{messages['prep']}"%>
+<%="que: #{messages['que']}"%>
+<%="run: #{messages['run']}"%>
 
-<%="done: #{qc.messages['done'].length}"%>
-<%="err: #{qc.messages['err'].length}"%>
-<%="relayed: #{qc.messages['relayed'].length}"%>
+<%="done: #{messages['done']}"%>
+<%="err: #{messages['err']}"%>
+<%="relayed: #{messages['relayed']}"%>
