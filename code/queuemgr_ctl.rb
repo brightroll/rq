@@ -63,7 +63,7 @@ def daemonize()
 
   # TODO: re chdir to proper dir
   #Dir.chdir "/"   # Release old working directory
-  File.umask 0000 # Insure sensible umask
+  File.umask 0027 # This will restrict file creation mode to 750 (complement of 027)
 
   # Make sure all file descriptors are closed
   ObjectSpace.each_object(IO) do |io|
