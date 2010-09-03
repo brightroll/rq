@@ -65,6 +65,24 @@ module RQ
       erb :queue
     end
 
+    get '/q/:name/done.json' do
+      if not RQ::QueueMgrClient.running?
+        throw :halt, [503, "503 - QueueMgr not running"]
+      end
+
+      qc = RQ::QueueClient.new(params[:name])
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      limit = 10
+      if params['limit']
+        limit = params['limit'].to_i
+      end
+      result = qc.messages({'state' => 'done', 'limit' => limit})
+      "#{result.to_json}"
+    end
+
     get '/q/:name/new_message' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)

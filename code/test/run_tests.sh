@@ -46,7 +46,8 @@ for test in \
    send_test_remote_relay.sh \
    send_test_relay_relayid_attach.sh \
    send_test_relay_relayid.sh \
-   send_test_resend.sh ; do
+   send_test_resend.sh \
+   test_web_done_json.rb ; do
 
       echo "RUNNING TEST: ${test}"
       output=`./code/test/$test 2>&1`
