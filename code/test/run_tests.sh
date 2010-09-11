@@ -23,6 +23,7 @@ fi
 
 
 for test in \
+   test_rq.sh \
    send_test_coalesce.sh \
    send_test_sneaky.sh \
    test_que_create_naming.sh \
