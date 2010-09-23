@@ -11,6 +11,8 @@ echo "Stopped..."
 echo "Removing installation dirs"
 rm -rf './queue.noindex'
 rm -rf './queue'
+rm -rf './scheduler'
+rm -rf './config'
 rm -rf './config'
 rm -rf './test_dirs'
 

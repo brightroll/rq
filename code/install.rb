@@ -52,6 +52,7 @@ module RQ
       # http://support.apple.com/kb/TA24975?viewlocale=en_US
       FileUtils.mkdir('queue.noindex')
       FileUtils.ln_sf('queue.noindex', 'queue')
+      FileUtils.mkdir('scheduler')
       p "Starting..."
       # This isn't working in WEBrick
       start_backend

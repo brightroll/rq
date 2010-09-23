@@ -1,5 +1,6 @@
 config
 queue
 queue.noindex
+scheduler
 .#*
 log/*.log

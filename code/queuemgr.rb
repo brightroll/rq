@@ -4,6 +4,7 @@ require 'json'
 
 require 'code/queue'
 require 'code/queueclient'
+require 'code/scheduler'
 require 'version'
 
 def log(mesg)
@@ -22,6 +23,7 @@ module RQ
   class QueueMgr
 
     attr_accessor :queues
+    attr_accessor :scheduler
     attr_accessor :status
     attr_accessor :host
     attr_accessor :port
@@ -29,6 +31,7 @@ module RQ
 
     def initialize
       @queues = []
+      @scheduler = nil
       @start_time = Time.now
       @status = "RUNNING"
       # Read config
@@ -161,6 +164,11 @@ module RQ
         |q|
         Process.kill("TERM", q.pid)
       end
+
+      @scheduler.each do
+        |q|
+        Process.kill("TERM", @scheduler.pid)
+      end
     end
 
     def final_shutdown!
@@ -187,6 +195,24 @@ module RQ
         log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
       end
     end
+
+    def start_scheduler
+      options = { }
+      results = RQ::Scheduler.start_process(options)
+      if results
+        worker = Worker.new
+        worker.name = "scheduler"
+        worker.qc = nil
+        worker.options = options
+        worker.status = "RUNNING"
+        worker.pid = results[0]
+        worker.child_write_pipe = results[1]
+        worker.num_restarts = 0
+        @scheduler = worker
+        log("STARTED [ scheduler ] - #{results[0]} ]")
+      end
+    end
+
 
     def load_queues
       queues = Dir.entries('queue').reject {|i| i.include? '.'}
@@ -215,6 +241,8 @@ def run_loop
 
 
   qmgr.load_queues
+
+  qmgr.start_scheduler
 
   require 'fcntl'
   flag = File::NONBLOCK
