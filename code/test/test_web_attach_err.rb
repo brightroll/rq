@@ -50,10 +50,9 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
     end
 
     # Check that you can read attachment from err
-    port = ENV["RQ_PORT"] ?  ENV["RQ_PORT"] : "3333"
-    uri_str = "http://127.0.0.1:#{port}/q/test/#{msg_id}/attach/studio3.jpg"
+    uri_str = "#{msg_id}/attach/studio3.jpg"
     res = Net::HTTP.get_response(URI.parse(uri_str))
-    assert_equal(res.code, "200")
+    assert_equal("200", res.code)
   end
 
 end
