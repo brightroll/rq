@@ -320,7 +320,7 @@ module RQ
         path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
         path += "/attach/#{params['attach_name']}"
       else
-        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/job/#{params['log_name']}"
+        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/attach/#{params['attach_name']}"
       end
 
       # send_file does this check, but we provide a much more contextually relevant error
