@@ -305,7 +305,7 @@ module Sinatra
       original_out_buf = defined?(@_out_buf) && @_out_buf
       data = data.call if data.kind_of? Proc
 
-      instance = ::ERB.new(data, nil, nil, '@_out_buf')
+      instance = ::ERB.new(data, options[:safe], options[:trim], '@_out_buf')
       locals_assigns = locals.to_a.collect { |k,v| "#{k} = locals[:#{k}]" }
 
       filename = options.delete(:filename) || '(__ERB__)'
