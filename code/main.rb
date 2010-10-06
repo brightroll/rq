@@ -5,6 +5,7 @@ require 'erb'
 load 'code/queuemgrclient.rb'
 load 'code/queueclient.rb'
 load 'code/hashdir.rb'
+load 'code/portaproc.rb'
 
 module RQ
   class Main < Sinatra::Base
@@ -38,6 +39,16 @@ module RQ
     get '/q.txt' do
       content_type 'text/plain', :charset => 'utf-8'
       erb :queue_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues}
+    end
+
+    get '/proc.txt' do
+      content_type 'text/plain', :charset => 'utf-8'
+      ps = RQ::PortaProc.new
+      ok, procs = ps.get_list
+      if not ok
+        throw :halt, [503, "503 - Could not get process list"]
+      end
+      erb :proc_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues, :procs => procs}, :trim => '-'
     end
     
     get '/q/:name' do
