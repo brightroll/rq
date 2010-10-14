@@ -353,7 +353,7 @@ module RQ
       msg['orig_msg_id'] = input['orig_msg_id'] || gen_full_msg_id(msg)
 
       # Copy only these keys from input message
-      keys = %w(src count param1 param2 param3 param3 post_run_webhook due)
+      keys = %w(src count param1 param2 param3 param4 post_run_webhook due)
       keys.each do
         |key|
         next unless input.has_key?(key)
