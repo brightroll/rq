@@ -23,6 +23,7 @@ fi
 
 
 for test in \
+   test_rq.sh \
    send_test_coalesce.sh \
    send_test_sneaky.sh \
    test_que_create_naming.sh \
@@ -47,6 +48,7 @@ for test in \
    send_test_relay_relayid_attach.sh \
    send_test_relay_relayid.sh \
    send_test_resend.sh \
+   test_web_attach_err.rb \
    test_web_done_json.rb ; do
 
       echo "RUNNING TEST: ${test}"

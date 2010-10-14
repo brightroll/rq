@@ -11,6 +11,8 @@ echo "Stopped..."
 echo "Removing installation dirs"
 rm -rf './queue.noindex'
 rm -rf './queue'
+rm -rf './scheduler'
+rm -rf './config'
 rm -rf './config'
 rm -rf './test_dirs'
 
@@ -34,7 +36,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Starting install..."
-curl -0 http://127.0.0.1:${rq_port}/install -sL -F install[host]=127.0.0.1 -F install[port]=3333 -F install[addr]=0.0.0.0 -F install[env]=test -o _install.txt
+curl -0 http://127.0.0.1:${rq_port}/install -sL -F install[host]=127.0.0.1 -F install[port]=${rq_port} -F install[addr]=0.0.0.0 -F install[env]=test -o _install.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
