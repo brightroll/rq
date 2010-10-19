@@ -216,6 +216,7 @@ module RQ
           RQ::Queue.log(job_path, "running #{script_path}")
 
           ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
+          ENV["RQ_HOSTNAMES"] = @hostnames.join(" ")
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
           ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
@@ -281,6 +282,7 @@ module RQ
         js_data = JSON.parse(data)
         @host = js_data['host']
         @port = js_data['port']
+        @hostnames = [ "http://#{@host}:#{@port}/" ].concat(js_data['hostnames'] || [])
       rescue
         return nil
       end

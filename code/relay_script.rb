@@ -87,7 +87,7 @@ end
 
 # Get destination queue
 
-this_system = ENV['RQ_HOST']
+hostnames = ENV['RQ_HOSTNAMES'].split(" ")
 dest = ENV['RQ_DEST']
 
 log("this - #{this_system}")
@@ -107,9 +107,15 @@ if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') &&
   end
 end
 
-# If host different, this is a remote queue delivery
-if (dest.index(this_system) != 0) || force
+remote_delivery = force
 
+# If none of the hostnames on this system are in the dest,
+# this is a remote queue delivery
+if not hostnames.any? {|h| dest.index(h) == 0}
+  remote_delivery = true
+end
+
+if remote_delivery
   # Get the URL
   remote_q_uri = dest[/(.*?\/q\/[^\/]+)/, 1]
 

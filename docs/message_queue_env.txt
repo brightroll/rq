@@ -7,6 +7,8 @@ Current Dir = <que>/<state>/<short msg id>/job/
 Full Msg ID = host + q_name + msg_id
 
 ENV["RQ_HOST"]       = Base URL of host (Ex. "http://localhost:3333/")
+ENV["RQ_HOSTNAMES"]  = Base URLs of host (aliases) (Ex. "http://localhost:3333/ http://butter:1234/")
+                       Split by space
 
 ENV["RQ_DEST"]       = Full Msg ID
                        (Ex. http://localhost:3333/q/test/20091109.0558.57.780)
