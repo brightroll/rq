@@ -90,7 +90,7 @@ end
 hostnames = ENV['RQ_HOSTNAMES'].split(" ")
 dest = ENV['RQ_DEST']
 
-log("this - #{this_system}")
+log("this - #{hostnames[0]}")
 log("dest - #{dest}")
 
 force = false
