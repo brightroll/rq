@@ -5,7 +5,7 @@
 
 <h3>Message Attribs</h3>
 <ul>
-<%  ['src', 'dest', 'msg_id', 'status', 'state', 'count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup'].each do |key| %>
+<%  ['src', 'dest', 'msg_id', 'status', 'state', 'count', 'max_count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup'].each do |key| %>
 <%    next unless locals['msg'].has_key?(key) %>
 <li>
   <span class="">

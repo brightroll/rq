@@ -73,6 +73,15 @@ if [ "$RQ_PARAM1" == "resend1" ]; then
     fi
 fi
 
+if [ "$RQ_PARAM1" == "resend2" ]; then
+    if [ "$RQ_COUNT" -lt 6 ]; then
+        echo "This script should resend the current job at a new time"
+        echo "count: ${RQ_COUNT}"
+        write_status 'resend' "0"
+        exit 0
+    fi
+fi
+
 if [ "$RQ_PARAM2" == "resend1" ]; then
     if [ "$RQ_COUNT" == "0" ]; then
         echo "This script should resend the current job at a new time"

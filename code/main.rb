@@ -112,15 +112,22 @@ module RQ
 
       api_call = params.fetch('x_format', 'json')
       if api_call == 'html'
-        prms = params['mesg']
-
-        # clean webhook input of any spaces
-        # Ruby split..... so good!
-        if prms.include? 'post_run_webhook'
-          prms['post_run_webhook'] = prms['post_run_webhook'].split ' '
-        end
+        prms = params['mesg'].clone
       else
         prms = JSON.parse(params['mesg'])
+      end
+
+      # Normalize some values
+      if prms.has_key? 'post_run_webhook'
+        # clean webhook input of any spaces
+        # Ruby split..... so good!
+        prms['post_run_webhook'] = prms['post_run_webhook'].split ' '
+      end
+      if prms.has_key? 'count'
+        prms['count'] = prms['count'].to_i
+      end
+      if prms.has_key? 'max_count'
+        prms['max_count'] = prms['max_count'].to_i
       end
 
       the_method = prms.fetch("_method", 'commit')

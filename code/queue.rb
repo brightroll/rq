@@ -221,7 +221,7 @@ module RQ
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_MSG_DIR"] = job_path
           ENV["RQ_PIPE"] = "3"
-          ENV["RQ_COUNT"] = msg.fetch('count', 0).to_s
+          ENV["RQ_COUNT"] = msg['count'].to_s
           ENV["RQ_PARAM1"] = msg['param1']
           ENV["RQ_PARAM2"] = msg['param2']
           ENV["RQ_PARAM3"] = msg['param3']
@@ -351,9 +351,11 @@ module RQ
       # If orig_msg_id is set already, then use it
       # otherwise we initialize it with this msg
       msg['orig_msg_id'] = input['orig_msg_id'] || gen_full_msg_id(msg)
+      msg['count'] = (input['count'] || 0).to_i
+      msg['max_count'] = (input['max_count'] || 15).to_i
 
       # Copy only these keys from input message
-      keys = %w(src count param1 param2 param3 param4 post_run_webhook due)
+      keys = %w(src param1 param2 param3 param4 post_run_webhook due)
       keys.each do
         |key|
         next unless input.has_key?(key)
@@ -593,7 +595,7 @@ module RQ
       if alloc_id(new_msg) and check_msg(new_msg, old_msg)
         # check_msg copies only required fields, but still copies count
         # so we delete that as well
-        new_msg.delete 'count'
+        new_msg['count'] = 0
         new_msg['cloned_from'] = old_msg['msg_id']
 
         # Now check for, and copy attachments
@@ -1131,7 +1133,13 @@ module RQ
                 #end
 
                 if completion[1] == :resend && res[1] == 0
-                  new_state = 'que'
+                  if msg['count'] >= msg['max_count']
+                    new_state = 'err'
+                    log("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
+                    write_msg_status(msg_id, "HIT MAX RESEND COUNT - MOVING TO ERR" )
+                  else
+                    new_state = 'que'
+                  end
                 end
 
                 if new_state == nil
