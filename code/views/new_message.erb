@@ -9,42 +9,43 @@
 
 <input type="hidden" name="x_format" value="html" />
 
-<div class="field">
+<div class="field" id="mesg_dest_field" <%= o.show_field('mesg_dest') ? '' : "style=\"display: none;\"" %>>
 <label class="field_label" for="mesg_dest">Destination Queue</label>
 <input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}q/#{params['name']}" %>" />
 </div>
 
-<div class="field">
-<label class="field_label" for="mesg_src">Source Identifier</label>
+<div class="field" id="mesg_src_field" <%= o.show_field('mesg_src') ? '' : "style=\"display: none;\"" %>>
+<label class="field_label" for="mesg_src"><%= o.text('mesg_src', 'label', 'Source Identifier') %></label>
 <input type="text" size="80" name="mesg[src]" id="mesg_src" value="" />
+<p class="note"><%= o.text('mesg_src', 'help', '') %></p>
 </div>
 
-<div class="field">
-<label class="field_label" for="mesg_param1">Param 1</label>
+<div class="field" id="mesg_param1_field" <%= o.show_field('mesg_param1') ? '' : "style=\"display: none;\"" %>>
+<label class="field_label" for="mesg_param1"><%= o.text('mesg_param1', 'label', 'Param 1') %></label>
 <input type="text" name="mesg[param1]" value="" size="80" />
-<p class="note">optional parameter</p>
+<p class="note"><%= o.text('mesg_param1', 'help', 'optional parameter') %></p>
 </div>
 
-<div class="field">
-<label class="field_label" for="mesg_param2">Param 2</label>
+<div class="field" id="mesg_param2_field" <%= o.show_field('mesg_param2') ? '' : "style=\"display: none;\"" %>>
+<label class="field_label" for="mesg_param2"><%= o.text('mesg_param2', 'label', 'Param 2') %></label>
 <input type="text" name="mesg[param2]" value="" size="80" />
-<p class="note">optional parameter</p>
+<p class="note"><%= o.text('mesg_param2', 'help', 'optional parameter') %></p>
 </div>
 
-<div class="field">
-<label class="field_label" for="mesg_param3">Param 3</label>
+<div class="field" id="mesg_param3_field" <%= o.show_field('mesg_param3') ? '' : "style=\"display: none;\"" %>>
+<label class="field_label" for="mesg_param3"><%= o.text('mesg_param3', 'label', 'Param 3') %></label>
 <input type="text" name="mesg[param3]" value="" size="80" />
-<p class="note">optional parameter</p>
+<p class="note"><%= o.text('mesg_param3', 'help', 'optional parameter') %></p>
 </div>
 
-<div class="field">
-<label class="field_label" for="mesg_param4">Param 4</label>
+<div class="field" id="mesg_param4_field" <%= o.show_field('mesg_param4') ? '' : "style=\"display: none;\"" %>>
+<label class="field_label" for="mesg_param4"><%= o.text('mesg_param4', 'label', 'Param 4') %></label>
 <input type="text" name="mesg[param4]" value="" size="80" />
-<p class="note">optional parameter</p>
+<p class="note"><%= o.text('mesg_param4', 'help', 'optional parameter') %></p>
 </div>
 
-<div class="field">
-<label class="field_label" for="mesg_status">Status</label>
+<div class="field" id="mesg_status_field" <%= o.show_field('mesg_status') ? '' : "style=\"display: none;\"" %>>
+<label class="field_label" for="mesg_status"><%= o.text('mesg_status', 'label', 'Status') %></label>
 <label for="mesg_status">commit</label>
 <input type="radio" name="mesg[_method]" value="commit" checked />
 <label for="mesg_status">prep</label>
@@ -56,7 +57,7 @@
 <p class="note">'single_que' only creates a message in 'que' state if that state is empty, otherwise it returns a msg_id of what is there. used for event coalescing.</p>
 </div>
 
-<div class="field">
+<div class="field" id="mesg_relay_ok_field" <%= o.show_field('mesg_relay_ok') ? '' : "style=\"display: none;\"" %>>
 <label class="field_label" for="mesg_relay_ok">Relay ok?</label>
 <label for="mesg_relay_ok">yes</label>
 <input type="radio" name="mesg[relay_ok]" value="yes" checked />
@@ -65,14 +66,14 @@
 <p class="note">Determine if relaying is ok for this message, if not destined for this queue.</p>
 </div>
 
-<div class="field">
+<div class="field" id="mesg_post_run_webhook_field" <%= o.show_field('mesg_post_run_webhook') ? '' : "style=\"display: none;\"" %>>
 <label class="field_label" for="mesg_post_run_webhook">post_run_hook</label>
 <input type="text" name="mesg[post_run_webhook]" value="" size="100" />
 <p class="note">URL to receive webhook POST after a message transitions from 'run' state</p>
 </div>
 
 
-<div class="field">
+<div class="field" id="mesg_submit_field">
 <label class="field_label" for="mesg_submit">&nbsp;</label>
 <input type="submit" name="mesg_submit" value="submit" />
 </div>

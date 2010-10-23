@@ -50,6 +50,8 @@ for test in \
    send_test_resend.sh \
    test_web_attach_err.rb \
    test_web_max_count.rb \
+   test_overrides.rb \
+   test_web_overrides.rb \
    test_web_done_json.rb ; do
 
       echo "RUNNING TEST: ${test}"

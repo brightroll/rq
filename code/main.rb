@@ -6,6 +6,7 @@ load 'code/queuemgrclient.rb'
 load 'code/queueclient.rb'
 load 'code/hashdir.rb'
 load 'code/portaproc.rb'
+load 'code/overrides.rb'
 
 module RQ
   class Main < Sinatra::Base
@@ -103,7 +104,8 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      erb :new_message
+      overrides = RQ::Overrides.new(params['name'])
+      erb :new_message, :layout => true, :locals => {:o => overrides }
     end
 
     post '/q/:name/new_message' do
