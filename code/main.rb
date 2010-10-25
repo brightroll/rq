@@ -109,9 +109,6 @@ module RQ
     end
 
     post '/q/:name/new_message' do
-      # check for queue
-      this_queue = "http://#{request.host}:#{request.port}/q/#{params[:name]}"
-
       api_call = params.fetch('x_format', 'json')
       if api_call == 'html'
         prms = params['mesg'].clone
@@ -134,7 +131,10 @@ module RQ
 
       the_method = prms.fetch("_method", 'commit')
 
-      if this_queue == prms['dest']
+      js_data = JSON.parse(File.read("./config/config.json"))
+      hostnames = [ "http://#{request.host}:#{request.port}/" ].concat(js_data['hostnames'] || [])
+
+      if hostnames.any? {|h| prms['dest'].index(h) == 0}
         q_name = params[:name]
       else
         if (prms['relay_ok'] == 'yes') && (the_method != 'single_que')
