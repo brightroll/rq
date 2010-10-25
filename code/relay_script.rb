@@ -181,6 +181,7 @@ if remote_delivery
     begin
       res = Net::HTTP.post_form(URI.parse(uri), {:x_format => 'json', :mesg => mesg.to_json })
     rescue Exception
+      log("Net::HTTP exception: " + $!.to_s)
       # THIS IS SO BAD, BUT HEY SUCH IS LIFE UNTIL 1.9
       # WHY?
       # BEST DESCRIPTION IS HERE http://jerith.livejournal.com/40063.html
@@ -259,6 +260,7 @@ if remote_delivery
   begin
     res = Net::HTTP.post_form(URI.parse(uri), form)
   rescue Exception
+    log("Net::HTTP exception: " + $!.to_s)
     # THIS IS SO BAD, BUT HEY SUCH IS LIFE UNTIL 1.9
     # WHY?
     # BEST DESCRIPTION IS HERE http://jerith.livejournal.com/40063.html
