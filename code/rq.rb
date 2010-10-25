@@ -81,7 +81,7 @@ if args[:cmd] == 'sendmesg'
 
   # Construct message
   mesg = {}
-  keys = %w(dest src count max_count param1 param2 param3 param3 due)
+  keys = %w(dest src count max_count param1 param2 param3 param4 due)
   keys.each do
     |key|
     next unless args.has_key?(key)
@@ -111,7 +111,7 @@ if args[:cmd] == 'prepmesg'
 
   # Construct message
   mesg = {}
-  keys = %w(dest src count max_count param1 param2 param3 param3 due)
+  keys = %w(dest src count max_count param1 param2 param3 param4 due)
   keys.each do
     |key|
     next unless args.has_key?(key)
@@ -232,7 +232,7 @@ if args[:cmd] == 'single_que'
 
   # Construct message
   mesg = {}
-  keys = %w(dest src count max_count param1 param2 param3 param3 due)
+  keys = %w(dest src count max_count param1 param2 param3 param4 due)
   keys.each do
     |key|
     next unless args.has_key?(key)

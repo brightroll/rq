@@ -166,7 +166,7 @@ if remote_delivery
 
     # Construct message
     mesg = {}
-    keys = %w(dest src count max_count param1 param2 param3 param3 post_run_webhook orig_msg_id)
+    keys = %w(dest src count max_count param1 param2 param3 param4 post_run_webhook orig_msg_id)
     keys.each do
       |key|
       next unless curr_msg.has_key?(key)
@@ -330,7 +330,7 @@ if nil == new_msg_id          # No, do prep, and store id
 
   # Construct message
   mesg = {}
-  keys = %w(dest src count max_count param1 param2 param3 param3 post_run_webhook orig_msg_id)
+  keys = %w(dest src count max_count param1 param2 param3 param4 post_run_webhook orig_msg_id)
   keys.each do
     |key|
     next unless curr_msg.has_key?(key)
