@@ -131,8 +131,18 @@ module RQ
 
       the_method = prms.fetch("_method", 'commit')
 
-      js_data = JSON.parse(File.read("./config/config.json"))
-      hostnames = [ "http://#{request.host}:#{request.port}/" ].concat(js_data['hostnames'] || [])
+      # request.host and request.port are setup by the config file
+      hostnames = [ "http://#{request.host}:#{request.port}/" ]
+      if File.exists? "./config/aliases.json"
+        begin
+          js_data = JSON.parse(File.read("./config/aliases.json"))
+          hostnames.concat(js_data['hostnames'] || [])
+        rescue
+          p $!
+          p "BAD aliases.json - could not parse"
+          throw :halt, [404, "404 - Couldn't parse existing aliases.json file."]
+        end
+      end
 
       if hostnames.any? {|h| prms['dest'].index(h) == 0}
         q_name = params[:name]

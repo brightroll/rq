@@ -215,6 +215,8 @@ module RQ
 
           RQ::Queue.log(job_path, "running #{script_path}")
 
+          load_aliases_config()
+
           ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
           ENV["RQ_HOSTNAMES"] = @hostnames.join(" ")
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
@@ -282,11 +284,26 @@ module RQ
         js_data = JSON.parse(data)
         @host = js_data['host']
         @port = js_data['port']
-        @hostnames = [ "http://#{@host}:#{@port}/" ].concat(js_data['hostnames'] || [])
       rescue
         return nil
       end
       return js_data
+    end
+
+    def load_aliases_config
+      @hostnames = [ "http://#{@host}:#{@port}/" ]
+      if File.exists?(@rq_config_path + 'aliases.json')
+        begin
+          data = File.read(@rq_config_path + 'aliases.json')
+          js_data = JSON.parse(data)
+          @hostnames.concat( js_data['hostnames'] || [] )
+        rescue
+          log($!)
+          log("Invalid aliases.json. Could not parse.")
+          return false
+        end
+      end
+      return true
     end
 
     def load_config
