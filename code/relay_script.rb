@@ -223,7 +223,7 @@ if remote_delivery
 
       md5 = file_md5("../attach/#{fname}")
 
-      pipe_res = `curl -0 -s -F filedata=@../attach/#{fname} -F pathname=#{fname} -F msg_id=#{new_short_msg_id} -F x_format=json #{remote_q_uri}/#{new_short_msg_id}/attach/new`
+      pipe_res = `curl -0 -s -F filedata=@../attach/#{fname} -F pathname=#{fname} -F msg_id=#{new_short_msg_id} -F x_format=json #{new_msg_id}/attach/new`
       #p $?
       #p pipe_res
       # Get the URL
@@ -256,7 +256,7 @@ if remote_delivery
   form = { :x_format => 'json', '_method' => 'commit', :msg_id => new_short_msg_id }
 
   # Get the URL
-  uri = remote_q_uri + "/#{new_short_msg_id}"
+  uri = new_msg_id
   begin
     res = Net::HTTP.post_form(URI.parse(uri), form)
   rescue Exception
