@@ -229,7 +229,14 @@ if remote_delivery
         soft_fail("Couldn't run curl to attach to message: #{$?.exitstatus.inspect}")
       end
 
-      result = JSON.parse(pipe_res)
+      begin
+        result = JSON.parse(pipe_res)
+      rescue Exception
+        log("Could not parse JSON")
+        log(pipe_res)
+        write_status('err', "BAD JSON")
+        exit(1)
+      end
 
       if result[0] != 'ok'
         if result[0] == 'fail' and result[1] == 'cannot find message'
