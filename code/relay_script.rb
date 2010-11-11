@@ -8,10 +8,6 @@ require 'digest'
 
 def log(mesg)
   m = "#{Process.pid} - #{Time.now} - #{mesg}\n"
-  File.open('relay.log', "a") do
-    |f|
-    f.write(m)
-  end
   print m
   $stdout.flush
 end
