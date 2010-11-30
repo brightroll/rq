@@ -117,7 +117,7 @@ module RQ
       end
 
       # Normalize some values
-      if prms.has_key? 'post_run_webhook'
+      if prms.has_key? 'post_run_webhook' and prms['post_run_webhook'].is_a? String
         # clean webhook input of any spaces
         # Ruby split..... so good!
         prms['post_run_webhook'] = prms['post_run_webhook'].split ' '
