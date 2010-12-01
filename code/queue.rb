@@ -668,15 +668,18 @@ module RQ
 
         # Now check for attachments
         if File.directory?(basename + "/attach/")
+          cwd = Dir.pwd
           ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
           if not ents.empty?
             msg['_attachments'] = { }
             ents.each do
               |ent|
               msg['_attachments'][ent] = { }
-              md5, size = file_md5("#{basename}/attach/#{ent}")
+              path = "#{basename}/attach/#{ent}"
+              md5, size = file_md5(path)
               msg['_attachments'][ent]['md5'] = md5
               msg['_attachments'][ent]['size'] = size
+              msg['_attachments'][ent]['path'] = cwd + '/' + path
             end
           end
         end

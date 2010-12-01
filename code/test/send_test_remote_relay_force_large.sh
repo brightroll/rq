@@ -137,19 +137,31 @@ while [  $COUNTER -lt 4 ]; do
 
     if [ "${attachstat_result[1]}" != "1" ]; then
         echo "Sorry, system didn't get attachment status message properly"
-        echo "Expected: 1    Got: #{attachstat_result[1]}"
+        echo "Expected: 1    Got: ${attachstat_result[1]}"
         exit 1
     fi
 
     if [ "${attachstat_result[2]}" != "cornell-box.png" ]; then
         echo "Sorry, system didn't get attachment status message properly"
-        echo "Expected: cornell-box.png Got: #{attachstat_result[2]}"
+        echo "Expected: cornell-box.png Got: ${attachstat_result[2]}"
         exit 1
     fi
 
     if [ "${attachstat_result[3]}" != "fd9e598f9eadc9cd045530b11ca9c3bc" ]; then
         echo "Sorry, system didn't get attachment status message properly"
-        echo "Expected: fd9e598f9eadc9cd045530b11ca9c3bc Got: #{attachstat_result[3]}"
+        echo "Expected: fd9e598f9eadc9cd045530b11ca9c3bc Got: ${attachstat_result[3]}"
+        exit 1
+    fi
+
+    if [ "${attachstat_result[4]}" != "1492960" ]; then
+        echo "Sorry, system didn't get attachment status message properly"
+        echo "Expected: 96007 Got: ${attachstat_result[4]}"
+        exit 1
+    fi
+
+    if [ ! -f "${attachstat_result[5]}" ]; then
+        echo "Sorry, system didn't get attachment status message properly"
+        echo "Expected: <valid path to attachment>. Got: ${attachstat_result[5]}"
         exit 1
     fi
 

@@ -262,13 +262,13 @@ if args[:cmd] == 'attachstatusmesg'
     if result[1].has_key?('_attachments')
       result[1]['_attachments'].each do
         |k,v|
-        ents << [k, v['md5']]
+        ents << [k, v['md5'], v['size'], v['path']]
       end
     end
     print "#{result[0]} #{ents.length}\n"
     ents.each do
       |ent|
-      print "#{ent[0]} #{ent[1]}\n"
+      print "#{ent[0]} #{ent[1]} #{ent[2]} #{ent[3]}\n"
     end
   else
     print "#{result[0]} #{result[1]}\n"
