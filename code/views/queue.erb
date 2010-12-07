@@ -47,7 +47,7 @@
       dest: <span class="yellow"> <%= msg_full['dest'] %></span>
     <% end %>
   <% end %>
-  : in <%= msg[1] - Time.now.to_i %> secs</span>
+  : in <%= msg[1].to_i - Time.now.to_i %> secs</span>
   <span class="">
     <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
     <input name="_method" type="hidden" value="delete" />
