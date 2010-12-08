@@ -222,6 +222,7 @@ module RQ
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
           ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
+          ENV["RQ_FULL_MSG_ID"] = gen_full_msg_id(msg)
           ENV["RQ_MSG_DIR"] = job_path
           ENV["RQ_PIPE"] = "3"
           ENV["RQ_COUNT"] = msg['count'].to_s

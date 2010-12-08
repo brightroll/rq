@@ -10,12 +10,14 @@ ENV["RQ_HOST"]       = Base URL of host (Ex. "http://localhost:3333/")
 ENV["RQ_HOSTNAMES"]  = Base URLs of host (aliases) (Ex. "http://localhost:3333/ http://butter:1234/")
                        Split by space
 
-ENV["RQ_DEST"]       = Full Msg ID
-                       (Ex. http://localhost:3333/q/test/20091109.0558.57.780)
+ENV["RQ_DEST"]       = Msg Dest Queue (Ex. http://localhost:3333/q/test/)
 
-ENV["RQ_DEST_QUEUE"] = Queue Name (Ex. 'test')
+ENV["RQ_DEST_QUEUE"] = Just Queue Name (Ex. 'test')
 
 ENV["RQ_MSG_ID"]     = Short msg id (Ex. "20091109.0558.57.780")
+
+ENV["RQ_FULL_MSG_ID"] = Full msg id of message being processed
+                       (Ex. http://vidxcode27.btrll.com:3333/q/test/20091109.0558.57.780)
 
 ENV["RQ_MSG_DIR"]    = Dir for msg (Should be Current Dir unless dir is changed
                        by script)
