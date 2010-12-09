@@ -346,6 +346,7 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
+      # TODO: use path from get_message instead of below
       if ['done', 'relayed'].include? msg['state']
         path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
         path += "/attach/#{params['attach_name']}"
