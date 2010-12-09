@@ -1,5 +1,3 @@
-require 'rubygems'
-require 'git'
 
 desc  'Increment the version.rb file with a new version number'
 task  :increment_ver do
