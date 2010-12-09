@@ -1,3 +1,6 @@
+require 'rubygems'
+require 'git'
+
 desc  'Increment the version.rb file with a new version number'
 task  :increment_ver do
     version_file = "version.rb"
@@ -31,5 +34,10 @@ desc  'Check the updated version number back into git'
 task  :update_version do
   #need to git push the new version number back to the repo 
   sh %{ git commit version.rb -m "increment VERSION_NUMBER" && git push }
+end
+
+desc 'Push git tag'
+git :tag do |t|
+  t.version_file = 'version.rb'
 end
 
