@@ -4,6 +4,7 @@ function write_status {
   echo $1 $2 >&3
 }
 
+
 write_status 'run'  "just started"
 echo "TESTTESTTEST"
 write_status 'run' "a little after just started"
@@ -11,7 +12,17 @@ write_status 'run' "a little after just started"
 
 pwd
 
+if [ "$RQ_PARAM1" == "html" ]; then
+  echo "<span id='envspan' style='color: blue;'>"
+fi
+env | grep RQ_
+if [ "$RQ_PARAM1" == "html" ]; then
+  echo "</span>"
+fi
+
+echo "----------- all env ---------"
 env
+echo "-----------------------------"
 
 lsof -p $$
 

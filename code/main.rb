@@ -327,7 +327,8 @@ module RQ
         throw :halt, [404, "404 - Message ID log '#{params['log_name']}' not found"]
       end
 
-      send_file(path)
+      url = "http://#{request.host}:#{request.port}#{request.path_info}"
+      ["<html><head><title>#{url}</title></head><body><pre>", File.read(path), '</pre></body></html>'].join("\n")
     end
 
     get '/q/:name/:msg_id/attach/:attach_name' do
