@@ -57,6 +57,8 @@ def set_id(msg_id)
   end
   File.rename('relay_id.tmp', 'relay_id')
 
+  log("Now using relay_id: #{msg_id}")
+
   return true
 end
 
@@ -241,7 +243,7 @@ if remote_delivery
       if result[0] != 'ok'
         if result[0] == 'fail' and result[1] == 'cannot find message'
           erase_id()
-          soft_fail("Remote message disappeared: #{pipe_res}. Getting new id.")
+          soft_fail("Remote message [#{new_msg_id}] disappeared: #{pipe_res}. Getting new id.")
         end
         soft_fail("Couldn't attach to test message properly : #{pipe_res}")
       end
@@ -279,13 +281,13 @@ if remote_delivery
   if json_result[0] != 'ok'
     if json_result[0] == 'fail' and json_result[1] == 'cannot find message'
       erase_id()
-      soft_fail("Remote message disappeared: #{json_result.inspect}. Getting new id.")
+      soft_fail("Remote message [#{new_msg_id}] disappeared: #{json_result.inspect}. Getting new id.")
     end
     soft_fail("Couldn't commit message: #{json_result.inspect}")
   else
+    erase_id()
     write_status('relayed', new_msg_id)
   end
-
 
   exit(0)
 end
@@ -387,6 +389,7 @@ mesg = {'msg_id' => new_short_msg_id, }
 result = qc.commit_message(mesg)
 
 if result && (result[0] == "ok")
+  erase_id()
   write_status('relayed', new_msg_id)
 else
   soft_fail("Couldn't commit message: #{result[0]} - #{result[1]}")
