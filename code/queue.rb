@@ -181,6 +181,11 @@ module RQ
           end
 
           f = File.open(job_path + "/stdio.log", "a")
+          pfx = "#{Process.pid} - #{Time.now} -"
+          f.write("\n#{pfx} RQ START - #{gen_full_msg_id(msg)}\n")
+          f.write("#{pfx} Running #{script_path}\n")
+          f.flush
+
           RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
           if f.fileno != 0
             IO.for_fd(0).close rescue nil
