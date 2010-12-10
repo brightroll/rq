@@ -955,10 +955,10 @@ module RQ
       return true
     end
 
-    def write_msg_process_id(msg_id, pid, state = 'run')
+    def write_msg_process_id(msg_id, pid)
       # Write message pid to disk
       begin
-        basename = @queue_path + "/#{state}/" + msg_id + "/pid"
+        basename = "#{@queue_path}/run/#{msg_id}/pid"
         File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
         File.rename(basename + '.tmp', basename)
       rescue
@@ -970,6 +970,10 @@ module RQ
       return true
     end
 
+    def remove_msg_process_id(msg_id, state = 'run')
+      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      FileUtils.rm_rf(basename)
+    end
 
     def log(mesg)
       File.open(@queue_path + '/queue.log', "a") do
@@ -1177,6 +1181,7 @@ module RQ
                 begin
                   basename = "#{@queue_path}/run/#{msg_id}"
                   raise unless File.exists? basename
+                  remove_msg_process_id(msg_id)
                   if ['done', 'relayed'].include? new_state
                     handle_dups_done(msg, new_state)
                     store_msg(msg, 'run') # store message since it made it to done and we want the 'dups' field to live
