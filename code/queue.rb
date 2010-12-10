@@ -70,10 +70,12 @@ module RQ
     end
 
     def self.log(path, mesg)
-      File.open(path + '/queue.log', "a") do
-        |f|
-        f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-      end
+      return
+      # Turn off until we need it or we have a debug mode
+      #File.open(path + '/queue.log', "a") do
+      #  |f|
+      #  f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
+      #end
     end
 
     def self.start_process(options)
