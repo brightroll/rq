@@ -7,8 +7,8 @@ require 'fcntl'
 require 'digest'
 
 def log(mesg)
-  m = "#{Process.pid} - #{Time.now} - #{mesg}\n"
-  print m
+  linkified_mesg = mesg.gsub(/(https?:\/\/[^ ]+)/) { |m| "<a href='#{m}'>#{m}</a>" }
+  puts "<span style=\"color: grey;\">#{$$} - #{Time.now}</span> - #{linkified_mesg}"
   $stdout.flush
 end
 
