@@ -2,11 +2,11 @@
 
 #+ Use a new queue test_run_states with num_workers 3
 #+ Inject two slow running messages into the queue
-#- Set que admin down
+#- Set que admin pause
 #- Stop the queue
 #- Kill the workers
 ##- Verify processes in run killed
-#- Restart the queue administratively down
+#- Restart the queue administratively pause
 #- Verify nothing in run dirs
 #- Verify nothing in run state
 
@@ -113,8 +113,8 @@ if not proper
   exit 1
 end
 
-# Set que admin down
-File.open('config/test_run.down', 'w') { |f| f.write(' ') }
+# Set que admin pause
+File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
 
 # Stop the queue
 `ruby ./code/queuemgr_ctl.rb stop`
@@ -137,7 +137,7 @@ if is_pid_alive?(pid2)
   exit 1
 end
 
-# Restart the queue administratively down
+# Restart the queue administratively pause
 `ruby ./code/queuemgr_ctl.rb start`
 
 # TODO: properly check for proper start
@@ -160,6 +160,6 @@ if result['que_size'] != 2
   exit 1
 end
 
-File.unlink('config/test_run.down')
+File.unlink('config/test_run.pause')
 puts "ALL DONE SUCCESSFULLY"
 

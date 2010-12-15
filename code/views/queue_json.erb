@@ -1,10 +1,12 @@
-{ "uptime": <%=qc.uptime%>,<% status = qc.status %>
-  "admin_status": "<%=status[0]%>",
-  "oper_status": "<%=status[1]%>",<% num_messages = qc.num_messages %>
-  "prep_size": <%= num_messages['prep'] %>,
-  "que_size": <%= num_messages['que'] %>,
-  "run_size": <%= num_messages['run'] %>,
-  "done_size": <%= num_messages['done'] %>,
-  "err_size": <%= num_messages['err'] %>,
-  "relayed_size": <%= num_messages['relayed'] %>
+{<% status = qc.status %>  "admin_status": "<%=status[0]%>"
+   ,"oper_status": "<%=status[1]%>"
+<% if status[1] != 'DOWN' %>
+   ,"uptime": <%=qc.uptime%><% num_messages = qc.num_messages %>
+   ,"prep_size": <%= num_messages['prep'] %>
+   ,"que_size": <%= num_messages['que'] %>
+   ,"run_size": <%= num_messages['run'] %>
+   ,"done_size": <%= num_messages['done'] %>
+   ,"err_size": <%= num_messages['err'] %>
+   ,"relayed_size": <%= num_messages['relayed'] %>
+ <% end %>
 }

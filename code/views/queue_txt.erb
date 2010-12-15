@@ -1,7 +1,8 @@
-<%="uptime: #{qc.uptime}"%>
 <% status = qc.status %>
 <%="admin_status: #{status[0]}"%>
 <%="oper_status: #{status[1]}"%>
+<% if status[1] != "DOWN" %>
+<%="uptime: #{qc.uptime}"%>
 
 <% messages = qc.num_messages %>
 <%="prep: #{messages['prep']}"%>
@@ -11,3 +12,4 @@
 <%="done: #{messages['done']}"%>
 <%="err: #{messages['err']}"%>
 <%="relayed: #{messages['relayed']}"%>
+<% end %>

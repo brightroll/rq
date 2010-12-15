@@ -191,9 +191,15 @@ function verify_msg_dup()
 }
 
 
-echo "SETTING admin DOWN"
-echo "TEST que in proper oper DOWN mode"
-touch "./config/test.down"
+echo "SETTING admin PAUSE"
+echo "TEST que in proper oper PAUSE mode"
+touch "./config/test.pause"
+
+# Inject 2 fast running messages into the queue
+send_msg -2
+msg1=$RETURN_VAR
+send_msg -2
+msg2=$RETURN_VAR
 
 # Verify nothing in run and all in que
 curl -0 -sL -o _test.txt http://127.0.0.1:${rq_port}/q/test.txt
@@ -201,22 +207,33 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running/couldn't get /q/test.txt"
   exit 1
 fi
-egrep "admin_status: DOWN" _test.txt > /dev/null
+egrep "run: 0" _test.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system has jobs in run"
+  exit 1
+fi
+egrep "que: 2" _test.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system has incorrect # of jobs in que"
+  exit 1
+fi
+egrep "admin_status: PAUSE" _test.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system has incorrect admin_status - should be DOWN"
   exit 1
 fi
-egrep "oper_status: DOWN" _test.txt > /dev/null
+egrep "oper_status: PAUSE" _test.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system has incorrect oper_status - should be DOWN"
   exit 1
 fi
 
-echo "TEST que in proper oper DOWN mode"
+
+echo "TEST que in proper oper PAUSE mode"
 echo "SETTING admin UP"
 
 # Set que to admin up and kick scheduler (asking for status is a kick)
-rm "./config/test.down"
+rm "./config/test.pause"
 curl -0 -sL -o _test2.txt http://127.0.0.1:${rq_port}/q/test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running/couldn't get /q/test.txt"
@@ -233,8 +250,41 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+
+# Verify jobs finish
+verify_msg $msg1
+verify_msg $msg2
+
+# Verify nothing in que or run
+curl -0 -sL -o _test3.txt http://127.0.0.1:${rq_port}/q/test.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ is not running/couldn't get /q/test.txt"
+  exit 1
+fi
+egrep "run: 0" _test3.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system has jobs in run"
+  exit 1
+fi
+egrep "que: 0" _test3.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system has incorrect # of jobs in que"
+  exit 1
+fi
+egrep "admin_status: UP" _test3.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system has incorrect admin_status - should be UP"
+  exit 1
+fi
+egrep "oper_status: UP" _test3.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system has incorrect oper_status - should be UP"
+  exit 1
+fi
+
 rm "_test.txt"
 rm "_test2.txt"
+rm "_test3.txt"
 
 echo "SUCCESS - system processed all messages properly"
 exit 0

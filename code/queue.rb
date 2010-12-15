@@ -6,6 +6,7 @@ require 'digest'
 require 'fileutils'
 require 'code/unixrack'
 require 'code/hashdir'
+require 'code/adminoper'
 
 module RQ
   class Queue
@@ -29,9 +30,7 @@ module RQ
 
       @config = {}
 
-      @status = {}
-      @status["admin_status"] = "UP"
-      @status["oper_status"]  = "UP"
+      @status = RQ::AdminOper.new(@rq_config_path + @name)
 
       @temp_que_dups = {}
 
@@ -48,6 +47,8 @@ module RQ
       end
 
       load_messages
+
+      @status.update!
     end
 
     def self.create(options)
@@ -143,14 +144,16 @@ module RQ
       script_path = File.expand_path(@config['script'])
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
-        if @status['oper_status'] == 'UP'
-          @status['oper_status'] = 'DOWN'
-          log("OPER STATUS is set to DOWN due to ERROR")
+        if @status.oper_status != 'SCRIPTERROR'
+          @status.set_daemon_status('SCRIPTERROR')
+          log("SCRIPTERROR - DAEMON STATUS is set to SCRIPTERROR")
+          log("OPER STATUS is now: #{@status.oper_status}")
         end
         return
-      elsif @status['oper_status'] == 'DOWN'
-        @status['oper_status'] = 'UP'
-        log("OPER STATUS is set to UP")
+      elsif @status.oper_status == 'SCRIPTERROR'
+        @status.set_daemon_status('UP')
+        log("SCRIPTERROR FIXED - DAEMON STATUS is set to UP")
+        log("OPER STATUS is now: #{@status.oper_status}")
       end
 
       #log("0 child process prep step for runnable #{script_path}")
@@ -998,18 +1001,11 @@ module RQ
     def run_scheduler!
       @wait_time = 60
 
-      # If oper_status != "UP"
-      if File.exists?("#{@rq_config_path}#{@name}.down")
-        if @status['admin_status'] == "UP"
-          @status['admin_status'] = "DOWN"
-          @status['oper_status'] = "DOWN"
-          log("ADMIN STATUS is set to DOWN")
-        end
+      @status.update!
+
+      # This could be DOWN, PAUSE, SCRIPTERROR
+      if @status.oper_status != "UP"
         return
-      elsif @status['admin_status'] == "DOWN"
-        @status['admin_status'] = "UP"
-        @status['oper_status'] = "UP"
-        log("ADMIN STATUS is set to UP")
       end
 
       # Are we arleady running max workers
@@ -1357,7 +1353,8 @@ module RQ
       end
 
       if packet.index('status') == 0
-        resp = [ @status["admin_status"], @status["oper_status"] ].to_json
+        @status.update!
+        resp = [ @status.admin_status, @status.oper_status ].to_json
         send_packet(sock, resp)
         return
       end
@@ -1366,6 +1363,14 @@ module RQ
         resp = [ 'ok' ].to_json
         send_packet(sock, resp)
         shutdown!
+        return
+      end
+
+      # IF queue is admin_status DOWN, no need to respond to any of the
+      # following messages (Note: there are other states, this is a hard DOWN)
+      if @status.admin_status == 'DOWN'
+        resp = [ "fail", "oper_status: DOWN"].to_json
+        send_packet(sock, resp)
         return
       end
 

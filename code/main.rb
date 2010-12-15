@@ -170,6 +170,10 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
+      if result == [ "fail", "oper_status: DOWN"]
+        throw :halt, [503, "503 - Service Unavailable - Operationally Down"]
+      end
+
       if api_call == 'json'
         "#{result.to_json}"
       else
