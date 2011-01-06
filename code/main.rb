@@ -182,13 +182,14 @@ module RQ
     end
 
     get '/q/:name/restart' do
-      qc = RQ::QueueClient.new(params[:name])
+      res = RQ::QueueMgrClient.restart_queue(params[:name])
 
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
+      if not res
+        throw :halt, [500, "500 - Couldn't restart queue. Internal error."]
       end
-
-      qc.shutdown
+      if res[0] != 'ok'
+        throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
+      end
 
       <<-HERE
         <script type="text/javascript">

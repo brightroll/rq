@@ -108,6 +108,34 @@ module RQ
         return
       end
 
+      if data[0].index('restart_queue') == 0
+        queuename = data[0].split(' ', 2)[1]
+        log("RESP [ restart_queue - #{queuename} ]")
+        worker = @queues.find { |i| i.name == queuename }
+        status = 'fail'
+        if worker.status == "RUNNING"
+          Process.kill("TERM", worker.pid) rescue nil
+          status = 'ok'
+        else
+          # TODO
+          # when I have timers, do this as a message to main event loop
+          # to centralize this code
+          results = RQ::Queue.start_process(worker.options)
+          if results
+            log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
+            worker.status = "RUNNING"
+            worker.num_restarts = 0
+            worker.pid = results[0]
+            worker.child_write_pipe = results[1]
+            status = 'ok'
+          end
+        end
+        resp = [status, queuename].to_json #['ok','brserv_push'].to_json
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
       if data[0].index('create_queue') == 0
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
@@ -162,12 +190,12 @@ module RQ
 
       @queues.each do
         |q|
-        Process.kill("TERM", q.pid)
+        Process.kill("TERM", q.pid) if q.pid
       end
 
       @scheduler.each do
         |q|
-        Process.kill("TERM", @scheduler.pid)
+        Process.kill("TERM", @scheduler.pid) if @scheduler.pid
       end
     end
 
@@ -254,8 +282,10 @@ def run_loop
 
   # Ye old event loop
   while true
-    io_list = qmgr.queues.map { |i| i.child_write_pipe }
+    #log(qmgr.queues.select { |i| i.status == "RUNNING" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
+    io_list = qmgr.queues.select { |i| i.status == "RUNNING" }.map { |i| i.child_write_pipe }
     io_list << $sock
+    #log(io_list.inspect)
     log('sleeping')
     begin
       ready = IO.select(io_list, nil, nil, 60)
@@ -290,11 +320,23 @@ def run_loop
             log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]}")
             worker.child_write_pipe.close
             if worker.status == "RUNNING"
-              results = RQ::Queue.start_process(worker.options)
-              log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
-              worker.pid = results[0]
-              worker.child_write_pipe = results[1]
               worker.num_restarts += 1
+              # TODO
+              # would really like a timer on the event loop so I can sleep a sec, but
+              # whatever
+              #
+              # If queue.rb code fails/exits 
+              if worker.num_restarts >= 11
+                worker.status = "INTERNAL FAIL"
+                worker.pid = nil
+                worker.child_write_pipe = nil
+                log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
+              else
+                results = RQ::Queue.start_process(worker.options)
+                log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
+                worker.pid = results[0]
+                worker.child_write_pipe = results[1]
+              end
             else
               qmgr.queues.delete(worker)
               if qmgr.queues.empty?
