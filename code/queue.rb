@@ -933,7 +933,7 @@ module RQ
           end
           if parts[0] == 'resend'
             @completed << [msg, :resend, parts[1].to_i]
-            due,reason = parts[1].split('-')
+            due,reason = parts[1].split('-',2)
             msg['due'] = Time.now.to_i + due.to_i
             msg['count'] = msg.fetch('count', 0) + 1
             store_msg(msg, 'run')
