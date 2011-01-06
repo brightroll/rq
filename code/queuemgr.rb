@@ -183,6 +183,9 @@ module RQ
     def shutdown
       final_shutdown! if @queues.empty?
       
+      # Remove non-running entries
+      @queues = @queues.select { |q| q.pid }
+
       @queues.each do
         |q|
         q.status = "SHUTDOWN"
@@ -193,6 +196,7 @@ module RQ
         Process.kill("TERM", q.pid) if q.pid
       end
 
+
       @scheduler.each do
         |q|
         Process.kill("TERM", @scheduler.pid) if @scheduler.pid
@@ -202,6 +206,9 @@ module RQ
     def final_shutdown!
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
+      $sock.close
+      File.unlink('config/queuemgr.sock') rescue nil
+      log("FINAL SHUTDOWN - EXITING")
       Process.exit! 0
     end
 
@@ -282,8 +289,8 @@ def run_loop
 
   # Ye old event loop
   while true
-    #log(qmgr.queues.select { |i| i.status == "RUNNING" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
-    io_list = qmgr.queues.select { |i| i.status == "RUNNING" }.map { |i| i.child_write_pipe }
+    #log(qmgr.queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
+    io_list = qmgr.queues.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
     io_list << $sock
     #log(io_list.inspect)
     log('sleeping')
@@ -313,7 +320,14 @@ def run_loop
         qmgr.handle_request(client_socket)
       else
         # probably a child pipe that closed
-        worker = qmgr.queues.find { |i| i.child_write_pipe.fileno == io.fileno }
+        worker = qmgr.queues.find {
+          |i|
+          if i.child_write_pipe
+            i.child_write_pipe.fileno == io.fileno
+          else
+            false
+          end
+        }
         if worker
           res = Process.wait2(worker.pid, Process::WNOHANG)
           if res
@@ -327,7 +341,7 @@ def run_loop
               #
               # If queue.rb code fails/exits 
               if worker.num_restarts >= 11
-                worker.status = "INTERNAL FAIL"
+                worker.status = "ERROR"
                 worker.pid = nil
                 worker.child_write_pipe = nil
                 log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
