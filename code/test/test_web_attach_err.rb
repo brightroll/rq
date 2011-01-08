@@ -47,6 +47,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       sleep 0.1
       next if ["prep", "que", "run"].include? res[1]
       assert_equal("err", res[1])
+      break
     end
 
     # Check that you can read attachment from err

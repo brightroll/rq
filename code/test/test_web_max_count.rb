@@ -66,6 +66,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
 
     assert_equal("done", result['state'])
@@ -88,6 +89,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
 
     assert_equal("done", result['state'])
@@ -114,7 +116,9 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
+
     assert_equal("done", result['state'])
 
     res = Net::HTTP.get_response(URI.parse(msg_id))
@@ -141,7 +145,9 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
+
     assert_equal("done", result['state'])
 
     res = Net::HTTP.get_response(URI.parse(msg_id))
@@ -169,6 +175,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
 
     assert_equal("done", result['state'])
@@ -197,6 +204,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
 
     assert_equal("err", result['state'])
@@ -223,6 +231,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
       assert_equal("200", res.code)
       result = JSON.parse(res.body)
       next if ["prep", "que", "run"].include? result['state']
+      break
     end
 
     assert_equal("done", result['state'])
