@@ -5,6 +5,24 @@ function write_status {
 }
 
 
+RETURN_VAR=      # BASH IS SOOOOOOO AWESOMEST
+
+function read_status() {
+  # read line from fd4 into result
+  read -u 4 readresult
+
+  if [ "$?" -ne "0" ]; then
+    echo "Sorry, system didn't read response correctly"
+    exit 1
+  fi
+
+  RETURN_VAR=(${readresult})
+
+  return
+}
+
+
+
 write_status 'run'  "just started"
 echo "TESTTESTTEST"
 write_status 'run' "a little after just started"
@@ -73,6 +91,61 @@ if [ "$RQ_PARAM2" == "err" ]; then
   echo "This script should end up with err status"
   write_status 'err' "by design"
   exit 0
+fi
+
+if [ "$RQ_PARAM1" == "dup_relay" ]; then
+  # Todo: need something better than a free roaming rm
+  rm -f "$RQ_PARAM2"
+  echo "This script should create a duplicate to the test_nop queue"
+  write_status 'run' "start dup"
+  write_status 'dup' "0-X-${RQ_HOST}/q/test_nop"
+  read_status
+  echo "Got: [${RETURN_VAR[@]}]"
+
+  if [ "${RETURN_VAR[0]}" != "ok" ]; then
+    echo "Sorry, system didn't dup test message properly : ${RETURN_VAR}"
+    echo "But we exit with an 'ok' the result file won't get generated"
+  fi
+
+  if [ "${RETURN_VAR[0]}" == "ok" ]; then
+    # Old school IPC
+    echo "${RETURN_VAR[1]}" > "$RQ_PARAM2"
+  fi
+  write_status 'run' "done dup"
+fi
+
+if [ "$RQ_PARAM1" == "dup_direct" ]; then
+  # Todo: need something better than a free roaming rm
+  rm -f "$RQ_PARAM2"
+  echo "This script should create a duplicate to the test_nop queue"
+  write_status 'run' "start dup"
+  write_status 'dup' "0-X-test_nop"
+  read_status
+  echo "Got: [${RETURN_VAR[@]}]"
+
+  if [ "${RETURN_VAR[0]}" != "ok" ]; then
+    echo "Sorry, system didn't dup test message properly : ${RETURN_VAR}"
+    echo "But we exit with an 'ok' the result file won't get generated"
+  fi
+
+  if [ "${RETURN_VAR[0]}" == "ok" ]; then
+    # Old school IPC
+    echo "${RETURN_VAR[1]}" > "$RQ_PARAM2"
+  fi
+  write_status 'run' "done dup"
+fi
+
+if [ "$RQ_PARAM1" == "dup_fail" ]; then
+  # Todo: need something better than a free roaming rm
+  rm -f "$RQ_PARAM2"
+  echo "This script should create a duplicate to a non-existent queue"
+  write_status 'run' "start dup"
+  write_status 'dup' "0-X-nope_this_q_does_not_exist"
+  read_status
+  echo "Got: [${RETURN_VAR[@]}]"
+  # Old school IPC
+  echo "${RETURN_VAR[@]}" > "$RQ_PARAM2"
+  write_status 'run' "done dup"
 fi
 
 

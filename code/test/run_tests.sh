@@ -54,6 +54,7 @@ for test in \
    test_web_max_count.rb \
    test_overrides.rb \
    test_web_overrides.rb \
+   send_dup.rb \
    test_web_done_json.rb ; do
 
       echo "RUNNING TEST: ${test}"

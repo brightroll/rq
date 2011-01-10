@@ -7,6 +7,7 @@ require 'fileutils'
 require 'code/unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
+require 'code/queueclient'
 
 module RQ
   class Queue
@@ -71,12 +72,10 @@ module RQ
     end
 
     def self.log(path, mesg)
-      return
-      # Turn off until we need it or we have a debug mode
-      #File.open(path + '/queue.log', "a") do
-      #  |f|
-      #  f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-      #end
+      File.open(path + '/queue.log', "a") do
+        |f|
+        f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
+      end
     end
 
     def self.start_process(options)
@@ -160,6 +159,7 @@ module RQ
       # 0 = stdin, 1 = stdout, 2 = stderr, 4 = pipe
       #
       parent_rd, child_wr = IO.pipe
+      child_rd, parent_wr = IO.pipe
 
       log("1 child process prep step for runnable #{script_path}")
       #log("1 child process prep step for runnable #{job_path}")
@@ -168,29 +168,51 @@ module RQ
         # Setup env
         $0 = "[rq] [#{@name}] [#{msg_id}]"
         begin
+
+          #child only code block
+
           Dir.chdir(job_path)   # Chdir to child path
 
-          RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
+          # TODO: log level
+          #RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
+
+          # We need to renumber fds to known locations. We need to map them higher
+          # to avoid doing more complicated logic below
+          IO.for_fd(13).close rescue nil
+          IO.for_fd(14).close rescue nil
+          child_wr.fcntl(Fcntl::F_DUPFD, 13)
+          child_rd.fcntl(Fcntl::F_DUPFD, 14)
+
           parent_rd.close
-          #child only code block
-          RQ::Queue.log(job_path, "post fork - child pipe fd: #{child_wr.fileno}")
+          parent_wr.close
+          # TODO: log level
+          #RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
+          #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
 
           # Unix house keeping
           #self.close_all_fds([child_wr.fileno])
 
-          if child_wr.fileno != 3
-            IO.for_fd(3).close rescue nil
-            fd = child_wr.fcntl(Fcntl::F_DUPFD, 3)
-            RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
-            #... the pipe fd will get closed on exec
-          end
+          #... the pipe fd will get closed on exec
+
+          # child_wr
+          IO.for_fd(3).close rescue nil
+          fd = IO.for_fd(13).fcntl(Fcntl::F_DUPFD, 3)
+          RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
+          IO.for_fd(13).close rescue nil
+
+          # child_rd
+          IO.for_fd(4).close rescue nil
+          fd = IO.for_fd(14).fcntl(Fcntl::F_DUPFD, 4)
+          RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
+          IO.for_fd(14).close rescue nil
+
 
           f = File.open(job_path + "/stdio.log", "a")
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
           f.flush
 
-          RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
+          #RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
           if f.fileno != 0
             IO.for_fd(0).close rescue nil
           end
@@ -214,15 +236,15 @@ module RQ
             RQ::Queue.log(job_path, "Error duping fd for 2 - got #{fd}") unless fd == 2
           end
 
-          RQ::Queue.log(job_path, 'post stdio re-assigning') unless fd == 2
-          (4..1024).each do |io|
+          #RQ::Queue.log(job_path, 'post stdio re-assigning') unless fd == 2
+          (5..32).each do |io|
             io = IO.for_fd(io) rescue nil
             next unless io
             io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
           end
-          RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
+          #RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
 
-          RQ::Queue.log(job_path, "running #{script_path}")
+          #RQ::Queue.log(job_path, "running #{script_path}")
 
           load_aliases_config()
 
@@ -244,12 +266,14 @@ module RQ
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
 
+          # TODO
 #          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
 
           # Setting priority to BATCH mode
           Process.setpriority(Process::PRIO_PROCESS, 0, 19)
 
-          RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
+          # TODO
+          #RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
           exec("bash -lc #{script_path}")
@@ -262,6 +286,7 @@ module RQ
 
       #parent only code block
       child_wr.close
+      child_rd.close
 
       if child_pid == nil
         parent_rd.close
@@ -271,6 +296,7 @@ module RQ
 
       msg['child_pid'] = child_pid
       msg['child_read_pipe'] = parent_rd
+      msg['child_write_pipe'] = parent_wr
       write_msg_process_id(msg_id, child_pid)
     end
 
@@ -400,7 +426,7 @@ module RQ
         if not msg.has_key?('due')
           msg['due'] = Time.now.to_i
         end
-        clean = msg.reject { |k,v| k == 'child_read_pipe' || k == 'child_pid' }
+        clean = msg.reject { |k,v| k == 'child_read_pipe' || k == 'child_pid' || k == 'child_write_pipe' }
         data = clean.to_json
         # Need a sysopen style system here TODO
         basename = @queue_path + "/#{que}/" + msg['msg_id']
@@ -506,6 +532,29 @@ module RQ
         log("#{r['msg_id']} - removed from @que as dup")
         i['dup'] = gen_full_msg_id(msg)
       }
+    end
+
+    # This is similar to check_msg, but it works with a message that is already
+    # in the system
+    def copy_and_clean_msg(input, new_dest = nil)
+      msg = {}
+      msg['dest'] = new_dest || input['dest']
+
+      # If orig_msg_id is set already, then use it
+      # otherwise we initialize it with this msg
+      msg['orig_msg_id'] = input['orig_msg_id']
+      msg['count'] = 0
+      msg['max_count'] = (input['max_count'] || 15).to_i
+
+      # Copy only these keys from input message
+      keys = %w(src param1 param2 param3 param4 post_run_webhook due)
+      keys.each do
+        |key|
+        next unless input.has_key?(key)
+        msg[key] = input[key]
+      end
+
+      return msg
     end
 
     def run_job(msg, from_state = 'que')
@@ -942,6 +991,89 @@ module RQ
             # since we are in the run queue, and we want to record
             # this to disk before moving on 
           end
+
+          ##############################################################################
+          # *** THIS ONE IS (((REALLY))) DIFFERENT ***
+          # We need to take an action instead of expecting an exit
+          # that will arrive soon.
+          if parts[0] == 'dup'
+            due,future,new_dest = parts[1].split('-',3)
+            new_due = Time.now.to_i + due.to_i
+
+            if new_dest.index('http') == 0
+              que_name = 'relay'
+            else
+              que_name = new_dest
+            end
+
+            qc = RQ::QueueClient.new(que_name)
+            if not qc.exists?
+              log("#{@name}:#{Process.pid} couldn't DUP message - #{que_name} not available.")
+              msg['child_write_pipe'].syswrite("fail couldn\'t connect to queue - #{que_name}\n")
+              return
+            end
+
+            # Copy orig message
+            msg_copy = copy_and_clean_msg(msg, new_dest)
+            msg_copy['due'] = new_due
+
+            basename = @queue_path + "/run/" + msg['msg_id']
+
+            # Now see if there are any attachments
+            attachments = []
+
+            if File.directory?(basename + "/attach/")
+              ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
+              if not ents.empty?
+                # Cool, lets normalize the paths
+                full_path = File.expand_path(basename + "/attach/")
+
+                attachments = ents.map { |e| "#{full_path}/#{e}" }
+              end
+            end
+
+            if attachments.empty?
+              result = qc.create_message(msg_copy)
+              if result[0] != 'ok'
+                log("#{@name}:#{Process.pid} couldn't DUP message - #{result[1]}")
+                msg['child_write_pipe'].syswrite("fail dup failed - #{result[1]}\n")
+                return
+              end
+              log("#{@name}:#{Process.pid} DUP message #{msg['msg_id']}-> #{result[1]}")
+              msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
+            else
+              result = qc.prep_message(msg_copy)
+              if result[0] != 'ok'
+                log("#{@name}:#{Process.pid} couldn't DUP message - #{result[1]}")
+                msg['child_write_pipe'].syswrite("fail dup failed - prep fail #{result[1]}\n")
+                return
+              end
+
+              # The short msg_id
+              que_msg_id = result[1][/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+              attachments.each {
+                |path|
+                r2 = qc.attach_message({'msg_id' => que_msg_id, 'pathname' => path})
+                if r2[0] != 'ok'
+                  log("#{@name}:#{Process.pid} couldn't DUP message - #{r2[1]}")
+                  msg['child_write_pipe'].syswrite("fail dup failed - attach fail #{r2[1]}\n")
+                  return
+                end
+              }
+
+              r3 = qc.commit_message({'msg_id' => que_msg_id})
+              if r3[0] != 'ok'
+                log("#{@name}:#{Process.pid} couldn't DUP message - #{r3[1]}")
+                msg['child_write_pipe'].syswrite("fail dup failed - commit fail #{r3[1]}\n")
+                return
+              end
+              log("#{@name}:#{Process.pid} DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
+              msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
+            end
+
+          end
+          ##############################################################################
         end
       end
 
@@ -1133,6 +1265,8 @@ module RQ
                 # Ok, close the pipe on our end
                 msg['child_read_pipe'].close
                 msg.delete('child_read_pipe')
+                msg['child_write_pipe'].close
+                msg.delete('child_write_pipe')
 
                 # Determine status of msg
                 completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
