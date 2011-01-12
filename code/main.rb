@@ -18,6 +18,17 @@ module RQ
       def url
         "http://#{request.host}:#{request.port}/"
       end
+
+      def get_queueclient(name)
+        # SPECIAL CASE - we allow relay
+        # No RQ should be connecting to another box's relay
+        # However, users need the web ui to interact, so we think
+        # this is safe and good for debugging/visiblity
+        if File.exists?("./config/rq_router_rules.rb") && name != 'relay'
+          name = 'rq_router'
+        end
+        RQ::QueueClient.new(name)
+      end
     end
 
     get '/' do
@@ -98,7 +109,7 @@ module RQ
     get '/q/:name/new_message' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = RQ::QueueClient.new(params[:name])
+      qc = get_queueclient(params[:name])
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
@@ -154,7 +165,7 @@ module RQ
         end
       end
 
-      qc = RQ::QueueClient.new(q_name)
+      qc = get_queueclient(q_name)
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
@@ -227,7 +238,7 @@ module RQ
         msg_id = msg_id[0..-6]
       end
 
-      qc = RQ::QueueClient.new(params[:name])
+      qc = get_queueclient(params[:name])
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
@@ -250,7 +261,7 @@ module RQ
     post '/q/:name/:msg_id/attach/new' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = RQ::QueueClient.new(params[:name])
+      qc = get_queueclient(params[:name])
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
@@ -307,7 +318,7 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = RQ::QueueClient.new(params[:name])
+      qc = get_queueclient(params[:name])
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
@@ -340,7 +351,7 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = RQ::QueueClient.new(params[:name])
+      qc = get_queueclient(params[:name])
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]
@@ -372,7 +383,7 @@ module RQ
     post '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = RQ::QueueClient.new(params[:name])
+      qc = get_queueclient(params[:name])
 
       if not qc.exists?
         throw :halt, [404, "404 - Queue not found"]

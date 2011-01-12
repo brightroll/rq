@@ -68,7 +68,7 @@ module RQ
       queue = {}
       queue['name'] = "relay"
       queue['script'] = "./code/relay_script.rb"
-      queue['ordering'] = "ordered"
+      queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
       result = RQ::QueueMgrClient.create_queue(queue)
@@ -76,7 +76,7 @@ module RQ
       queue = {}
       queue['name'] = "webhook"
       queue['script'] = "./code/webhook_script.rb"
-      queue['ordering'] = "ordered"
+      queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
       result = RQ::QueueMgrClient.create_queue(queue)
@@ -84,7 +84,15 @@ module RQ
       queue = {}
       queue['name'] = "cleaner"
       queue['script'] = "./code/cleaner_script.rb"
-      queue['ordering'] = "ordered"
+      queue['ordering'] = "none"
+      queue['num_workers'] = "1"
+      queue['fsync'] = 'no-fsync'
+      result = RQ::QueueMgrClient.create_queue(queue)
+
+      queue = {}
+      queue['name'] = "rq_router"
+      queue['script'] = "./code/rq_router_script.rb"
+      queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
       result = RQ::QueueMgrClient.create_queue(queue)
