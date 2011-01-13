@@ -176,18 +176,22 @@ module RQ
           # TODO: log level
           #RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
 
-          # We need to renumber fds to known locations. We need to map them higher
-          # to avoid doing more complicated logic below
-          IO.for_fd(13).close rescue nil
-          IO.for_fd(14).close rescue nil
-          child_wr.fcntl(Fcntl::F_DUPFD, 13)
-          child_rd.fcntl(Fcntl::F_DUPFD, 14)
+          #RQ::Queue.log(job_path, "post fork - parent rd pipe fd: #{parent_rd.fileno}")
+          #RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
+
+          #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
+          #RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
+
+          # WE MUST DO THIS BECAUSE WE MAY GET PIPE FDs IN THE 3-4 RANGE
+          # THIS GIVES US HIGHER # FDs SO WE CAN SAFELY CLOSE
+          child_wr_fd = child_wr.fcntl(Fcntl::F_DUPFD)
+          child_rd_fd = child_rd.fcntl(Fcntl::F_DUPFD)
+
+          #RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
+          #RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
 
           parent_rd.close
           parent_wr.close
-          # TODO: log level
-          #RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
-          #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
 
           # Unix house keeping
           #self.close_all_fds([child_wr.fileno])
@@ -196,15 +200,15 @@ module RQ
 
           # child_wr
           IO.for_fd(3).close rescue nil
-          fd = IO.for_fd(13).fcntl(Fcntl::F_DUPFD, 3)
+          fd = IO.for_fd(child_wr_fd).fcntl(Fcntl::F_DUPFD, 3)
           RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
-          IO.for_fd(13).close rescue nil
+          IO.for_fd(child_wr_fd).close rescue nil
 
           # child_rd
           IO.for_fd(4).close rescue nil
-          fd = IO.for_fd(14).fcntl(Fcntl::F_DUPFD, 4)
+          fd = IO.for_fd(child_rd_fd).fcntl(Fcntl::F_DUPFD, 4)
           RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
-          IO.for_fd(14).close rescue nil
+          IO.for_fd(child_rd_fd).close rescue nil
 
 
           f = File.open(job_path + "/stdio.log", "a")
