@@ -19,7 +19,7 @@
     <% colors['production'] = 'white' %>
     <% colors['stage'] = '#e8ffe8' %>
     <% colors['stage'] = '#ffffb0' %>
-    <% our_env = RQ::QueueMgrClient.environment %>
+    <% our_env = RQ::QueueMgrClient.environment rescue 'install' %>
     <% our_env = 'stage' %>
     <% our_env = (our_env.index('stage') == 0) ? 'stage' : our_env %>
     style="background-color: <%= colors[our_env] %>">
