@@ -21,6 +21,25 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
     assert_equal(6, rp.length, "Error: Rules empty")
   end
 
+  def test_good_no_default_list
+    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_no_default_rules.rb')
+
+    assert(rp, "Error: rules should have been a valid return for good_rules.rb file")
+
+    assert_equal(2, rp.length, "Error: Rules empty")
+
+    msg = {'dest' => 'http://m0.btrll.com/q/old_queue_name'}
+    rule = rp.first_match(msg)
+    assert_equal(rp.rules[0], rule, "should have matched proper rule")
+
+    assert_equal("default", rp.rules[1].data[:desc], "should have proper default rule")
+    assert_equal(:err, rp.rules[1].data[:action], "should have proper default rule action")
+    assert_equal(true, rp.rules[1].data[:log], "should have proper default rule logging")
+
+    new_host = rp.txform_host(msg['dest'], rule.data[:route][0])
+    assert_equal("http://mc34.btrll.com:3333/q/new_queue_name", new_host, "should have proper transform")
+  end
+
   def test_good_match_rule1
     rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
 

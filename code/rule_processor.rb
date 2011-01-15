@@ -207,6 +207,18 @@ module RQ
         puts ex.message
         return nil
       end
+
+      any_defaults,rules = rules.partition {|o| o.data[:desc] == 'default'}
+
+      default_rule = Rule.new
+      default_rule.rule('default')
+      default_rule.action(:err)
+      default_rule.end_rule()
+
+      any_defaults.unshift(default_rule)
+
+      rules << any_defaults.last
+
       RuleProcessor.new(rules)
     end
 
