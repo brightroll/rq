@@ -114,6 +114,13 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+echo "Creating the ansi test queue..."
+curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_ansi -F queue[script]=./code/test/ansi_script.sh -F queue[num_workers]=1 -o _install_ansi_script.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ failed to respond correctly"
+  exit 1
+fi
+
 egrep "successqueue created" _install_test_nop.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_nop queue"
@@ -126,6 +133,7 @@ rm _install_test.txt
 rm _install_test_coalesce.txt
 rm _install_test_run.txt
 rm _install_test_nop.txt
+rm _install_ansi_script.txt
 
 echo "ALL DONE SUCCESSFULLY"
 

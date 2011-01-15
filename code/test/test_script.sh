@@ -30,13 +30,14 @@ write_status 'run' "a little after just started"
 
 pwd
 
+
 if [ "$RQ_PARAM1" == "html" ]; then
-  echo "<span id='envspan' style='color: blue;'>"
+  echo "html unsafe chars test"
+  echo "<HTML "UNSAFE" 'CHARS' TEST & OTHER FRIENDS>"
+  echo ""
 fi
+
 env | grep RQ_
-if [ "$RQ_PARAM1" == "html" ]; then
-  echo "</span>"
-fi
 
 echo "----------- all env ---------"
 env

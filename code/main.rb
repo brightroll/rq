@@ -7,6 +7,7 @@ load 'code/queueclient.rb'
 load 'code/hashdir.rb'
 load 'code/portaproc.rb'
 load 'code/overrides.rb'
+load 'code/htmlutils.rb'
 
 module RQ
   class Main < Sinatra::Base
@@ -343,8 +344,19 @@ module RQ
         throw :halt, [404, "404 - Message ID log '#{params['log_name']}' not found"]
       end
 
-      url = "http://#{request.host}:#{request.port}#{request.path_info}"
-      ["<html><head><title>#{url}</title></head><body><pre>", File.read(path), '</pre></body></html>'].join("\n")
+      data = File.read(path)
+
+      # Assumption: log output does not contain HTML. This is a good safe assumption
+      # First escape any HTML unsafe chars
+      data2 = RQ::HtmlUtils.escape_html(data)
+      # OK, now we can linkify (aka add html), to make urls actual links
+      data3 = RQ::HtmlUtils.linkify_text(data2)
+      # Finally, do the necessary work to colorize via html text that used ANSI escape codes
+      data4 = RQ::HtmlUtils.ansi_to_html(data3)
+
+      tmpurl = "http://#{request.host}:#{request.port}#{request.path_info}"
+
+      ["<html><head><title>#{tmpurl}</title></head><body><pre>", data4, '</pre></body></html>'].join("\n")
     end
 
     get '/q/:name/:msg_id/attach/:attach_name' do

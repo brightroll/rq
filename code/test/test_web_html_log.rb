@@ -39,7 +39,7 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
   def post_new_mesg(mesg)
 
     form = { :mesg => mesg.to_json }
-    remote_q_uri = "http://127.0.0.1:#{@rq_port}/q/test"
+    remote_q_uri = mesg['dest']
     res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"), form)
 
     assert_equal("200", res.code)
@@ -76,14 +76,57 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
     res = Net::HTTP.get_response(URI.parse(uri_str))
     assert_equal("200", res.code)
 
+
+    assert_match(/&lt;HTML UNSAFE 'CHARS' TEST &amp; OTHER FRIENDS&gt;/m, res.body, message="Missing nicely escaped string")
+
     doc = Nokogiri::HTML(res.body)
 
     # Verify that there is a span  elements are hidden
 
-    spans = doc.css("#envspan")
-    envspan = spans.pop
+    anchors = doc.css("a")
 
-    assert_equal("color: blue;", envspan['style'])
+    assert_equal(10, anchors.length)
+  end
+
+  def test_ansi_log
+    mesg = { 'dest' => "http://127.0.0.1:#{@rq_port}/q/test_ansi",
+      'src' => 'test_web_html_log/test_ansi_log',
+      'param1' => ''
+    }
+    msg_id = post_new_mesg(mesg)
+
+    # Wait for it to change state
+    result = {}
+    20.times do
+      |i|
+      sleep 0.2
+      uri_str = "#{msg_id}.json"
+      res = Net::HTTP.get_response(URI.parse(uri_str))
+      assert_equal("200", res.code)
+      result = JSON.parse(res.body)
+      raise if result['state'] == 'err'
+      break if result['state'] == 'done'
+    end
+
+    uri_str = "#{msg_id}/log/stdio.log"
+    res = Net::HTTP.get_response(URI.parse(uri_str))
+    assert_equal("200", res.code)
+
+    doc = Nokogiri::HTML(res.body)
+
+    # Verify that there is a span  elements are hidden
+
+    anchors = doc.css("a")
+
+    assert_equal("http://xxeo.com/", anchors[0]['href'])
+    assert_equal("http://www.brightroll.com/", anchors[1]['href'])
+
+
+    assert_match(/&amp; &amp;&lt; &lt; &gt;/m, res.body, message="Missing nicely escaped string")
+
+    spans = doc.css("span")
+
+    assert_equal(6 * 8 * 8, spans.length)
   end
 
 end
