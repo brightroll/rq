@@ -94,6 +94,13 @@ module RQ
       true
     end
 
+    def inspect
+      puts @data[:desc]
+      fields = @@fields - [:desc, :num]
+      fields.each { |k| puts "#{k.to_s} #{@data[k].to_s}" if @data[k] }
+      puts
+    end
+
     def select_hosts
       return [] if @data[:route].empty? 
 
@@ -112,14 +119,18 @@ module RQ
       end
     end
 
-    def process(str, num)
+    def process(str, num, verbose=false)
       begin
         instance_eval(str)
       rescue DSLArgumentError => ex
-        puts "Argument error with line #{num}: [#{str.chop.to_s}]"
-        puts ex.message
+        if verbose
+          puts "Argument error with line #{num}: [#{str.chop.to_s}]"
+          puts ex.message
+        end
       rescue
-        puts "Problem with line #{num}: [#{str.chop.to_s}]"
+        if verbose
+          puts "Problem with line #{num}: [#{str.chop.to_s}]"
+        end
         raise
       end
     end
@@ -162,7 +173,7 @@ module RQ
       end
     end
 
-    def self.process_pathname(path)
+    def self.process_pathname(path, verbose=false)
       rules = []
       begin
         lines = []
@@ -186,7 +197,7 @@ module RQ
               in_rule = false
               next
             end
-            rule.process(line,i)
+            rule.process(line, i, verbose)
           end
           if line[0..4] == "rule "
             rule.end_rule if in_rule
@@ -194,17 +205,19 @@ module RQ
             rule = Rule.new()
             rule.data[:num] = rules.length + 1
             rules << rule
-            rule.process(line,i)
+            rule.process(line, i, verbose)
           end
         }
       rescue Errno::ENOENT => ex 
         return nil
       rescue StandardError => ex 
-        p ex
-        p ex.class
-        p ex.backtrace
-        puts ex
-        puts ex.message
+        if verbose
+          p ex
+          p ex.class
+          p ex.backtrace
+          puts ex
+          puts ex.message
+        end
         return nil
       end
 

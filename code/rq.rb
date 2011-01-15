@@ -292,3 +292,19 @@ if args[:cmd] == 'clone'
   print "#{result[0]} #{result[1]}\n"
 end
 
+if args[:cmd] == 'verify_rules'
+  require 'code/rule_processor'
+
+  rp = RQ::RuleProcessor.process_pathname(args['path'], args['verbose'])
+
+  if rp == nil
+    puts "fail bad router rules file"
+    exit 1
+  else
+    if args['verbose']
+      rp.rules.each {|o| p o}
+    end
+    puts "ok"
+  end
+end
+
