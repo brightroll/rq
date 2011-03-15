@@ -48,6 +48,16 @@ else
     $host = config['host']
     $port = config['port']
     $addr = config['addr']
+    if config['tmpdir']
+      dir = File.expand_path(config['tmpdir'])
+      if File.directory?(dir) and File.writable?(dir)
+        # This will affect the class Tempfile, which is used by Rack
+        ENV['TMPDIR'] = dir
+      else
+        puts "Bad 'tmpdir' in config json [#{dir}]. Exiting"
+        exit! 1
+      end
+    end
   rescue
     puts "Couldn't read config/config.json file properly. Exiting"
     exit! 1
