@@ -21,12 +21,14 @@ module RQ
       end
 
       def get_queueclient(name)
-        # SPECIAL CASE - we allow relay
+        # SPECIAL CASE - we allow relay and cleaner
         # No RQ should be connecting to another box's relay
         # However, users need the web ui to interact, so we think
         # this is safe and good for debugging/visiblity
-        if File.exists?("./config/rq_router_rules.rb") && name != 'relay'
-          name = 'rq_router'
+        if File.exists?("./config/rq_router_rules.rb")
+          if not ['relay', 'cleaner'].include?(name)
+            name = 'rq_router'
+          end
         end
         RQ::QueueClient.new(name)
       end
