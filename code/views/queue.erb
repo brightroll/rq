@@ -96,7 +96,7 @@
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{msg}" %></a>
+    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
   </span>
 </li>
 <%   end %>
@@ -108,10 +108,14 @@
 <%   msgs.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
+  <% if q != 'relay' %>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{url}q/#{q}/#{msg}" %></a>
   </span>
-  <% if q == 'relay' %>
+  <% else %>
+  <span class="">
+    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
+  </span>
     <%  ok, msg_full = qc.get_message({ 'msg_id' => msg}) %>
     <% if ok == 'ok' %>
       <%  status, new_location = msg_full['status'].split(' - ', 2) %>
@@ -132,7 +136,7 @@
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
   <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{msg}" %></a>
+    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
   </span>
   <br />
 </form>
