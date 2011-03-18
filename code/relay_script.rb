@@ -5,6 +5,7 @@ require 'uri'
 require 'fileutils'
 require 'fcntl'
 require 'digest'
+require 'resolv-replace'
 
 def log(mesg)
   linkified_mesg = mesg.gsub(/(https?:\/\/[^ ]+)/) { |m| "<a href='#{m}'>#{m}</a>" }
