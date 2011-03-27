@@ -1,0 +1,7 @@
+POST /q/test/XXXXMSG_IDXXXX/attach/new HTTP/1.0
+User-Agent: curl/7.18.2 (i486-pc-linux-gnu) libcurl/7.18.2 OpenSSL/0.9.8g zlib/1.2.3.3 libidn/1.8 libssh2/0.18
+Host: dru-brserv.btrll.com:3333
+Accept: */*
+Content-Length: 16652
+Content-Type: multipart/form-data; boundary=----------------------------4052c1a88d79
+

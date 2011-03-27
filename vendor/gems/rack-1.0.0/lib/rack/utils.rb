@@ -384,7 +384,13 @@ module Rack
 
             Utils.normalize_params(params, name, data) unless data.nil?
 
-            break  if buf.empty? || content_length == -1
+            # BACKPORTED FIX FROM RACK 1.2.1
+            # previous:
+            #break  if buf.empty? || content_length == -1
+            # new:
+
+            # break if we're at the end of a buffer, but not if it is the end of a field
+            break if (buf.empty? && $1 != EOL) || content_length == -1
           }
 
           input.rewind

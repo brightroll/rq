@@ -36,6 +36,7 @@ for test in \
    send_test_web_done.rb \
    send_test_web_prepattachdone.rb \
    send_test_web_prepattachdone_large.rb \
+   send_test_web_prepattachmime.rb \
    send_test_attachdone.sh \
    send_test_cloneattachdone.sh \
    send_test_web_prepdone.rb \
