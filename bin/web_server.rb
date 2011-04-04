@@ -30,6 +30,7 @@ def run(daemon = false)
   router = MiniRouter.new
   Rack::Handler::UnixRack.run(router, {:port => $port,
                                        :host => $host,
+                                       :allowed_ips => $allowed_ips,
                                        :listen => $addr})
 end
 
@@ -41,6 +42,7 @@ if ARGV[0] == "install"
   $host = "127.0.0.1"
   $port = "3333"
   $addr = "0.0.0.0"
+  $allowed_ips = []
 else
   begin
     data = File.read('config/config.json')
@@ -48,6 +50,7 @@ else
     $host = config['host']
     $port = config['port']
     $addr = config['addr']
+    $allowed_ips = config['allowed_ips'] || []
     if config['tmpdir']
       dir = File.expand_path(config['tmpdir'])
       if File.directory?(dir) and File.writable?(dir)

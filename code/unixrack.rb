@@ -1,6 +1,11 @@
+# unixrack - ruby webserver compatible with rack using unix philosophy 
+#
+# license  - see COPYING 
+
 require 'rack/content_length'
 require 'time'
 require 'stringio'
+
 
 # Thx - Logan Capaldo 
 require 'dl/import'
@@ -23,6 +28,10 @@ module UnixRack
     def initialize(sock)
       @sock = sock
       @buff = ""
+    end
+
+    def peeraddr
+      @sock.peeraddr
     end
 
     def self.write_buff(io, buff)
@@ -225,12 +234,13 @@ module Rack
   module Handler
     class UnixRack
 
-      def self.run(app, options=nil)
+      def self.run(app, options={})
 
         require 'socket'
         port = options[:port] || 8080
         host = options[:host] || '127.0.0.1'
         listen = options[:listen] || '127.0.0.1'
+        allowed_ips = options[:allowed_ips] || []
         server = TCPServer.new(listen, port)
 
         trap(:CHLD) do
@@ -284,6 +294,14 @@ module Rack
             $stdout.flush
             Alarm.alarm(60)               # if command not handled in 60 seconds 
 
+            client_ip = sock.peeraddr.last
+
+            if not allowed_ips.empty?
+              if not (allowed_ips.any? { |e| client_ip.include? e })
+                sock.error_reply(403, "Forbidden")
+              end
+            end
+
             if ["GET", "POST"].include?(sock.hdr_method[0])
 
               env = {}
@@ -336,6 +354,7 @@ module Rack
 
               env["SERVER_NAME"] = host
               env["SERVER_PORT"] = port
+              env["REMOTE_ADDR"] = client_ip
 
               env["HTTP_VERSION"] = "HTTP/1.1"
               if sock.headers['If-Modified-Since']
