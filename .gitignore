@@ -4,3 +4,6 @@ queue.noindex
 scheduler
 .#*
 log/*.log
+gems/*
+!gems/cache
+bin/rake
