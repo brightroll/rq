@@ -76,6 +76,7 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
     res = Net::HTTP.get_response(URI.parse(uri_str))
     assert_equal("200", res.code)
 
+    puts res.body
 
     assert_match(/&lt;HTML UNSAFE 'CHARS' TEST &amp; OTHER FRIENDS&gt;/m, res.body, message="Missing nicely escaped string")
 
@@ -85,7 +86,12 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
 
     anchors = doc.css("a")
 
-    assert_equal(10, anchors.length)
+    # On EC2 instances we will get back an extra link
+    if res.body.match(/EC2_URL/)
+      assert_equal(11, anchors.length)
+    else
+      assert_equal(10, anchors.length)
+    end
   end
 
   def test_ansi_log

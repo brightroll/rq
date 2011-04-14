@@ -142,7 +142,7 @@ end
 
 # TODO: properly check for proper start
 
-sleep(0.25)
+sleep(1)
 # Verify nothing in run dirs
 if not Dir.glob('queue/test_run/run/*').empty?
   print "FAILED - run dir is not empty after restart\n"
