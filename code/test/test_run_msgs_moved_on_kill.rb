@@ -125,14 +125,33 @@ Process.kill("TERM", pid1)
 pid2 = File.read("queue/test_run/run/#{msg2}/pid").to_i
 Process.kill("TERM", pid2)
 
-sleep(0.25)
+pid1_dead = false
+pid2_dead = false
+
+4.times do
+  if is_pid_alive?(pid1)
+    sleep(0.25)
+  else
+    pid1_dead = true
+    break
+  end
+end
+
+4.times do
+  if is_pid_alive?(pid2)
+    sleep(0.25)
+  else
+    pid2_dead = true
+    break
+  end
+end
 
 # Verify processes in run killed
-if is_pid_alive?(pid1)
+if !pid1_dead
   print "FAILED #{msg1} is still alive after shutdown\n"
   exit 1
 end
-if is_pid_alive?(pid2)
+if !pid2_dead
   print "FAILED #{msg2} is still alive after shutdown\n"
   exit 1
 end
@@ -141,8 +160,21 @@ end
 `ruby ./code/queuemgr_ctl.rb start`
 
 # TODO: properly check for proper start
+# This is hard because on a dev instance there will only be a test RQ running, on Jenkins there will be a system RQ _and_ the test RQ, so two sets of queues
+# Reading the queue mgr log is not really viable either
+# Let's try waiting for the '[rq] [test_nop]' process to be present, which is specific to the test instance of RQ
+# I gave up trying to find a way to pass [] to pgrep and have it work
 
-sleep(1)
+#sleep(1)
+5.times do
+  queue_pids = `pgrep -f test_nop`.split("\n")
+  if queue_pids.length > 0
+    break
+  else
+    sleep(1)
+  end
+end
+
 # Verify nothing in run dirs
 if not Dir.glob('queue/test_run/run/*').empty?
   print "FAILED - run dir is not empty after restart\n"

@@ -30,7 +30,7 @@ echo "***** Sleeping a bit to let the web_server start up..."
 sleep 8
 
 echo "***** Deleting old queues and configs..."
-/bin/rm -rf queue queue.noindex 
+/bin/rm -rf queue queue.noindex
 
 echo "***** Setting up test queues..."
 ./code/test/setup_test_queues.sh

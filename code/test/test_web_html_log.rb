@@ -76,6 +76,7 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
     res = Net::HTTP.get_response(URI.parse(uri_str))
     assert_equal("200", res.code)
 
+
     assert_match(/&lt;HTML UNSAFE 'CHARS' TEST &amp; OTHER FRIENDS&gt;/m, res.body, message="Missing nicely escaped string")
 
     doc = Nokogiri::HTML(res.body)

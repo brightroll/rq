@@ -52,7 +52,7 @@ while [ ! -f ./queue/relay/queue.pid ] ; do
   sleep 1
 done
 
-# This makes Hudson happy
+# TODO: Find a better way to monitor service startup
 sleep 5
 
 echo "Checking that system is operational..."
