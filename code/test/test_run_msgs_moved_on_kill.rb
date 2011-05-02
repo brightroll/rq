@@ -160,25 +160,22 @@ end
 `ruby ./code/queuemgr_ctl.rb start`
 
 # TODO: properly check for proper start
-# This is hard because on a dev instance there will only be a test RQ running, on Jenkins there will be a system RQ _and_ the test RQ, so two sets of queues
-# Reading the queue mgr log is not really viable either
-# Let's try waiting for the '[rq] [test_nop]' process to be present, which is specific to the test instance of RQ
-# I gave up trying to find a way to pass [] to pgrep and have it work
 
 #sleep(1)
+started = false
 5.times do
-  queue_pids = `pgrep -f test_nop`.split("\n")
-  if queue_pids.length > 0
-    break
-  else
+  # Verify nothing in run dirs
+  if not Dir.glob('queue/test_run/run/*').empty?
     sleep(1)
+  else
+    started = true
+    break
   end
 end
 
-# Verify nothing in run dirs
-if not Dir.glob('queue/test_run/run/*').empty?
-  print "FAILED - run dir is not empty after restart\n"
-  exit 1
+if !started
+    print "FAILED - run dir is not empty after restart\n"
+    exit 1
 end
 
 # Verify nothing in run state
