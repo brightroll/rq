@@ -83,16 +83,18 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
 
     # Verify that there is a span  elements are hidden
 
+    links = []
     anchors = doc.css("a")
-
-    # On EC2 instances we will get back an extra link; Hudson sets a few more...
-    if res.body.match(/HUDSON_URL/)
-      assert_equal(14, anchors.length)
-    elsif res.body.match(/EC2_URL/)
-      assert_equal(11, anchors.length)
-    else
-      assert_equal(10, anchors.length)
+    anchors.each do |link|
+      links << link.content
     end
+
+    # Filter links that aren't RQ
+    links.delete_if { |link|
+      !link.match(/4444/)
+    }
+
+    assert_equal(10, links.length)
   end
 
   def test_ansi_log
