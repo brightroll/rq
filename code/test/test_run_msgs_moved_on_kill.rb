@@ -120,10 +120,14 @@ File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
 `ruby ./code/queuemgr_ctl.rb stop`
 
 # Kill the workers
-pid1 = File.read("queue/test_run/run/#{msg1}/pid").to_i
-Process.kill("TERM", pid1)
-pid2 = File.read("queue/test_run/run/#{msg2}/pid").to_i
-Process.kill("TERM", pid2)
+begin
+  pid1 = File.read("queue/test_run/run/#{msg1}/pid").to_i
+  Process.kill("TERM", pid1)
+  pid2 = File.read("queue/test_run/run/#{msg2}/pid").to_i
+  Process.kill("TERM", pid2)
+rescue Exception => e
+  puts "Error killing #{pid1} or #{pid2}: #{e.message}"
+end
 
 pid1_dead = false
 pid2_dead = false
