@@ -126,7 +126,7 @@ begin
   pid2 = File.read("queue/test_run/run/#{msg2}/pid").to_i
   Process.kill("TERM", pid2)
 rescue Exception => e
-  puts "Error killing #{pid1} or #{pid2}: #{e.message}"
+  puts "Error killing pid1 (#{pid1}) or pid2 (#{pid2}): #{e.message}"
 end
 
 pid1_dead = false
