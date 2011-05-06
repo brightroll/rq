@@ -91,7 +91,7 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
 
     # Filter links that aren't RQ
     links.delete_if { |link|
-      !link.match(/4444/)
+      !link.match(/#{@rq_port}/)
     }
 
     assert_equal(10, links.length)
