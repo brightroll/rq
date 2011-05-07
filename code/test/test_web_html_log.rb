@@ -83,9 +83,18 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
 
     # Verify that there is a span  elements are hidden
 
+    links = []
     anchors = doc.css("a")
+    anchors.each do |link|
+      links << link.content
+    end
 
-    assert_equal(10, anchors.length)
+    # Filter links that aren't RQ
+    links.delete_if { |link|
+      !link.match(/#{@rq_port}/)
+    }
+
+    assert_equal(10, links.length)
   end
 
   def test_ansi_log

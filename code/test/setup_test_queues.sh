@@ -52,6 +52,9 @@ while [ ! -f ./queue/relay/queue.pid ] ; do
   sleep 1
 done
 
+# TODO: Find a better way to monitor service startup
+sleep 5
+
 echo "Checking that system is operational..."
 curl -0 -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then

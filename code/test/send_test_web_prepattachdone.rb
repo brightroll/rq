@@ -93,7 +93,7 @@ if result[1] != "14a1a7845cc7f981977fbba6a60f0e42-Attached successfully"
   exit 1
 end
 
-tmp_files = Dir.glob("/tmp/RackMultipart*")
+tmp_files = Dir.glob("#{ENV['TMPDIR']}/RackMultipart*")
 if not tmp_files.empty?
   print "Sorry, system didn't remove tmp attachment files properly : #{tmp_files}\n"
   exit 1

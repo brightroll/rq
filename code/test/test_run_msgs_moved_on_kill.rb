@@ -120,19 +120,42 @@ File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
 `ruby ./code/queuemgr_ctl.rb stop`
 
 # Kill the workers
-pid1 = File.read("queue/test_run/run/#{msg1}/pid").to_i
-Process.kill("TERM", pid1)
-pid2 = File.read("queue/test_run/run/#{msg2}/pid").to_i
-Process.kill("TERM", pid2)
+begin
+  pid1 = File.read("queue/test_run/run/#{msg1}/pid").to_i
+  Process.kill("TERM", pid1)
+  pid2 = File.read("queue/test_run/run/#{msg2}/pid").to_i
+  Process.kill("TERM", pid2)
+rescue Exception => e
+  puts "Error killing pid1 (#{pid1}) or pid2 (#{pid2}): #{e.message}"
+end
 
-sleep(0.25)
+pid1_dead = false
+pid2_dead = false
+
+4.times do
+  if is_pid_alive?(pid1)
+    sleep(0.25)
+  else
+    pid1_dead = true
+    break
+  end
+end
+
+4.times do
+  if is_pid_alive?(pid2)
+    sleep(0.25)
+  else
+    pid2_dead = true
+    break
+  end
+end
 
 # Verify processes in run killed
-if is_pid_alive?(pid1)
+if !pid1_dead
   print "FAILED #{msg1} is still alive after shutdown\n"
   exit 1
 end
-if is_pid_alive?(pid2)
+if !pid2_dead
   print "FAILED #{msg2} is still alive after shutdown\n"
   exit 1
 end
@@ -142,11 +165,21 @@ end
 
 # TODO: properly check for proper start
 
-sleep(0.25)
-# Verify nothing in run dirs
-if not Dir.glob('queue/test_run/run/*').empty?
-  print "FAILED - run dir is not empty after restart\n"
-  exit 1
+#sleep(1)
+started = false
+5.times do
+  # Verify nothing in run dirs
+  if not Dir.glob('queue/test_run/run/*').empty?
+    sleep(1)
+  else
+    started = true
+    break
+  end
+end
+
+if !started
+    print "FAILED - run dir is not empty after restart\n"
+    exit 1
 end
 
 # Verify nothing in run state
