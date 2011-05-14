@@ -28,10 +28,10 @@ def run(daemon = false)
   end
 
   router = MiniRouter.new
-  Rack::Handler::UnixRack.run(router, {:port => $port,
-                                       :host => $host,
+  Rack::Handler::UnixRack.run(router, {:Port => $port,
+                                       :Hostname => $host,
                                        :allowed_ips => $allowed_ips,
-                                       :listen => $addr})
+                                       :Host => $addr})
 end
 
 
