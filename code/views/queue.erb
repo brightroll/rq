@@ -27,20 +27,36 @@
 <br />
 <%   num_msgs = qc.num_messages %>
 
-<span><%= num_msgs['prep'] %> items in prep</span>
-<ul></ul>
-<span><%= num_msgs['que'] %> items in que</span>
-<ul></ul>
-<ul>
+<table id="queue_lists">
+  <thead>
+    <tr>
+      <th class="prep"><h4>PREP</h4><%= num_msgs['prep'] %></th>
+      <th class="que"><h4>QUE</h4><%= num_msgs['que'] %></th>
+      <th class="run"><h4>RUN</h4><%= num_msgs['run'] %></th>
+      <% if q != 'relay' %>
+        <th class="done"><h4>DONE</h4><%= num_msgs['done'] %></th>
+      <% else %>
+        <th class="relayed"><h4>RELAYED</h4><%= num_msgs['relayed'] %></th>
+      <% end %>
+      <th class="err"><h4>ERR</h4><%= num_msgs['err'] %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <!-- PREP -->
+      <td class="prep">
+        <ul></ul>
+      </td>
+      <!-- QUE -->
+      <td class="que">
+        <ul>
 <%   msgs = qc.messages({'state' => 'que'}) %>
 <%   msgs.sort.reverse.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
+    <a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a>
   </span>
-  <br />
-  id: <span class=""> <%= msg[0] %></span>
   <% if q == 'relay' %>
     <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
     <% if ok == 'ok' %>
@@ -58,61 +74,78 @@
 </li>
 <%   end %>
 </ul>
-
-<span><%= num_msgs['run'] %> items in run</span>
-<ul>
-<%   msgs = qc.messages({'state' => 'run'}) %>
-<%   msgs.sort.reverse.each do |msg| %>
-<%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
-<li>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg[0]}" %>"><%= "#{url}q/#{q}/#{msg[0]}" %></a>
-  </span>
-  <br />
-  id: <span class=""> <%= msg[0] %></span>
-  <% if q == 'relay' %>
-    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
-    <% if ok == 'ok' %>
-      dest: <span class="yellow"> <%= msg_full['dest'] %></span>
-      STATUS: <span class="yellow"> <%= msg_full['status'] %></span>
-    <% else %>
-      STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
+      </td>
+      <!-- RUN -->
+      <td class="run">
+<% msgs = qc.messages({'state' => 'run'}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <%# BUG -- msg contains -> ["2011...", nil] !!! %>
+  <%# so next part is ugly =/ %>
+  <% if msg.class == Array %>
+    <% msg.each do |m| %>
+      <% next if m.nil? %>
+      <% date, rest = m.split('.', 2) %>
+      <% grouped[date] = [] unless grouped[date] %>
+      <% grouped[date] << rest %>
     <% end %>
+  <% else %>
+    <% date, rest = msg.split('.', 2) %>
+    <% grouped[date] = [] unless grouped[date] %>
+    <% grouped[date] << rest %>
   <% end %>
-  <span class="">
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <% msg_id = "#{url}q/#{q}/#{msg}" %>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a></li>
+    <% if q == 'relay' %>
+      <% ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
+      <% if ok == 'ok' %>
+        dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+        STATUS: <span class="yellow"> <%= msg_full['status'] %></span>
+      <% else %>
+        STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
+      <% end %>
+    <% end %>
     <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
-    <input name="_method" type="hidden" value="delete" />
-    <button type="submit">Destroy it</button>
+      <input name="_method" type="hidden" value="delete" />
+      <button type="submit">Destroy it</button>
     </form>
-  </span>
-</form>
-</li>
-<%   end %>
-</ul>
-<span><%= num_msgs['done'] %> items in done</span>
-<ul>
-<%   msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
-<%   msgs.each do |msg| %>
-<%     msg_id = "#{url}q/#{q}/#{msg}" %>
-<li>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
-  </span>
-</li>
-<%   end %>
-</ul>
-
-<span><%= num_msgs['relayed'] %> items in relayed</span>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+      <% if q != 'relay' %>
+      <!-- DONE -->
+      <td class="done">
+<% msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg.split('.', 2) %>
+  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <% msg_id = "#{url}q/#{q}/#{msg}" %>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+    <% else %>
+      <!-- RELAYED -->
+      <td class="relayed">
 <ul>
 <%   msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
 <%   msgs.each do |msg| %>
 <%     msg_id = "#{url}q/#{q}/#{msg}" %>
 <li>
-  <% if q != 'relay' %>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= "#{url}q/#{q}/#{msg}" %></a>
-  </span>
-  <% else %>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
   </span>
@@ -122,27 +155,43 @@
       : <span class="green">&nbsp;<%= status %> </span>&nbsp;- &gt;
       <a href="<%= new_location %>"><%= new_location %></a>
     <% end %>
+  </span>
+</form>
+</li>
+<%   end %>
+</ul>
+      </td>
+      <% end %>
+      <!-- ERR -->
+      <td class="err">
+<% msgs = qc.messages({'state' => 'err'}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg.split('.', 2) %>
+  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <% msg_id = "#{url}q/#{q}/#{msg}" %>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
-  </span>
-</form>
-</li>
-<%   end %>
-</ul>
+  </ul>
+<% end %>
+      </td>
+  </tbody>
+</table>
 
-<span><%= num_msgs['err'] %> items in err</span>
-<ul>
-<%   msgs = qc.messages({'state' => 'err'}) %>
-<%   msgs.sort.reverse.each do |msg| %>
-<%     msg_id = "#{url}q/#{q}/#{msg}" %>
-<li>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
-  </span>
-  <br />
-</form>
-</li>
-<%   end %>
-</ul>
-
-</ul>
-
+<h3>config.json (<a href="<%= "#{url}q/#{q}/config.json" %>">raw</a>)</h3>
+<% json_path = "queue/#{q}/config.json" %>
+<% if File.exists?(json_path) %>
+<pre class="json">
+<% File.open(json_path) do |file| %>
+ <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/\:/, " : ") %>
+<% end %>
+</pre>
+<% else %>
+  <p>config.json doesn't currently exist?</p>
+<% end %>

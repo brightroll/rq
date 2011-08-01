@@ -36,15 +36,18 @@
 <% if RQ::QueueMgrClient.running? %>
 <%   queues = RQ::QueueMgrClient.queues.sort %>
 <table>
-<tr>
-  <th>name</th>
-  <th>url</th>
-  <th>status</th>
-  <th>ping</th>
-  <th>pid</th>
-  <th>uptime</th>
-  <th></th>
-</tr>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th>url</th>
+      <th>status</th>
+      <th>ping</th>
+      <th>pid</th>
+      <th>uptime</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
 <%   queues.each do |q| %>
 <%     qc = RQ::QueueClient.new(q) %>
 <tr>
@@ -88,6 +91,7 @@
   </td>
 </tr>
 <%   end %>
+</tbody>
 </table>
 <% end %>
 </ul>
