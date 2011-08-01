@@ -27,15 +27,11 @@
 <% end %>
 </ul>
 
-<% json_path = "queue/#{q}/#{locals['msg']['state']}/#{locals['msg_id']}/msg" %>
-<% if File.exists?(json_path) %>
-  <h3><a href="<%= json_path %>">Download raw .json</a></h3>
-<% else %>
-  <p>JSON file doesn't currently exist.</p>
-<% end %>
+<% json_url = "#{url}q/#{q}/#{locals['msg_id']}.json" %>
+<h3><a href="<%= json_url %>">Download raw .json</a></h3>
 
 <h3>Message Attachments</h3>
-<%  locals['msg']['_attachments'] ||= {} %>
+<% locals['msg']['_attachments'] ||= {} %>
 <% if locals['msg']['_attachments'].size > 0 %>
 <ul>
 <%  locals['msg']['_attachments'].keys.sort.each do |key| %>
@@ -53,7 +49,13 @@
 <!-- TODO: FOR DONE STATE, LOG + JSON DIR IS UNDER SOME DATE SUBDIRS -->
 
 <h3>Log (<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">raw</a>)</h3>
-<% log_path = "queue/#{q}/#{locals['msg']['state']}/#{locals['msg_id']}/job/stdio.log" %>
+<% if locals['msg']['state'] == 'relayed' || locals['msg']['state'] == 'done' %>
+  <% datestamp = locals['msg_id'].split('.', 3) %>
+  <% date_dirs = "%s/%s/%s" % [datestamp[0], datestamp[1][0,2], datestamp[1][-2..-1]] %>
+  <% log_path = "queue/#{q}/#{locals['msg']['state']}/#{date_dirs}/#{locals['msg_id']}/job/stdio.log" %>
+<% else %>
+  <% log_path = "queue/#{q}/#{locals['msg']['state']}/#{locals['msg_id']}/job/stdio.log" %>
+<% end %>
 <% if File.exists?(log_path) %>
 <pre>
 <% File.open(log_path) do |file| %>
