@@ -12,13 +12,13 @@ h1 {
   color: #444;
 }
 
-a { text-decoration: none; color: #333; }
-a:hover { text-decoration: underline; color: #777; }
+a { color: #333; }
+a:hover { text-decoration: none; color: #777; }
 a:visited { text-decoration: none; color: #060; }
 
 form label.field_label {
     display: block;
-    float: left;	
+    float: left;
     width: 18%;
     padding: .2em 2% 0 0;
     text-align: right;
@@ -40,3 +40,24 @@ form .note {
     color: #444;
     font-style: italic;
 }
+
+thead th {background: none}
+#queue_lists {table-layout: fixed}
+#queue_lists td, #queue_lists th {padding: 5px}
+#queue_lists th {font-size: 20px}
+#queue_lists td {text-align: center}
+#queue_lists h4 {font-size: 12px; margin-bottom: 0; border-bottom: 1px solid black}
+#queue_lists h5 {font-size: 1.5em; margin-bottom: 0}
+#queue_lists ul {margin: 0}
+table a {display: block}
+th {text-align: center}
+td {vertical-align: inherit}
+span.green, span.red, span.yellow {padding: 3px}
+th.run {background: #fc6}
+th.done {background: #cfc}
+th.relayed {background: #ffc}
+th.err {background: #f99}
+pre {line-height: 0.5; background: white; overflow-x: scroll}
+body {margin-bottom: 100px}
+.json {line-height: 1.5}
+html {overflow-y: scroll}

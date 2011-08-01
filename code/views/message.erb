@@ -1,5 +1,5 @@
 <% q = params[:name] %>
-<h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Mesg: [ <%= locals['msg_id'] %> ] </h1>
+<h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Msg [ <%= locals['msg_id'] %> ]</h1>
 <h5><%= RQ::QueueMgrClient.environment %></h5>
 
 
@@ -15,7 +15,7 @@
     <% elsif key == 'orig_msg_id' || key == 'dup' %>
        <%= key %> : <a href="<%= locals['msg'][key] %>"><%= locals['msg'][key] %></a>
     <% elsif key == 'dups' %>
-      <%= key %> : [ 
+      <%= key %> : [
          <% locals['msg'][key].each do |v| %>
             <a href="<%= v %>"><%= v %></a>
          <% end %> ]
@@ -26,16 +26,18 @@
 </li>
 <% end %>
 </ul>
-<ul>
-<li>
-<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">log</a> -
-<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">json</a>
-</li>
-</ul>
+
+<% json_path = "queue/#{q}/#{locals['msg']['state']}/#{locals['msg_id']}/msg" %>
+<% if File.exists?(json_path) %>
+  <h3><a href="<%= json_path %>">Download raw .json</a></h3>
+<% else %>
+  <p>JSON file doesn't currently exist.</p>
+<% end %>
 
 <h3>Message Attachments</h3>
-<ul>
 <%  locals['msg']['_attachments'] ||= {} %>
+<% if locals['msg']['_attachments'].size > 0 %>
+<ul>
 <%  locals['msg']['_attachments'].keys.sort.each do |key| %>
 <li>
   <span class="">
@@ -44,4 +46,22 @@
 </li>
 <% end %>
 </ul>
+<% else %>
+  <p>No attachments.</p>
+<% end %>
 
+<!-- TODO: FOR DONE STATE, LOG + JSON DIR IS UNDER SOME DATE SUBDIRS -->
+
+<h3>Log (<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">raw</a>)</h3>
+<% log_path = "queue/#{q}/#{locals['msg']['state']}/#{locals['msg_id']}/job/stdio.log" %>
+<% if File.exists?(log_path) %>
+<pre>
+<% File.open(log_path) do |file| %>
+  <% while line = file.gets %>
+    <%= line %>
+  <% end %>
+<% end %>
+</pre>
+<% else %>
+  <p>Log file doesn't currently exist.</p>
+<% end %>
