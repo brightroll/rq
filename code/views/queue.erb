@@ -141,25 +141,29 @@
     <% else %>
       <!-- RELAYED -->
       <td class="relayed">
-<ul>
-<%   msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
-<%   msgs.each do |msg| %>
-<%     msg_id = "#{url}q/#{q}/#{msg}" %>
-<li>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{msg}" %>"><%= msg %></a>
-  </span>
-    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg}) %>
-    <% if ok == 'ok' %>
+<% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg.split('.', 2) %>
+  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <% msg_id = "#{url}q/#{q}/#{msg}" %>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
+    <% if ok != 'ok' %>
       <%  status, new_location = msg_full['status'].split(' - ', 2) %>
       : <span class="green">&nbsp;<%= status %> </span>&nbsp;- &gt;
       <a href="<%= new_location %>"><%= new_location %></a>
     <% end %>
-  </span>
-</form>
-</li>
-<%   end %>
-</ul>
+  <% end %>
+  </ul>
+<% end %>
+<ul>
       </td>
       <% end %>
       <!-- ERR -->
