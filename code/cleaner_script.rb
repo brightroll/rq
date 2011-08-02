@@ -3,6 +3,7 @@
 require 'fileutils'
 require 'date'
 require 'time'
+require 'tempfile'
 ################################################################################
 # Stuff that goes everywhere in RQ
 ################################################################################
@@ -78,14 +79,12 @@ def mv_logs(qname)
   log = "#{qname}/queue.log"
   if File.exists?(log)
     # move file to avoid writes to it while computing dates
-    tmp_log = log + ".tmp"
-    FileUtils.mv(log, tmp_log)
+    tmp_log = Tempfile.new("#{qname}_log")
+    FileUtils.mv(log, tmp_log.path)
 
     # read last and first line from file
-    last_line = `tail -n 1 #{tmp_log}`
-    log_file = File.open(tmp_log)
-    first_line = log_file.gets
-    log_file.close
+    last_line = `tail -n 1 #{tmp_log.path}`
+    first_line = tmp_log.gets
 
     # compute datetimes
     first = DateTime.parse(first_line.split(' - ')[1])
@@ -99,7 +98,7 @@ def mv_logs(qname)
     # do actual stuff
     puts "status: moving #{log}"
     STDOUT.flush
-    FileUtils.mv(tmp_log, "#{log}.#{ext}")
+    FileUtils.mv(tmp_log.path, "#{log}.#{ext}")
   end
 end
 
