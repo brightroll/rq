@@ -209,7 +209,7 @@
 <% if File.exists?(json_path) %>
 <pre class="json">
 <% File.open(json_path) do |file| %>
- <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/\:/, " : ") %>
+ <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/"\:"/, "\" : \"") %>
 <% end %>
 </pre>
 <% else %>
