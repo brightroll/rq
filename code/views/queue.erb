@@ -21,11 +21,9 @@
 </ul>
 
 <h3>Message List</h3>
-<ul>
-  <b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b>
-<br />
-<br />
-<%   num_msgs = qc.num_messages %>
+  <p><b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b></p>
+
+<% num_msgs = qc.num_messages %>
 
 <table id="queue_lists">
   <thead>
@@ -35,8 +33,6 @@
       <th class="run"><h4>RUN</h4><%= num_msgs['run'] %></th>
       <% if q != 'relay' %>
         <th class="done"><h4>DONE</h4><%= num_msgs['done'] %></th>
-      <% else %>
-        <th class="relayed"><h4>RELAYED</h4><%= num_msgs['relayed'] %></th>
       <% end %>
       <th class="err"><h4>ERR</h4><%= num_msgs['err'] %></th>
     </tr>
@@ -45,14 +41,31 @@
     <tr>
       <!-- PREP -->
       <td class="prep">
-        <ul></ul>
+<ul>
+<% msgs = qc.messages({'state' => 'prep', 'limit' => 50}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg.split('.', 2) %>
+  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <% msg_id = "#{url}q/#{q}/#{msg}" %>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
+  <% end %>
+  </ul>
+<% end %>
+</ul>
       </td>
       <!-- QUE -->
       <td class="que">
         <ul>
-<%   msgs = qc.messages({'state' => 'que'}) %>
-<%   msgs.sort.reverse.each do |msg| %>
-<%     msg_id = "#{url}q/#{q}/#{msg[0]}" %>
+<% msgs = qc.messages({'state' => 'que'}) %>
+<% msgs.sort.reverse.each do |msg| %>
+<% msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a>
@@ -138,34 +151,7 @@
   </ul>
 <% end %>
       </td>
-    <% else %>
-      <!-- RELAYED -->
-      <td class="relayed">
-<% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
-<% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% date, rest = msg.split('.', 2) %>
-  <% grouped[date] = [] unless grouped[date] %>
-  <% grouped[date] << rest %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <% msgs.sort.reverse.each do |msg| %>
-    <% msg_id = "#{url}q/#{q}/#{msg}" %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
-    <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
-    <% if ok != 'ok' %>
-      <%  status, new_location = msg_full['status'].split(' - ', 2) %>
-      : <span class="green">&nbsp;<%= status %> </span>&nbsp;- &gt;
-      <a href="<%= new_location %>"><%= new_location %></a>
     <% end %>
-  <% end %>
-  </ul>
-<% end %>
-<ul>
-      </td>
-      <% end %>
       <!-- ERR -->
       <td class="err">
 <% msgs = qc.messages({'state' => 'err'}) %>
@@ -187,6 +173,36 @@
       </td>
   </tbody>
 </table>
+
+<!-- RELAYED -->
+<% if q == 'relay' %>
+<div class="relayed">
+  <h4><b><%= num_msgs['relayed'] %></b> in RELAYED</h4>
+  <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
+  <% grouped = {} %>
+  <% msgs.each do |msg| %>
+    <% date, rest = msg.split('.', 2) %>
+    <% grouped[date] = [] unless grouped[date] %>
+    <% grouped[date] << rest %>
+  <% end %>
+  <% grouped.sort.reverse.each do |date, msgs| %>
+    <h5><%= date %></h5>
+    <ul>
+    <% msgs.sort.reverse.each do |msg| %>
+      <% msg_id = "#{url}q/#{q}/#{msg}" %>
+      <li class="relayed-li">
+        <a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a>
+        <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
+        <% if ok == 'ok' %>
+          <%  status, new_location = msg_full['status'].split(' - ', 2) %>
+          <!-- <%= status %> -->
+          <a title="<%= new_location %>" href="<%= new_location %>"> - <span class="green">relayed</span> - <%= new_location %></a>
+        <% end %>
+      </li>
+    <% end %>
+    </ul>
+  <% end %>
+<% end %>
 
 <h3>config.json (<a href="<%= "#{url}q/#{q}/config.json" %>">raw</a>)</h3>
 <% json_path = "queue/#{q}/config.json" %>

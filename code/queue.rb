@@ -497,7 +497,7 @@ module RQ
           h['status'] = new_state + " - " + new_status
           h['state'] = new_state
           store_msg(h, 'que')
-          # TODO: refactor this 
+          # TODO: refactor this
           basename = "#{@queue_path}/que/#{i}"
           RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", i)
         }
@@ -521,7 +521,7 @@ module RQ
     def handle_dups(msg)
       return if @config['coalesce'] != 'yes'
 
-      duplicates = @que.select { |i| is_duplicate?(msg, i) } 
+      duplicates = @que.select { |i| is_duplicate?(msg, i) }
 
       return if duplicates.empty?
 
@@ -993,7 +993,7 @@ module RQ
             # *** THIS ONE IS DIFFERENT ***
             # We need to set the messages 'due' time. This is safe
             # since we are in the run queue, and we want to record
-            # this to disk before moving on 
+            # this to disk before moving on
           end
 
           ##############################################################################
@@ -1176,7 +1176,7 @@ module RQ
       delta = ready_msg['due'].to_f - Time.now.to_f
 
       log("Delta: #{delta}")
-      # If it is time to wait, then run 
+      # If it is time to wait, then run
       if delta > 0
         if delta < 60  # Set timeout to be this, vs default of 60 set above
           @wait_time = delta
@@ -1234,7 +1234,7 @@ module RQ
               rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
                 log('error acception on main sock, supposed to be readysleeping')
               end
-              # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
+              # Linux Doesn't inherit and BSD does... recomended behavior is to set again
               flag = 0xffffffff ^ File::NONBLOCK
               if defined?(Fcntl::F_GETFL)
                 flag &= client_socket.fcntl(Fcntl::F_GETFL)
@@ -1573,10 +1573,12 @@ module RQ
           send_packet(sock, resp)
           return
         end
-        if options['state'] == 'que'
+        if options['state'] == 'prep'
+          status = @prep.map { |m| [m['msg_id'], m['status']] }
+        elsif options['state'] == 'que'
           status = @que.map { |m| [m['msg_id'], m['due']] }
         elsif options['state'] == 'run'
-          status =  @run.map { |m| [m['msg_id'], m['status']] }
+          status = @run.map { |m| [m['msg_id'], m['status']] }
         elsif options['state'] == 'done'
           status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
         elsif options['state'] == 'relayed'
