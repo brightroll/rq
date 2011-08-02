@@ -50,7 +50,6 @@ thead th {background: none}
 #queue_lists h5 {font-size: 1.5em; margin-bottom: 0}
 #queue_lists ul {margin: 0}
 table a {display: block}
-th {text-align: center}
 td {vertical-align: inherit}
 span.green, span.red, span.yellow {padding: 3px}
 th.run {background: #fc6}
