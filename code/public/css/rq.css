@@ -54,7 +54,11 @@ th {text-align: center}
 td {vertical-align: inherit}
 span.green, span.red, span.yellow {padding: 3px}
 th.run {background: #fc6}
-th.done, th.relayed {background: #cfc}
+th.done {background: #cfc}
+.relayed h4 {background: #cfc; padding: 10px}
+.relayed-li {margin-bottom: 15px}
+.relayed-li a {display: inline}
+.relayed-li span {padding: 5px}
 th.err {background: #f99}
 pre {line-height: 0.5; background: white; overflow-x: scroll}
 body {margin-bottom: 100px}

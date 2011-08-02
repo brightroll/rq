@@ -1,13 +1,13 @@
-# unixrack - ruby webserver compatible with rack using unix philosophy 
+# unixrack - ruby webserver compatible with rack using unix philosophy
 #
-# license  - see COPYING 
+# license  - see COPYING
 
 require 'rack/content_length'
 require 'time'
 require 'stringio'
 
 
-# Thx - Logan Capaldo 
+# Thx - Logan Capaldo
 require 'dl/import'
 module Alarm
   extend DL::Importable
@@ -169,10 +169,7 @@ module UnixRack
         end
 
         while true
-          if len == cont_len
-            f.rewind
-            return f
-          end
+          return f if len == cont_len
 
           return nil if not do_read
 
@@ -237,24 +234,12 @@ module Rack
   module Handler
     class UnixRack
 
-      @@chdir = ''
-
-      # Set this in config.ru when in daemon mode
-      # Why? It appears that the behaviour of most servers
-      # is to expect to be in a certain dir when run
-      # Or, another way, rackup daemon mode is a bit strict
-      # and does the old-school chdir to '/' as a daemon.
-      # the fact is people probably don't use rackup often
-      def self.set_chdir(dir)
-        @@chdir = dir
-      end
-
       def self.run(app, options={})
 
         require 'socket'
-        port = options[:Port] || 8080
-        host = options[:Hostname] || 'localhost'
-        listen = options[:Host] || '127.0.0.1'
+        port = options[:port] || 3333
+        host = options[:host] || '127.0.0.1'
+        listen = options[:listen] || '127.0.0.1'
         allowed_ips = options[:allowed_ips] || []
         server = TCPServer.new(listen, port)
 
@@ -275,9 +260,6 @@ module Rack
         trap(:TERM) { puts "#{$$}: Listener received TERM. Exiting."; $stdout.flush; exit! 0  }
         trap("SIGINT") { puts "#{$$}: Listener received INT. Exiting."; $stdout.flush; exit! 0  }
 
-        if not @@chdir.empty?
-          Dir.chdir @@chdir
-        end
         while true
           begin
             conn = server.accept
@@ -308,11 +290,12 @@ module Rack
             sock = ::UnixRack::Socket.new(conn)
 
             sock.read_headers()
-            puts "#{$$}: Request: #{sock.hdr_method.inspect}"
-            $stdout.flush
-            Alarm.alarm(60)               # if command not handled in 60 seconds 
 
             client_ip = sock.peeraddr.last
+
+            puts "#{$$}: #{client_ip} - - #{Time.now.strftime('[%d/%b/%Y:%k:%M:%S %z]')} \"#{sock.hdr_method.inspect}\""
+            $stdout.flush
+            Alarm.alarm(60)               # if command not handled in 60 seconds
 
             if not allowed_ips.empty?
               if not (allowed_ips.any? { |e| client_ip.include? e })
@@ -374,13 +357,6 @@ module Rack
               env["SERVER_PORT"] = port
               env["REMOTE_ADDR"] = client_ip
 
-              if sock.headers['User-Agent']
-                env["HTTP_USER_AGENT"] = sock.headers['User-Agent']
-              end
-              if sock.headers['Cookie']
-                env["HTTP_COOKIE"] = sock.headers['Cookie']
-              end
-
               env["HTTP_VERSION"] = "HTTP/1.1"
               if sock.headers['If-Modified-Since']
                 env["HTTP_IF_MODIFIED_SINCE"] = sock.headers['If-Modified-Since']
@@ -395,11 +371,6 @@ module Rack
                          "rack.url_scheme" => "http"
               })
 
-              # Reminder of how to do this for the future the '::' I always forget
-              #::File.open('/tmp/dru', 'a') do
-              #  |f2|
-              #  f2.syswrite(env.inspect + "\n")
-              #end
               status, headers, body = app.call(env)
 
               sock.send_response(status, headers, body)
@@ -445,5 +416,3 @@ module Rack
     end
   end
 end
-
-Rack::Handler.register 'unixrack', 'Rack::Handler::UnixRack'
