@@ -75,12 +75,31 @@ def rm_logs_older_than(qname, regex, hours)
 end
 
 def mv_logs(qname)
-  if File.exists?("#{qname}/queue.log")
-    a=Time.now
-    b = sprintf("%s%.2d%.2d.%.2d:%.2d" ,a.year, a.month, a.day, a.hour, a.min)
-    puts "status: moving #{qname}/queue.log"
+  log = "#{qname}/queue.log"
+  if File.exists?(log)
+    # move file to avoid writes to it while computing dates
+    tmp_log = log + ".tmp"
+    FileUtils.mv(log, tmp_log)
+
+    # read last and first line from file
+    last_line = `tail -n 1 #{tmp_log}`
+    log_file = File.open(tmp_log)
+    first_line = log_file.gets
+    log_file.close
+
+    # compute datetimes
+    first = DateTime.parse(first_line.split(' - ')[1])
+    last = DateTime.parse(last_line.split(' - ')[1])
+
+    # generate timestamp extension
+    ext = sprintf("%s%.2d%.2d.%.2d:%.2d-%s%.2d%.2d.%.2d:%.2d",
+                  first.year, first.month, first.day, first.hour, first.min,
+                  last.year, last.month, last.day, last.hour, last.min)
+
+    # do actual stuff
+    puts "status: moving #{log}"
     STDOUT.flush
-    FileUtils.mv("#{qname}/queue.log", "#{qname}/queue.log.#{b}")
+    FileUtils.mv(tmp_log, "#{log}.#{ext}")
   end
 end
 
@@ -88,11 +107,11 @@ def remove_old(qname, days)
   clean_queues = ["/done", "/relayed", "/prep", "/queue"]
   clean_queues.each do |cq|
     if File.exists?(qname + cq)
-  
+
       # go by directories and remove any day dir > days + 1
       # then go into the hour dirs and remove by time
       # easier to whack a whole higher level dir then stat everything below it
-      
+
       Dir.glob(qname + cq + "/????????").each do |x|
         if Date.today - Date.strptime(File.basename(x), "%Y%m%d") >= days + 1
           puts "status: removing " + x
@@ -114,9 +133,9 @@ def remove_old(qname, days)
       end
     end
   end
-  
+
 end
-  
+
 
 ##################################################################
 # My MAIN
