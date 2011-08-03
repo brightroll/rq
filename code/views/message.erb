@@ -46,8 +46,6 @@
   <p>No attachments.</p>
 <% end %>
 
-<!-- TODO: FOR DONE STATE, LOG + JSON DIR IS UNDER SOME DATE SUBDIRS -->
-
 <h3>Log (<a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">raw</a>)</h3>
 <% if locals['msg']['state'] == 'relayed' || locals['msg']['state'] == 'done' %>
   <% datestamp = locals['msg_id'].split('.', 3) %>
