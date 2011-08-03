@@ -48,7 +48,18 @@ module RQ
       # This creates and starts a queue
       params['queue']['url'] = url
       result = RQ::QueueMgrClient.create_queue(params['queue'])
-      "We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr"
+      res = "<p>We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr</p>"
+      res << <<-RES
+        <script type="text/javascript">
+        <!--
+        function delayer(){
+          location.href = "/q/#{params['queue']['name']}";
+        }
+        setTimeout('delayer()', 3000);
+        //-->
+        </script>
+        (going to queue in <b>3</b> sec)
+      RES
     end
 
     get '/q.txt' do
@@ -214,7 +225,7 @@ module RQ
         setTimeout('delayer()', 1000);
         //-->
         </script>
-        Queue restarted... (returning in 1 sec)
+        Queue restarted... (returning in <b>1</b> sec)
       HERE
     end
 
@@ -284,7 +295,7 @@ module RQ
         setTimeout('delayer()', 1000);
         //-->
         </script>
-        Message cloned... (going to queue in 1 sec)
+        Message cloned... (going to queue in <b>1</b> sec)
       HERE
     end
 
