@@ -274,6 +274,18 @@ module RQ
       if res[0] != 'ok'
         throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
       end
+
+      <<-HERE
+        <script type="text/javascript">
+        <!--
+        function delayer(){
+          location.href = "/q/#{params[:name]}";
+        }
+        setTimeout('delayer()', 1000);
+        //-->
+        </script>
+        Message cloned... (going to queue in 1 sec)
+      HERE
     end
 
     post '/q/:name/:msg_id/attach/new' do
