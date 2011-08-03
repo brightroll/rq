@@ -65,7 +65,7 @@ module RQ
       end
       erb :proc_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues, :procs => procs}, :trim => '-'
     end
-    
+
     get '/q/:name' do
       if params[:name].index(".txt")
         content_type 'text/plain', :charset => 'utf-8'
@@ -76,7 +76,7 @@ module RQ
         end
       end
 
-      if not RQ::QueueMgrClient.running? 
+      if not RQ::QueueMgrClient.running?
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
@@ -258,6 +258,21 @@ module RQ
       else
         #content_type 'application/json'
         msg.to_json
+      end
+    end
+
+    get '/q/:name/:msg_id/clone' do
+      qc = get_queueclient(params[:name])
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+      res = qc.clone_message({ 'msg_id' => params[:msg_id] })
+
+      if not res
+        throw :halt, [500, "500 - Couldn't restart queue. Internal error."]
+      end
+      if res[0] != 'ok'
+        throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
       end
     end
 
