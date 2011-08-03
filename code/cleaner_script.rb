@@ -79,12 +79,12 @@ def mv_logs(qname)
   log = "#{qname}/queue.log"
   if File.exists?(log)
     # move file to avoid writes to it while computing dates
-    tmp_log = Tempfile.new("#{qname}_log")
+    tmp_log = Tempfile.new("#{qname.split('/')[-1]}_log", Dir.getwd)
     FileUtils.mv(log, tmp_log.path)
 
     # read last and first line from file
     last_line = `tail -n 1 #{tmp_log.path}`
-    first_line = tmp_log.gets
+    first_line = tmp_log.open.gets # need more r/r+ as opposed to w+
 
     # compute datetimes
     first = DateTime.parse(first_line.split(' - ')[1])
