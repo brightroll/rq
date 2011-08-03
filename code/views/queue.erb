@@ -64,19 +64,21 @@
         <ul>
 <% msgs = qc.messages({'state' => 'que'}) %>
 <% msgs.sort.reverse.each do |msg| %>
-<li>
+  <%# double check qc.messages for que state -- array is assumed below %>
+  <% msg_id = msg.class == Array ? msg[0] : msg %>
+  <li>
   <span class="">
-    <a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a>
+    <a href="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a>
   </span>
   <% if q == 'relay' %>
-    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
+    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
     <% if ok == 'ok' %>
       dest: <span class="yellow"> <%= msg_full['dest'] %></span>
     <% end %>
   <% end %>
   : in <%= msg[1].to_i - Time.now.to_i %> secs</span>
   <span class="">
-    <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
+    <form method="post" action="<%= "#{url}q/#{q}/#{msg_id}" %>">
     <input name="_method" type="hidden" value="delete" />
     <button type="submit">Destroy it</button>
     </form>
@@ -110,9 +112,10 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a></li>
+    <% msg_id = msg.class == Array ? msg[0] : msg %>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if q == 'relay' %>
-      <% ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
+      <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
       <% if ok == 'ok' %>
         dest: <span class="yellow"> <%= msg_full['dest'] %></span>
         STATUS: <span class="yellow"> <%= msg_full['status'] %></span>
@@ -120,7 +123,7 @@
         STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
       <% end %>
     <% end %>
-    <form method="post" action="<%= "#{url}q/#{q}/#{msg[0]}" %>">
+    <form method="post" action="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>">
       <input name="_method" type="hidden" value="delete" />
       <button type="submit">Destroy it</button>
     </form>
