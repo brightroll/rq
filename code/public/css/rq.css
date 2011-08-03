@@ -59,7 +59,6 @@ th.done {background: #cfc}
 .relayed-li a {display: inline}
 .relayed-li span {padding: 5px}
 th.err {background: #f99}
-pre {line-height: 0.5; background: white; overflow-x: scroll}
+pre {line-height: 1.5; background: white; padding: 10px 30px; overflow: scroll}
 body {margin-bottom: 100px}
-.json {line-height: 1.5}
 html {overflow-y: scroll}
