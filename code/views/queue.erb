@@ -53,7 +53,6 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <% msg_id = "#{url}q/#{q}/#{msg}" %>
     <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
@@ -65,7 +64,6 @@
         <ul>
 <% msgs = qc.messages({'state' => 'que'}) %>
 <% msgs.sort.reverse.each do |msg| %>
-<% msg_id = "#{url}q/#{q}/#{msg[0]}" %>
 <li>
   <span class="">
     <a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a>
@@ -112,7 +110,6 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <% msg_id = "#{url}q/#{q}/#{msg}" %>
     <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg[0]}" %>"><%= "#{msg[0]}" %></a></li>
     <% if q == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg[0]}) %>
@@ -145,7 +142,6 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <% msg_id = "#{url}q/#{q}/#{msg}" %>
     <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
@@ -165,7 +161,6 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <% msg_id = "#{url}q/#{q}/#{msg}" %>
     <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
@@ -189,7 +184,6 @@
     <h5><%= date %></h5>
     <ul>
     <% msgs.sort.reverse.each do |msg| %>
-      <% msg_id = "#{url}q/#{q}/#{msg}" %>
       <li class="relayed-li">
         <a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a>
         <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
