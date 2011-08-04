@@ -20,6 +20,7 @@
 </li>
 </ul>
 
+<% if admin_status == 'UP' %>
 <h3>Message List</h3>
   <p><b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b></p>
 
@@ -41,7 +42,6 @@
     <tr>
       <!-- PREP -->
       <td class="prep">
-<ul>
 <% msgs = qc.messages({'state' => 'prep', 'limit' => 50}) %>
 <% grouped = {} %>
 <% msgs.each do |msg| %>
@@ -57,36 +57,42 @@
   <% end %>
   </ul>
 <% end %>
-</ul>
       </td>
       <!-- QUE -->
       <td class="que">
-        <ul>
-<% msgs = qc.messages({'state' => 'que'}) %>
-<% msgs.sort.reverse.each do |msg| %>
-  <%# double check qc.messages for que state -- array is assumed below %>
-  <% msg_id = msg.class == Array ? msg[0] : msg %>
-  <li>
-  <span class="">
-    <a href="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a>
-  </span>
-  <% if q == 'relay' %>
-    <%  ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
-    <% if ok == 'ok' %>
-      dest: <span class="yellow"> <%= msg_full['dest'] %></span>
-    <% end %>
+<% msgs_and_backoffs = qc.messages({'state' => 'que'}) %>
+<% grouped = {} %>
+<% msgs_and_backoffs.each do |msg_and_backoff| %>
+  <% date, rest = msg_and_backoff[0].split('.', 2) %>
+  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] << [ rest, msg_and_backoff[1] ] %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs_and_backoffs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs_and_backoffs.sort.reverse.each do |msg_and_backoff| %>
+    <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
+    <li>
+      <span class="">
+        <a href="<%= "#{url}q/#{q}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
+      </span>
+      <% if q == 'relay' %>
+        <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
+        <% if ok == 'ok' %>
+          dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+        <% end %>
+      <% end %>
+      : in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs</span>
+      <span class="">
+        <form method="post" action="<%= "#{url}q/#{q}/#{msg_id}" %>">
+          <input name="_method" type="hidden" value="delete" />
+          <button type="submit">Destroy it</button>
+        </form>
+      </span>
+    </li>
   <% end %>
-  : in <%= msg[1].to_i - Time.now.to_i %> secs</span>
-  <span class="">
-    <form method="post" action="<%= "#{url}q/#{q}/#{msg_id}" %>">
-    <input name="_method" type="hidden" value="delete" />
-    <button type="submit">Destroy it</button>
-    </form>
-  </span>
-</form>
-</li>
-<%   end %>
-</ul>
+  </ul>
+<% end %>
       </td>
       <!-- RUN -->
       <td class="run">
@@ -95,6 +101,7 @@
 <% msgs.each do |msg| %>
   <%# BUG -- msg contains -> ["2011...", nil] !!! %>
   <%# so next part is ugly =/ %>
+  <%# TODO -- revisit the format of messages in run %>
   <% if msg.class == Array %>
     <% msg.each do |m| %>
       <% next if m.nil? %>
@@ -112,8 +119,8 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <% msg_id = msg.class == Array ? msg[0] : msg %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
+    <% msg_id = msg.class == Array ? "%s.%s" % [date, msg[0]] : "%s.%s" % [date, msg] %>
+    <li><a href="<%= "#{url}q/#{q}/#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if q == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
       <% if ok == 'ok' %>
@@ -211,4 +218,9 @@
 </pre>
 <% else %>
   <p>config.json doesn't currently exist?</p>
+<% end %>
+
+<% else %>
+  <h3>Queue is HARD DOWN</h3>
+  <p>Nothing to display.</p>
 <% end %>
