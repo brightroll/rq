@@ -84,7 +84,7 @@ def mv_logs(qname)
 
     # read last and first line from file
     last_line = `tail -n 1 #{tmp_log.path}`
-    first_line = tmp_log.open.gets # need more r/r+ as opposed to w+
+    first_line = tmp_log.open.gets
 
     # compute datetimes
     first = DateTime.parse(first_line.split(' - ')[1])
@@ -95,7 +95,6 @@ def mv_logs(qname)
                   first.year, first.month, first.day, first.hour, first.min,
                   last.year, last.month, last.day, last.hour, last.min)
 
-    # do actual stuff
     puts "status: moving #{log}"
     STDOUT.flush
     FileUtils.mv(tmp_log.path, "#{log}.#{ext}")

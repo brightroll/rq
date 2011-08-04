@@ -280,10 +280,10 @@ module RQ
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
 
       if not res
-        throw :halt, [500, "500 - Couldn't restart queue. Internal error."]
+        throw :halt, [500, "500 - Couldn't clone queue. Internal error."]
       end
       if res[0] != 'ok'
-        throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
+        throw :halt, [500, "500 - Couldn't clone queue. #{res.inspect}."]
       end
 
       <<-HERE
