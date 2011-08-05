@@ -396,6 +396,11 @@ module Rack
                          "rack.url_scheme" => "http"
               })
 
+              # Reminder of how to do this for the future the '::' I always forget
+              #::File.open('/tmp/dru', 'a') do
+              #  |f2|
+              #  f2.syswrite(env.inspect + "\n")
+              #end
               status, headers, body = app.call(env)
 
               sock.send_response(status, headers, body)

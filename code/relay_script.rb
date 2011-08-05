@@ -8,8 +8,7 @@ require 'digest'
 require 'resolv-replace'
 
 def log(mesg)
-  linkified_mesg = mesg.gsub(/(https?:\/\/[^ ]+)/) { |m| "<a href='#{m}'>#{m}</a>" }
-  puts "<span style=\"color: grey;\">#{$$} - #{Time.now}</span> - #{linkified_mesg}"
+  puts "\033[0;36m#{$$} - #{Time.now}\033[0m - #{mesg}"
   $stdout.flush
 end
 
@@ -79,7 +78,7 @@ end
 
 # Get count, if too high, big fail
 count = ENV['RQ_COUNT'].to_i
-if count > 15 
+if count > 15
   write_status('run', "RQ_COUNT > 15 - failing")
   write_status('fail', "RQ_COUNT > 15 FAIL")
 end
@@ -95,7 +94,7 @@ log("dest - #{dest}")
 force = false
 fake_fail = false
 
-if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') && 
+if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') &&
   (ENV['RQ_PARAM2'] == 'the_mighty_rq_force')
   force = true
   log("TEST MODE force = true")
@@ -332,7 +331,7 @@ if nil == new_msg_id          # No, do prep, and store id
     soft_fail("Couldn't read message data from file")
   end
 
-  
+
   # Increment count
   curr_msg['count'] = curr_msg.fetch('count', 0) + 1
 
@@ -368,7 +367,7 @@ if File.exists?('../attach')
   fnames =  entries.select { |e| File.file?("../attach/#{e}") }
   fnames.each do
     |fname|
- 
+
     log("attempting local send attach #{fname}")
     mesg = {'msg_id' => new_short_msg_id,
       'pathname' => File.expand_path("../attach/#{fname}")

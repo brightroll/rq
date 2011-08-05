@@ -1574,7 +1574,7 @@ module RQ
           return
         end
         if options['state'] == 'prep'
-          status = @prep.map { |m| [m['msg_id'], m['status']] }
+          status = @prep.map { |m| m['msg_id'] }
         elsif options['state'] == 'que'
           status = @que.map { |m| [m['msg_id'], m['due']] }
         elsif options['state'] == 'run'
@@ -1703,6 +1703,31 @@ module RQ
           resp = [ "ok", "msg deleted" ].to_json
         else
           resp = [ "fail", "msg not found" ].to_json
+        end
+
+        send_packet(sock, resp)
+        return
+      end
+
+      if packet.index('run_message') == 0
+        json = packet.split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        state = lookup_msg(options, '*')
+        if state == 'que'
+          if run_job(options)
+            resp = [ "ok", "msg sent to run" ].to_json
+          else
+            resp = [ "fail", "cannot send message to run state" ].to_json
+          end
         end
 
         send_packet(sock, resp)

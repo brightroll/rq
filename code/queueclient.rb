@@ -11,7 +11,7 @@ module RQ
 
     def initialize(name, path=".")
       @name = name
-     
+
       path = File.join(File.dirname(__FILE__), "..")
 
       @queue_path = "#{path}/queue/#{@name}"
@@ -32,7 +32,7 @@ module RQ
         return false
       end
     end
-    
+
     def stop!
       if running?
         pid = read_pid
@@ -45,7 +45,7 @@ module RQ
       end
       return false
     end
-    
+
     def read_pid
       File.read(@queue_path + '/queue.pid').to_i
     end
@@ -105,7 +105,7 @@ module RQ
     def ping
       return send_recv('ping')
     end
-    
+
     def uptime
       return send_recv('uptime')
     end
@@ -156,6 +156,10 @@ module RQ
 
     def get_message(params)
       return send_recv('get_message', params.to_json)
+    end
+
+    def run_message(params)
+      return send_recv('run_message', params.to_json)
     end
 
     def clone_message(params)

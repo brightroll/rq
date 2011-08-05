@@ -280,10 +280,10 @@ module RQ
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
 
       if not res
-        throw :halt, [500, "500 - Couldn't clone queue. Internal error."]
+        throw :halt, [500, "500 - Couldn't clone message. Internal error."]
       end
       if res[0] != 'ok'
-        throw :halt, [500, "500 - Couldn't clone queue. #{res.inspect}."]
+        throw :halt, [500, "500 - Couldn't clone message. #{res.inspect}."]
       end
 
       <<-HERE
@@ -296,6 +296,34 @@ module RQ
         //-->
         </script>
         Message cloned... (going to queue in <b>1</b> sec)
+      HERE
+    end
+
+    get '/q/:name/:msg_id/run_now' do
+      qc = get_queueclient(params[:name])
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      res = qc.run_message({ 'msg_id' => params[:msg_id] })
+
+      if not res
+        throw :halt, [500, "500 - Couldn't run message. Internal error."]
+      end
+      if res[0] != 'ok'
+        throw :halt, [500, "500 - Couldn't run message. #{res.inspect}."]
+      end
+
+      <<-HERE
+        <script type="text/javascript">
+        <!--
+        function delayer(){
+          location.href = "/q/#{params[:name]}/#{params[:msg_id]}";
+        }
+        setTimeout('delayer()', 1000);
+        //-->
+        </script>
+        Message sent to run... (going to running message in <b>1</b> sec)
       HERE
     end
 
