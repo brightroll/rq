@@ -23,18 +23,22 @@
   <span class="red">QUEUE MGR is DOWN</span>
 <%end %>
 </li>
-<li>
-</li>
 </ul>
 
 
 <h3>Queue List</h3>
-<ul>
-<p>
-<b><a href="new_queue">New Queue</a></b>
-</p>
+<p><b><a href="new_queue">New Queue</a></b></p>
 <% if RQ::QueueMgrClient.running? %>
 <%   queues = RQ::QueueMgrClient.queues.sort %>
+<%   builtin_queues, custom_queues = [], []  %>
+<%   queues.each do |q| %>
+<%     if q =~ /relay|cleaner|webhook/ %>
+<%       builtin_queues << q %>
+<%     else %>
+<%       custom_queues << q %>
+<%     end %>
+<%   end %>
+<h4>Built-in Queues<h4>
 <table>
   <thead>
     <tr>
@@ -48,7 +52,7 @@
     </tr>
   </thead>
   <tbody>
-<%   queues.each do |q| %>
+<%   builtin_queues.each do |q| %>
 <%     qc = RQ::QueueClient.new(q) %>
 <tr>
   <td>
@@ -57,35 +61,67 @@
   <td>
     <a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a>
   </td>
-<%if  qc.running? %>
+<%     if  qc.running? %>
+<%       admin_stat, oper_stat = qc.status %>
+  <td>
+    <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %> </span>
+    <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %> </span>
+  </td>
+  <td><%= qc.ping %></td>
+  <td><%= qc.read_pid %></td>
+  <td><%= qc.uptime %></td>
+<%     else %>
+  <td><span class="red">queue is DOWN</span></td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+<%     end %>
+  <td>
+    <span class=""> <a href="<%= "#{url}q/#{q}/restart" %>">Restart</a> </span>
+  </td>
+</tr>
+<%   end %>
+</tbody>
+</table>
+
+<h4>Custom Queues<h4>
+<table>
+  <thead>
+    <tr>
+      <th>name</th>
+      <th>url</th>
+      <th>status</th>
+      <th>ping</th>
+      <th>pid</th>
+      <th>uptime</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+<%   custom_queues.each do |q| %>
+<%     qc = RQ::QueueClient.new(q) %>
+<tr>
+  <td>
+    <a href="<%= "#{url}q/#{q}" %>"><%= q %></a>
+  </td>
+  <td>
+    <a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a>
+  </td>
+<%     if  qc.running? %>
   <% admin_stat, oper_stat = qc.status %>
   <td>
     <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %> </span>
     <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %> </span>
   </td>
-  <td>
-    <%= qc.ping %>
-  </td>
-  <td>
-    <%= qc.read_pid %>
-  </td>
-  <td>
-    <%= qc.uptime %>
-  </td>
-<% else %>
-  <td>
-    <span class="red">queue is DOWN</span>
-  </td>
-  <td>
-    -
-  </td>
-  <td>
-    -
-  </td>
-  <td>
-    -
-  </td>
-<%end %>
+  <td><%= qc.ping %></td>
+  <td><%= qc.read_pid %></td>
+  <td><%= qc.uptime %></td>
+<%     else %>
+  <td><span class="red">queue is DOWN</span></td>
+  <td>-</td>
+  <td>-</td>
+  <td>-</td>
+<%     end %>
   <td>
     <span class=""> <a href="<%= "#{url}q/#{q}/restart" %>">Restart</a> </span>
   </td>
@@ -94,5 +130,3 @@
 </tbody>
 </table>
 <% end %>
-</ul>
-

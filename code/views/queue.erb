@@ -20,6 +20,18 @@
 </li>
 </ul>
 
+<h3>config.json [ <a href="#" onclick="config_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a>]</h3>
+<% json_path = "queue/#{q}/config.json" %>
+<% if File.exists?(json_path) %>
+<pre id="config" class="json hidden">
+<% File.open(json_path) do |file| %>
+ <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/"\:"/, "\" : \"") %>
+<% end %>
+</pre>
+<% else %>
+  <p>config.json doesn't currently exist?</p>
+<% end %>
+
 <% if admin_status == 'UP' %>
 <h3>Message List</h3>
   <p><b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b></p>
@@ -42,10 +54,14 @@
     <tr>
       <!-- PREP -->
       <td class="prep">
-<% msgs = qc.messages({'state' => 'prep', 'limit' => 50}) %>
+<% msg_ids = qc.messages({'state' => 'prep', 'limit' => 50}) %>
 <% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% date, rest = msg.split('.', 2) %>
+<% msg_ids.each do |msg_id| %>
+  <%# TODO -- this shouldn't be the case -- fix it (related to run now / clone) %>
+  <% if msg_id.nil? %>
+    <% next %>
+  <% end %>
+  <% date, rest = msg_id.split('.', 2) %>
   <% grouped[date] = [] unless grouped[date] %>
   <% grouped[date] << rest %>
 <% end %>
@@ -208,19 +224,19 @@
   <% end %>
 <% end %>
 
-<h3>config.json (<a href="<%= "#{url}q/#{q}/config.json" %>">raw</a>)</h3>
-<% json_path = "queue/#{q}/config.json" %>
-<% if File.exists?(json_path) %>
-<pre class="json">
-<% File.open(json_path) do |file| %>
- <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/"\:"/, "\" : \"") %>
-<% end %>
-</pre>
-<% else %>
-  <p>config.json doesn't currently exist?</p>
-<% end %>
-
 <% else %>
   <h3>Queue is HARD DOWN</h3>
   <p>Nothing to display.</p>
 <% end %>
+
+<script>
+  function config_toggle() {
+    var cfg = document.getElementById('config');
+    if (cfg.className.indexOf('hidden') >= 0) {
+      cfg.className = cfg.className.replace('hidden', '').replace(/\s+$/, "");
+    } else {
+      cfg.className += ' hidden';
+    }
+    return false;
+  }
+</script>

@@ -62,3 +62,4 @@ th.err {background: #f99}
 pre {line-height: 1.5; background: white; padding: 10px 30px; overflow: scroll}
 body {margin-bottom: 100px}
 html {overflow-y: scroll}
+.hidden {display: none}
