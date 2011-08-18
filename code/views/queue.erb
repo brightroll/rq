@@ -135,8 +135,7 @@
   <h5><%= date %></h5>
   <ul>
   <%# hotfix for indika's problem. this needs to be revisited. %>
-  <% next if msgs.nil? %>
-  <% msgs.sort.reverse.each do |msg| %>
+  <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
     <% msg_id = msg.class == Array ? "%s.%s" % [date, msg[0]] : "%s.%s" % [date, msg] %>
     <li><a href="<%= "#{url}q/#{q}/#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if q == 'relay' %>
