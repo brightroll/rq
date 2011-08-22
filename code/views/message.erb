@@ -1,3 +1,5 @@
+<% require 'cgi' %>
+
 <% q = params[:name] %>
 <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Msg [ <%= locals['msg_id'] %> ]</h1>
 <h5><%= RQ::QueueMgrClient.environment %></h5>
@@ -58,7 +60,7 @@
 <% end %>
 <% if File.exists?(log_path) %>
 <pre>
-<%= `tail -n 256 #{log_path}`.strip %>
+<%= CGI.escapeHTML(`tail -n 256 #{log_path}`.strip) %>
 </pre>
 <% else %>
   <p>Log file doesn't currently exist.</p>
