@@ -13,7 +13,7 @@
     <% else %>
      <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
     <% end %>
-    <h5><%= RQ::QueueMgrClient.environment %></h5>
+    <h5><%= RQ::QueueMgrClient.environment.upcase %></h5>
   </div>
 </div>
 
