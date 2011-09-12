@@ -1,4 +1,3 @@
-
 .green { background-color: green; color: white; }
 .red { background-color: red; color: yellow; }
 .yellow { background-color: yellow; color: black; }
@@ -10,6 +9,19 @@ h1 {
   font-weight: bold;
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   color: #444;
+  display: inline;
+}
+h1 .small {font-size: 0.8em}
+
+#header {overflow: hidden}
+#header .right {
+  text-align: right;
+}
+
+h3 {margin: 20px 0 10px}
+
+.container {
+  padding-top: 20px;
 }
 
 a { color: #333; }
@@ -63,3 +75,4 @@ pre {line-height: 1.5; background: white; padding: 10px 30px; overflow: scroll}
 body {margin-bottom: 100px}
 html {overflow-y: scroll}
 .hidden {display: none}
+p {margin-bottom: 5px}

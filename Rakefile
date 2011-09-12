@@ -1,4 +1,3 @@
-
 include FileUtils
 
 # Load any app level custom rakefile extensions from lib/tasks

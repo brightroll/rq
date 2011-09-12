@@ -1,32 +1,27 @@
-
-<h1><a href="<%= url %>">RQ</a></h1>
-<h5></h5>
-
-<h3>QueueMgr Status</h3>
-<ul>
-<li>
-<%if  RQ::QueueMgrClient.running? %>
-  <span class="green">QUEUE MGR is OPERATIONAL</span>
-  <span class="green"> <%=  RQ::QueueMgrClient.ping %> </span>
-  <span class="green"> <%=  RQ::QueueMgrClient.read_pid %></span>
-  uptime <%= RQ::QueueMgrClient.uptime %> seconds
-  <br />
-  <% vver = RQ::QueueMgrClient.version %>
-  <% if vver == VERSION_NUMBER %>
-    server ver: <%= vver %>
+<div id="header">
+  <h1><a href="<%= url %>">RQ</a></h1>
+  <div id="queuemgr_status" class="right">
+  <% if  RQ::QueueMgrClient.running? %>
+    <p><span class="green">QUEUE MGR is OPERATIONAL</span>
+    <span class="green"><%= RQ::QueueMgrClient.ping %></span>
+    <span class="green"><%= RQ::QueueMgrClient.read_pid %></span>
+    <span>uptime <%= RQ::QueueMgrClient.uptime %> seconds</span></p>
+    <p>
+    <% vver = RQ::QueueMgrClient.version %>
+    <% if vver == VERSION_NUMBER %>
+      server: <strong>v<%= vver %></strong>
+    <% else %>
+      <span class="red">sever: <strong>v<%= vver %></strong> != web: <strong>v<%= VERSION_NUMBER %></strong></span>
+    <% end %>
+    <span>env: <strong><%= RQ::QueueMgrClient.environment %></strong></span>
+    </p>
   <% else %>
-    <b><span class="red"> sever ver: <%=  vver %> != web ver: <%= VERSION_NUMBER %></span></b>
+    <p><span class="red">QUEUE MGR is DOWN</span></p>
   <% end %>
-  <br />
-  env: <b><%= RQ::QueueMgrClient.environment %></b>
-  <% else %>
-  <span class="red">QUEUE MGR is DOWN</span>
-<%end %>
-</li>
-</ul>
+  </div>
+</div>
 
-
-<h3>Queue List</h3>
+<h2>Queue List</h2>
 <p><b><a href="new_queue">New Queue</a></b></p>
 <% if RQ::QueueMgrClient.running? %>
 <%   queues = RQ::QueueMgrClient.queues.sort %>
@@ -38,8 +33,8 @@
 <%       custom_queues << q %>
 <%     end %>
 <%   end %>
-<h4>Built-in Queues<h4>
-<table>
+<h3>Built-in Queues</h3>
+<table border="1">
   <thead>
     <tr>
       <th>name</th>
@@ -55,17 +50,13 @@
 <%   builtin_queues.each do |q| %>
 <%     qc = RQ::QueueClient.new(q) %>
 <tr>
-  <td>
-    <a href="<%= "#{url}q/#{q}" %>"><%= q %></a>
-  </td>
-  <td>
-    <a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a>
-  </td>
+  <td><a href="<%= "#{url}q/#{q}" %>"><%= q %></a></td>
+  <td><a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a></td>
 <%     if  qc.running? %>
 <%       admin_stat, oper_stat = qc.status %>
   <td>
-    <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %> </span>
-    <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %> </span>
+    <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %></span>
+    <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %></span>
   </td>
   <td><%= qc.ping %></td>
   <td><%= qc.read_pid %></td>
@@ -84,8 +75,8 @@
 </tbody>
 </table>
 
-<h4>Custom Queues<h4>
-<table>
+<h3>Custom Queues</h3>
+<table border="1">
   <thead>
     <tr>
       <th>name</th>
@@ -105,7 +96,7 @@
     <a href="<%= "#{url}q/#{q}" %>"><%= q %></a>
   </td>
   <td>
-    <a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a>
+    <a title="<%= "#{url}q/#{q}" %>" href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}"[0..30]+'...' %></a>
   </td>
 <%     if  qc.running? %>
   <% admin_stat, oper_stat = qc.status %>

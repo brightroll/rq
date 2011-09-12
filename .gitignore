@@ -4,3 +4,4 @@ queue.noindex
 scheduler
 .#*
 log/*.log
+*.swp
