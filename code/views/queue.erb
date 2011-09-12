@@ -1,24 +1,21 @@
 <% q = params[:name] %>
-<h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> </h1>
-<h5><%= RQ::QueueMgrClient.environment %></h5>
-
-<h3>Queue Status</h3>
-<ul>
-<%  qc = RQ::QueueClient.new(q) %>
-<li>
-<% if qc.running? %>
-<% admin_status, oper_status = qc.status %>
-  Admin Status: <span class="<%= admin_status == "UP" ? "green" : "red" %>"> <%= admin_status %></span>
-  Oper Status: <span class="<%= oper_status == "UP" ? "green" : "red" %>"> <%= oper_status %></span>
-  <span class=""> <%=  qc.ping %></span>
-  <span class=""> <%=  qc.read_pid %></span>
-  up for <%= qc.uptime %> seconds
-<% else %>
-  Status: <span class="red">queue is COMPLETELY DOWN</span>
-  <br />
-<% end %>
-</li>
-</ul>
+<% qc = RQ::QueueClient.new(q) %>
+<div id="header">
+  <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> </h1>
+  <div class="right">
+    <% if qc.running? %>
+    <% admin_status, oper_status = qc.status %>
+      <p>Admin Status: <span class="<%= admin_status == "UP" ? "green" : "red" %>"> <%= admin_status %></span>
+      Oper Status: <span class="<%= oper_status == "UP" ? "green" : "red" %>"> <%= oper_status %></span>
+      <span class=""> <%=  qc.ping %></span>
+      <span class=""> <%=  qc.read_pid %></span>
+      up for <%= qc.uptime %> seconds</p>
+    <% else %>
+     <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
+    <% end %>
+    <h5><%= RQ::QueueMgrClient.environment %></h5>
+  </div>
+</div>
 
 <h3>config.json [ <a href="#" onclick="config_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a>]</h3>
 <% json_path = "queue/#{q}/config.json" %>

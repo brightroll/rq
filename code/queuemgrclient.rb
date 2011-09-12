@@ -18,7 +18,7 @@ module RQ
 
       return true
     end
-    
+
     def self.stop!
       if self.running?
         pid = self.read_pid
@@ -31,11 +31,11 @@ module RQ
       end
       return false
     end
-    
+
     def self.read_pid
       File.read('config/queuemgr.pid').to_i rescue nil
     end
-    
+
     def self.ping
       client = UNIXSocket.open('config/queuemgr.sock')
       client.send("ping", 0)
@@ -51,7 +51,7 @@ module RQ
       client.close
       return result ? result[0] : nil
     end
-    
+
     def self.version
       client = UNIXSocket.open('config/queuemgr.sock')
       client.send("version", 0)

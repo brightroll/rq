@@ -23,11 +23,10 @@
     <% our_env = (our_env.index('stage') == 0) ? 'stage' : our_env %>
     style="background-color: <%= colors[our_env] %>">
     <div class="container">
-      <br />
-    <%#= message[:notice] %>
-    <%= yield %>
-    <i><%= Time.now %>
-    <br />ver: <%= VERSION_NUMBER %></i>
+      <%#= message[:notice] %>
+      <%= yield %>
+      <p><em><%= Time.now %></em></p>
+      <p><em>v<%= VERSION_NUMBER %></em></p>
     </div>
   </body>
 </html>

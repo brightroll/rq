@@ -1,5 +1,3 @@
-
-
 require 'sinatra/base'
 require 'erb'
 load 'code/queuemgrclient.rb'
@@ -95,9 +93,7 @@ module RQ
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
 
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       erb :queue
     end
@@ -108,9 +104,7 @@ module RQ
       end
 
       qc = RQ::QueueClient.new(params[:name])
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       limit = 10
       if params['limit']
@@ -125,9 +119,7 @@ module RQ
       # TODO: sanitize names (no dots or slashes)
       qc = get_queueclient(params[:name])
 
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       overrides = RQ::Overrides.new(params['name'])
       erb :new_message, :layout => true, :locals => {:o => overrides }
@@ -181,9 +173,7 @@ module RQ
 
       qc = get_queueclient(q_name)
 
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       if the_method == 'prep'
         result = qc.prep_message(prms)
@@ -254,9 +244,7 @@ module RQ
 
       qc = get_queueclient(params[:name])
 
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -274,9 +262,7 @@ module RQ
 
     get '/q/:name/:msg_id/clone' do
       qc = get_queueclient(params[:name])
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
 
       if not res
@@ -301,9 +287,7 @@ module RQ
 
     get '/q/:name/:msg_id/run_now' do
       qc = get_queueclient(params[:name])
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       res = qc.run_message({ 'msg_id' => params[:msg_id] })
 

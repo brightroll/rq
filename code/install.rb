@@ -22,8 +22,7 @@ module RQ
     end
 
     def write_file(fname, data)
-      File.open(fname + ".tmp", "w") do
-        |f|
+      File.open(fname + ".tmp", "w") do |f|
         f.write(data)
       end
       File.rename(fname + ".tmp", fname)
@@ -44,7 +43,10 @@ module RQ
       # TODO: do error/sanity checking
 
       # Clean up any whitespace
-      prms = params['install'].keys.inject( {} ) { |acc, k| acc[k] = params['install'][k].strip; acc }
+      prms = params['install'].keys.inject({}) do |acc, k|
+        acc[k] = params['install'][k].strip
+        acc
+      end
 
       write_file("config/config.json", prms.to_json)
 

@@ -1,8 +1,10 @@
 <% require 'cgi' %>
-
 <% q = params[:name] %>
-<h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Msg [ <%= locals['msg_id'] %> ]</h1>
-<h5><%= RQ::QueueMgrClient.environment %></h5>
+
+<div id="header">
+  <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> : Msg [ <span class="small"><%= locals['msg_id'] %></span> ]</h1>
+  <h5 class="right"><%= RQ::QueueMgrClient.environment %></h5>
+</div>
 
 <h3><a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/clone" %>">Clone message</a> (use at own risk)</h3>
 <h3><a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/run_now" %>">Run message</a> (use at own risk)</h3>
