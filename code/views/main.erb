@@ -13,7 +13,7 @@
     <% else %>
       <span class="red">sever: <strong>v<%= vver %></strong> != web: <strong>v<%= VERSION_NUMBER %></strong></span>
     <% end %>
-    <span>env: <strong><%= RQ::QueueMgrClient.environment %></strong></span>
+    <span>env: <strong><%= RQ::QueueMgrClient.environment.upcase %></strong></span>
     </p>
   <% else %>
     <p><span class="red">QUEUE MGR is DOWN</span></p>
@@ -68,7 +68,7 @@
   <td>-</td>
 <%     end %>
   <td>
-    <span class=""> <a href="<%= "#{url}q/#{q}/restart" %>">Restart</a> </span>
+    <form method="get" action="<%= "#{url}q/#{q}/restart" %>"><button>Restart</button></form>
   </td>
 </tr>
 <%   end %>
@@ -114,7 +114,7 @@
   <td>-</td>
 <%     end %>
   <td>
-    <span class=""> <a href="<%= "#{url}q/#{q}/restart" %>">Restart</a> </span>
+    <form method="get" action="<%= "#{url}q/#{q}/restart" %>"><button>Restart</button></form>
   </td>
 </tr>
 <%   end %>
