@@ -1,56 +1,43 @@
-.green { background-color: green; color: white; }
-.red { background-color: red; color: yellow; }
-.yellow { background-color: yellow; color: black; }
-
-ul { list-style: none; }
-h1 {
-  font-size: 2.5em;
-  margin-bottom: 2px;
-  font-weight: bold;
-  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-  color: #444;
-  display: inline;
-}
+.green {background-color: green; color: white}
+.red {background-color: red; color: yellow}
+.yellow {background-color: yellow; color: black}
+ul {list-style: none;}
+h1 {font-size: 2.5em; margin-bottom: 2px; font-weight: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; display: inline}
 h1 .small {font-size: 0.8em}
-
 #header {overflow: hidden}
-#header .right {
-  text-align: right;
-}
-
+#header .right {text-align: right}
 h3 {margin: 20px 0 10px}
-
-.container {
-  padding-top: 20px;
-}
-
-a { color: #333; }
-a:hover { text-decoration: none; color: #777; }
-a:visited { text-decoration: none; color: #060; }
-
+.container {padding-top: 20px}
+a {color: #333; text-decoration: none}
+a:hover {text-decoration: underline}
+a:visited {text-decoration: underline; color: #060}
+.flash {font-size: 1.4em; font-weight: bold; color: white; text-align: center; padding: 5px; margin-bottom: 10px}
+#flash-error {background: red}
+#flash-notice {background: green}
 form label.field_label {
-    display: block;
-    float: left;
-    width: 18%;
-    padding: .2em 2% 0 0;
-    text-align: right;
-    clear: left;
+  display: block;
+  float: left;
+  width: 18%;
+  padding: .2em 2% 0 0;
+  text-align: right;
+  clear: left;
 }
 
 form .field {
-    margin: 0;
-    padding: 0 0 1em 0;
-    clear: both;
-    width: 100%;
-    overflow: auto;
+  margin: 0;
+  padding: 0 0 1em 0;
+  clear: both;
+  width: 100%;
+  overflow: auto;
 }
 
 
 form .note {
-    font-size: .8em;
-    padding: 0 0 0 20%;
-    color: #444;
-    font-style: italic;
+  font-size: .8em;
+  padding: 0 0 0 20%;
+  color: #444;
+  font-style: italic;
 }
 
 thead th {background: none}

@@ -17,13 +17,16 @@
   <body
     <% colors = Hash.new('wheat') %>
     <% colors['production'] = 'white' %>
-    <% colors['stage'] = '#e8ffe8' %>
     <% colors['stage'] = '#ffffb0' %>
     <% our_env = RQ::QueueMgrClient.environment rescue 'install' %>
     <% our_env = (our_env.index('stage') == 0) ? 'stage' : our_env %>
     style="background-color: <%= colors[our_env] %>">
     <div class="container">
-      <%= message ||= {}; message[:notice] %>
+      <% [:notice, :error].each do |type| %>
+        <% if @flash[type] %>
+          <div id="flash-<%= type.to_s %>" class="flash"><%= @flash[type] %></div>
+        <% end %>
+      <% end %>
       <%= yield %>
       <p><em><%= Time.now %></em></p>
       <p><em>v<%= VERSION_NUMBER %></em></p>
