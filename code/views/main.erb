@@ -22,7 +22,7 @@
 </div>
 
 <h2>Queue List</h2>
-<p><b><a href="new_queue">New Queue</a></b></p>
+<p><b><a href="/new_queue">New Queue</a></b></p>
 <% if RQ::QueueMgrClient.running? %>
 <%   queues = RQ::QueueMgrClient.queues.sort %>
 <%   builtin_queues, custom_queues = [], []  %>
