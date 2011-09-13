@@ -9,6 +9,9 @@ load 'code/htmlutils.rb'
 
 module RQ
   class Main < Sinatra::Base
+
+    enable :sessions
+
     def self.views
       './code/views'
     end
@@ -30,6 +33,30 @@ module RQ
         end
         RQ::QueueClient.new(name)
       end
+
+      def hash_insert(hash, type, msg)
+        hash ||= {}
+        hash[type] = msg
+      end
+
+      def flash(type, msg)
+        hash_insert(session[:flash], type, msg)
+      end
+
+      def flash_now(type, msg)
+        hash_insert(@flash, type, msg)
+      end
+    end
+
+    before do
+      @flash = session[:flash] || {}
+      session[:flash] = {}
+    end
+
+    # handle 404s
+    not_found do
+      flash_now :error, "404 -- No route matches #{request.path_info}"
+      erb :main
     end
 
     get '/' do
@@ -46,18 +73,8 @@ module RQ
       # This creates and starts a queue
       params['queue']['url'] = url
       result = RQ::QueueMgrClient.create_queue(params['queue'])
-      res = "<p>We got <pre> #{params.inspect} </pre> from form, and #{result} from QueueMgr</p>"
-      res << <<-RES
-        <script type="text/javascript">
-        <!--
-        function delayer(){
-          location.href = "/q/#{params['queue']['name']}";
-        }
-        setTimeout('delayer()', 3000);
-        //-->
-        </script>
-        (going to queue in <b>3</b> sec)
-      RES
+      flash :notice, "We got <pre>#{params.inspect}</pre> from form, and #{result} from QueueMgr"
+      redirect "/q/#{params['queue']['name']}"
     end
 
     get '/q.txt' do
@@ -206,17 +223,8 @@ module RQ
         throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
       end
 
-      <<-HERE
-        <script type="text/javascript">
-        <!--
-        function delayer(){
-            history.back();
-        }
-        setTimeout('delayer()', 1000);
-        //-->
-        </script>
-        Queue restarted... (returning in <b>1</b> sec)
-      HERE
+      flash :notice, "Successfully restarted queue #{params[:name]}"
+      redirect back
     end
 
     get '/q/:name/config.json' do
