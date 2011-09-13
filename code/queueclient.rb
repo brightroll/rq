@@ -23,29 +23,18 @@ module RQ
       File.directory?(@queue_path)
     end
 
-    def running?
-      pid = read_pid
-      begin
-        Process.kill(0, pid)
-        return true
-      rescue
-        return false
-      end
+    def running?(pid=read_pid)
+      Process.kill(0, pid)
+    rescue
     end
 
     def stop!
-      if running?
-        pid = read_pid
-        begin
-          Process.kill("TERM", pid)
-          return true
-        rescue
-          return false
-        end
-      end
-      return false
+      pid = read_pid
+      Process.kill("TERM", pid) if running?(pid)
+    rescue
     end
 
+    # block on this?
     def read_pid
       File.read(@queue_path + '/queue.pid').to_i
     end
