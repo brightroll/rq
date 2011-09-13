@@ -34,8 +34,12 @@ module RQ
     rescue
     end
 
-    # block on this?
+    # on create, the file might not quite exist yet
+    # this could be bad
     def read_pid
+      File.read(@queue_path + '/queue.pid').to_i
+    rescue Errno::ENOENT
+      sleep(1.0)
       File.read(@queue_path + '/queue.pid').to_i
     end
 
