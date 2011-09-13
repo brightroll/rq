@@ -6,12 +6,13 @@ h1 {font-size: 2.5em; margin-bottom: 2px; font-weight: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; display: inline}
 h1 .small {font-size: 0.8em}
 #header {overflow: hidden}
-#header .right {text-align: right}
+.right {text-align: right}
+.inline {display: inline}
 h3 {margin: 20px 0 10px}
 .container {padding-top: 20px}
-a {color: #333; text-decoration: none}
+a {color: #060; text-decoration: none}
 a:hover {text-decoration: underline}
-a:visited {text-decoration: underline; color: #060}
+a:visited {}
 .flash {font-size: 1.4em; font-weight: bold; color: white; text-align: center; padding: 5px; margin-bottom: 10px}
 #flash-error {background: red}
 #flash-notice {background: green}
