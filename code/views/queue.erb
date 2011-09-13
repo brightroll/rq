@@ -17,7 +17,7 @@
   </div>
 </div>
 
-<h3>config.json [ <a href="#" onclick="config_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a>]</h3>
+<h3>config.json [ <a href="#" onclick="config_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a> ]</h3>
 <% json_path = "queue/#{q}/config.json" %>
 <% if File.exists?(json_path) %>
 <pre id="config" class="json hidden">
@@ -31,7 +31,7 @@
 
 <% if admin_status == 'UP' %>
 <h3>Message List</h3>
-  <p><b><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></b></p>
+<p class="right"><strong><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></strong></p>
 
 <% num_msgs = qc.num_messages %>
 
@@ -59,7 +59,7 @@
     <% next %>
   <% end %>
   <% date, rest = msg_id.split('.', 2) %>
-  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
 <% end %>
 <% grouped.sort.reverse.each do |date, msgs| %>
@@ -77,7 +77,7 @@
 <% grouped = {} %>
 <% msgs_and_backoffs.each do |msg_and_backoff| %>
   <% date, rest = msg_and_backoff[0].split('.', 2) %>
-  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] ||= [] %>
   <% grouped[date] << [ rest, msg_and_backoff[1] ] %>
 <% end %>
 <% grouped.sort.reverse.each do |date, msgs_and_backoffs| %>
@@ -114,17 +114,15 @@
 <% msgs.each do |msg| %>
   <%# BUG -- msg contains -> ["2011...", nil] !!! %>
   <%# so next part is ugly =/ %>
-  <%# TODO -- revisit the format of messages in run %>
   <% if msg.class == Array %>
-    <% msg.each do |m| %>
-      <% next if m.nil? %>
-      <% date, rest = m.split('.', 2) %>
-      <% grouped[date] = [] unless grouped[date] %>
-      <% grouped[date] << rest %>
-    <% end %>
+    <% m = msg[0] %>
+    <% next if m.nil? %>
+    <% date, rest = m.split('.', 2) %>
+    <% grouped[date] ||= [] %>
+    <% grouped[date] << rest %>
   <% else %>
     <% date, rest = msg.split('.', 2) %>
-    <% grouped[date] = [] unless grouped[date] %>
+    <% grouped[date] ||= [] %>
     <% grouped[date] << rest %>
   <% end %>
 <% end %>
@@ -159,7 +157,7 @@
 <% grouped = {} %>
 <% msgs.each do |msg| %>
   <% date, rest = msg.split('.', 2) %>
-  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
 <% end %>
 <% grouped.sort.reverse.each do |date, msgs| %>
@@ -178,7 +176,7 @@
 <% grouped = {} %>
 <% msgs.each do |msg| %>
   <% date, rest = msg.split('.', 2) %>
-  <% grouped[date] = [] unless grouped[date] %>
+  <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
 <% end %>
 <% grouped.sort.reverse.each do |date, msgs| %>
@@ -201,7 +199,7 @@
   <% grouped = {} %>
   <% msgs.each do |msg| %>
     <% date, rest = msg.split('.', 2) %>
-    <% grouped[date] = [] unless grouped[date] %>
+    <% grouped[date] ||= [] %>
     <% grouped[date] << rest %>
   <% end %>
   <% grouped.sort.reverse.each do |date, msgs| %>

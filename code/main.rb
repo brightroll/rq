@@ -73,7 +73,7 @@ module RQ
       # This creates and starts a queue
       params['queue']['url'] = url
       result = RQ::QueueMgrClient.create_queue(params['queue'])
-      flash :notice, "We got <pre>#{params.inspect}</pre> from form, and #{result} from QueueMgr"
+      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{params['queue']['name']}"
     end
 
@@ -268,7 +268,7 @@ module RQ
       end
     end
 
-    get '/q/:name/:msg_id/clone' do
+    post '/q/:name/:msg_id/clone' do
       qc = get_queueclient(params[:name])
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
@@ -280,20 +280,11 @@ module RQ
         throw :halt, [500, "500 - Couldn't clone message. #{res.inspect}."]
       end
 
-      <<-HERE
-        <script type="text/javascript">
-        <!--
-        function delayer(){
-          location.href = "/q/#{params[:name]}";
-        }
-        setTimeout('delayer()', 1000);
-        //-->
-        </script>
-        Message cloned... (going to queue in <b>1</b> sec)
-      HERE
+      flash :notice, "Message cloned successfully"
+      redirect "/q/#{params[:name]}"
     end
 
-    get '/q/:name/:msg_id/run_now' do
+    post '/q/:name/:msg_id/run_now' do
       qc = get_queueclient(params[:name])
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
@@ -306,17 +297,8 @@ module RQ
         throw :halt, [500, "500 - Couldn't run message. #{res.inspect}."]
       end
 
-      <<-HERE
-        <script type="text/javascript">
-        <!--
-        function delayer(){
-          location.href = "/q/#{params[:name]}/#{params[:msg_id]}";
-        }
-        setTimeout('delayer()', 1000);
-        //-->
-        </script>
-        Message sent to run... (going to running message in <b>1</b> sec)
-      HERE
+      flash :notice, "Message in run successfully"
+      redirect "/q/#{params[:name]}/#{params[:msg_id]}"
     end
 
     post '/q/:name/:msg_id/attach/new' do

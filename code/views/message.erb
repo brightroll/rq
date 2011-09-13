@@ -6,8 +6,12 @@
   <h5 class="right"><%= RQ::QueueMgrClient.environment.upcase %></h5>
 </div>
 
-<h3><a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/clone" %>">Clone message</a> (use at own risk)</h3>
-<h3><a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/run_now" %>">Run message</a> (use at own risk)</h3>
+<form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/clone" %>">
+  <button id="clone-message">Clone message</button>
+</form>
+<form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/run_now" %>">
+  <button id="clone-message">Run message (risky)</button>
+</form>
 
 <h3>Message Attribs</h3>
 <ul>
