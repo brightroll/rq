@@ -1,18 +1,97 @@
+html {
+  overflow-y: scroll;
+}
+
+body {
+  background-color: #F5DEB3; /* wheat */
+  margin-bottom: 100px;
+  font-family: arial, sans-serif;
+  font-size: 13px;
+}
+
+body.stage {
+  background-color: #ffffb0;
+}
+
+body.production {
+  background-color: white;
+}
+
+table {
+  text-align: center;
+}
+
+#queue-list {
+}
+
+#queue-list th {
+  background: #AB9B7D;
+  color: #FEF9EE;
+}
+
+#custom-queues {
+  background: #FEF9EE;
+}
+
+#builtin-queues {
+  background: #FC6;
+}
+
+.odd-row {
+  background: #FEF3DD;
+}
+
+.meta {
+  margin-top: 20px;
+}
+
+#env {
+  font-weight: bold;
+}
+
+.left-aligned {
+  text-align: left;
+}
+#separator-row {
+  background: #777;
+}
+
 .green {background-color: green; color: white}
 .red {background-color: red; color: yellow}
 .yellow {background-color: yellow; color: black}
+
 ul {list-style: none;}
-h1 {font-size: 2.5em; margin-bottom: 2px; font-weight: bold;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; display: inline}
-h1 .small {font-size: 0.8em}
-#header {overflow: hidden}
+#message-json {
+  background: white;
+  line-height: 1.5;
+  padding: 20px 0 20px 40px;
+  font-family: monospace;
+
+}
+h1 {font-size: 2.5em; margin-top: 0; margin-bottom: 2px; font-weight: bold;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; overflow: hidden; zoom: 1}
+h2 {display: none}
+#header {overflow: hidden; margin-bottom: 20px}
+#sub-header {border: 1px dashed black; padding: 5px; margin-bottom: 20px}
+#sub-header p {margin-top: 5px}
+#json-config {overflow: hidden; zoom: 1}
+#queue-status,
+#message-actions {
+  float: right;
+  width: 300px;
+  text-align: right
+}
 .right {text-align: right}
 .inline {display: inline}
 h3 {margin: 20px 0 10px}
-.container {padding-top: 20px}
+h4, h5 {margin-top: 5px}
+.container {padding: 20px; margin: 0 auto; max-width: 860px; position: relative}
 a {color: #060; text-decoration: none}
 a:hover {text-decoration: underline}
 a:visited {}
+#new-queue,
+#new-message {float: right; width: 200px; text-align: right}
+#flash-container {position: absolute; z-index: 10; right: 20px; top: 10px}
 .flash {font-size: 1.4em; font-weight: bold; color: white; text-align: center; padding: 5px; margin-bottom: 10px}
 #flash-error {background: red}
 #flash-notice {background: green}
@@ -41,16 +120,17 @@ form .note {
   font-style: italic;
 }
 
-thead th {background: none}
-#queue_lists {table-layout: fixed}
-#queue_lists td, #queue_lists th {padding: 5px}
-#queue_lists th {font-size: 20px}
-#queue_lists td {text-align: center}
-#queue_lists h4 {font-size: 12px; margin-bottom: 0; border-bottom: 1px solid black}
-#queue_lists h5 {font-size: 1.5em; margin-bottom: 0}
-#queue_lists ul {margin: 0}
+#queue-lists {table-layout: fixed}
+#queue-lists td, #queue-lists th {padding: 5px}
+#queue-lists th {font-size: 20px}
+#queue-lists td {text-align: center}
+#queue-lists h4 {font-size: 12px; margin-bottom: 0; border-bottom: 1px solid black}
+#queue-lists h5 {font-size: 1.5em; margin-bottom: 0}
+#queue-lists ul {padding: 0}
+#queue-lists li {margin: 0}
+table {width: 100%}
 table a {display: block}
-td {vertical-align: inherit}
+#queue-lists td {vertical-align: top}
 span.green, span.red, span.yellow {padding: 3px}
 th.run {background: #fc6}
 th.done {background: #cfc}
@@ -59,8 +139,13 @@ th.done {background: #cfc}
 .relayed-li a {display: inline}
 .relayed-li span {padding: 5px}
 th.err {background: #f99}
-pre {line-height: 1.5; background: white; padding: 10px 30px; overflow: scroll}
-body {margin-bottom: 100px}
-html {overflow-y: scroll}
+pre {
+  line-height: 1.5;
+  background: white;
+  overflow: auto;
+}
+#log-output {
+  padding: 20px;
+}
 .hidden {display: none}
 p {margin-bottom: 5px}

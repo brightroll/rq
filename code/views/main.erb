@@ -1,28 +1,9 @@
 <div id="header">
+  <p id="new-queue"><a href="/new_queue">New Queue</a></p>
   <h1><a href="<%= url %>">RQ</a></h1>
-  <div id="queuemgr_status" class="right">
-  <% if  RQ::QueueMgrClient.running? %>
-    <p><span class="green">QUEUE MGR is OPERATIONAL</span>
-    <span class="green"><%= RQ::QueueMgrClient.ping %></span>
-    <span class="green"><%= RQ::QueueMgrClient.read_pid %></span>
-    <span>uptime <%= RQ::QueueMgrClient.uptime %> seconds</span></p>
-    <p>
-    <% vver = RQ::QueueMgrClient.version %>
-    <% if vver == VERSION_NUMBER %>
-      server: <strong>v<%= vver %></strong>
-    <% else %>
-      <span class="red">sever: <strong>v<%= vver %></strong> != web: <strong>v<%= VERSION_NUMBER %></strong></span>
-    <% end %>
-    <span>env: <strong><%= RQ::QueueMgrClient.environment.upcase %></strong></span>
-    </p>
-  <% else %>
-    <p><span class="red">QUEUE MGR is DOWN</span></p>
-  <% end %>
-  </div>
 </div>
 
 <h2>Queue List</h2>
-<p><b><a href="/new_queue">New Queue</a></b></p>
 <% if RQ::QueueMgrClient.running? %>
 <%   queues = RQ::QueueMgrClient.queues.sort %>
 <%   builtin_queues, custom_queues = [], []  %>
@@ -33,91 +14,55 @@
 <%       custom_queues << q %>
 <%     end %>
 <%   end %>
-<h3>Built-in Queues</h3>
-<table border="1">
+<table id="queue-list" cellspacing="0" cellpadding="5">
   <thead>
     <tr>
-      <th>name</th>
-      <th>url</th>
-      <th>status</th>
-      <th>ping</th>
-      <th>pid</th>
-      <th>uptime</th>
+      <th class="left-aligned">NAME</th>
+      <th class="left-aligned">URL</th>
+      <th>STATUS</th>
+      <th>PING</th>
+      <th>PID</th>
+      <th>UPTIME</th>
       <th></th>
     </tr>
   </thead>
-  <tbody>
-<%   builtin_queues.each do |q| %>
-<%     qc = RQ::QueueClient.new(q) %>
-<tr>
-  <td><a href="<%= "#{url}q/#{q}" %>"><%= q %></a></td>
-  <td><a href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}" %></a></td>
-<%     if  qc.running? %>
-<%       admin_stat, oper_stat = qc.status %>
-  <td>
-    <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %></span>
-    <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %></span>
-  </td>
-  <td><%= qc.ping %></td>
-  <td><%= qc.read_pid %></td>
-  <td><%= qc.uptime %></td>
-<%     else %>
-  <td><span class="red">queue is DOWN</span></td>
-  <td>-</td>
-  <td>-</td>
-  <td>-</td>
-<%     end %>
-  <td>
-    <form method="get" action="<%= "#{url}q/#{q}/restart" %>"><button>Restart</button></form>
-  </td>
-</tr>
-<%   end %>
-</tbody>
-</table>
-
-<h3>Custom Queues</h3>
-<table border="1">
-  <thead>
-    <tr>
-      <th>name</th>
-      <th>url</th>
-      <th>status</th>
-      <th>ping</th>
-      <th>pid</th>
-      <th>uptime</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-<%   custom_queues.each do |q| %>
-<%     qc = RQ::QueueClient.new(q) %>
-<tr>
-  <td>
-    <a href="<%= "#{url}q/#{q}" %>"><%= q %></a>
-  </td>
-  <td>
-    <a title="<%= "#{url}q/#{q}" %>" href="<%= "#{url}q/#{q}" %>"><%= "#{url}q/#{q}"[0..30]+'...' %></a>
-  </td>
-<%     if  qc.running? %>
-  <% admin_stat, oper_stat = qc.status %>
-  <td>
-    <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>">admin: <%= admin_stat %> </span>
-    <span class="<%= oper_stat == 'UP' ? 'green' : 'red' %>">oper: <%= oper_stat %> </span>
-  </td>
-  <td><%= qc.ping %></td>
-  <td><%= qc.read_pid %></td>
-  <td><%= qc.uptime %></td>
-<%     else %>
-  <td><span class="red">queue is DOWN</span></td>
-  <td>-</td>
-  <td>-</td>
-  <td>-</td>
-<%     end %>
-  <td>
-    <form method="get" action="<%= "#{url}q/#{q}/restart" %>"><button>Restart</button></form>
-  </td>
-</tr>
-<%   end %>
-</tbody>
+  <tbody id="custom-queues">
+<%  custom_queues.each_with_index do |q, i| %>
+ <%=   queue_row(q, :odd => i % 2 != 0) %>
+<%  end %>
+  </tbody>
+  <tbody id="builtin-queues">
+<%  builtin_queues.each do |q| %>
+ <%=   queue_row(q, :odd => false) %>
+<%  end %>
+  </tbody>
 </table>
 <% end %>
+
+<div id="sub-header" style="margin-top: 20px">
+  <h4>Aliases</h4>
+  <% if File.exist?('./config/aliases.json') %>
+    <pre id="alias-json">
+      <%= File.open('./config/aliases.json').read %>
+    </pre>
+  <% else %>
+    <p>No aliases configured (missing <code>rq/config/aliases.json</code>).</p>
+  <% end %>
+</div>
+
+<div class="meta">
+<% if  RQ::QueueMgrClient.running? %>
+  <span class="green">QUEUE MGR is OPERATIONAL</span>
+  <span class="green"><%= RQ::QueueMgrClient.ping %></span>
+  <span class="green"><%= RQ::QueueMgrClient.read_pid %></span>
+  <span>uptime <%= RQ::QueueMgrClient.uptime %> seconds</span> |
+  <% vver = RQ::QueueMgrClient.version %>
+  <% if vver == VERSION_NUMBER %>
+    <span>server: <strong>v<%= vver %></strong></span>
+  <% else %>
+    <span class="red">sever: <strong>v<%= vver %></strong> != web: <strong>v<%= VERSION_NUMBER %></strong></span>
+  <% end %>
+<% else %>
+  <span class="red">QUEUE MGR is DOWN</span>
+<% end %>
+</div>
