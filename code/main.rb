@@ -34,6 +34,35 @@ module RQ
         RQ::QueueClient.new(name)
       end
 
+      def queue_row(name, options={})
+        qc = get_queueclient(name)
+        html = options[:odd] ?
+             "<tr class=\"odd-row\">" :
+             "<tr>"
+        html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{name}</a></td>"
+        html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{(url+'q/'+name.to_s)}</a></td>"
+        if qc.running?
+          admin_stat, oper_stat = qc.status
+          html += "<td>"
+            html += "<span class=\"#{admin_stat == 'UP' ? 'green' : 'red'}\">#{admin_stat}</span>:"
+            html += "<span class=\"#{oper_stat  == 'UP' ? 'green' : 'red'}\">#{oper_stat}</span>"
+          html += "</td>"
+          html += "<td>#{qc.ping}</td>"
+          html += "<td>#{qc.read_pid}</td>"
+          html += "<td>#{qc.uptime}</td>"
+        else
+          html +=
+          html += "<td><span class=\"red\">DOWN</span></td>"
+          html += "<td>-</td>"
+          html += "<td>-</td>"
+          html += "<td>-</td>"
+        end
+        html += "<td><form method=\"post\" action=\"#{url}q/#{name}/restart\">"
+          html += "<button id=\"restart-queue\">Restart</button>"
+        html += "</form></td>"
+        html += "</tr>"
+      end
+
       def hash_insert(hash, type, msg)
         hash ||= {}
         hash[type] = msg
@@ -213,7 +242,7 @@ module RQ
       end
     end
 
-    get '/q/:name/restart' do
+    post '/q/:name/restart' do
       res = RQ::QueueMgrClient.restart_queue(params[:name])
 
       if not res

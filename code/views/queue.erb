@@ -1,41 +1,41 @@
 <% q = params[:name] %>
 <% qc = RQ::QueueClient.new(q) %>
 <div id="header">
-  <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q}" %>">Queue [ <%= q %> ]</a> </h1>
-  <div class="right">
-    <% if qc.running? %>
-    <% admin_status, oper_status = qc.status %>
-      <p>Admin Status: <span class="<%= admin_status == "UP" ? "green" : "red" %>"> <%= admin_status %></span>
-      Oper Status: <span class="<%= oper_status == "UP" ? "green" : "red" %>"> <%= oper_status %></span>
-      <span class=""> <%=  qc.ping %></span>
-      <span class=""> <%=  qc.read_pid %></span>
-      up for <%= qc.uptime %> seconds</p>
-    <% else %>
-     <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
-    <% end %>
-    <h5><%= RQ::QueueMgrClient.environment.upcase %></h5>
-  </div>
+  <p id="new-message"><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></p>
+  <h1><a href="<%= url %>">RQ</a> : <%= q %></h1>
 </div>
 
-<h3>config.json [ <a href="#" onclick="config_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a> ]</h3>
-<% json_path = "queue/#{q}/config.json" %>
-<% if File.exists?(json_path) %>
-<pre id="config" class="json hidden">
-<% File.open(json_path) do |file| %>
- <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/"\:"/, "\" : \"") %>
-<% end %>
-</pre>
-<% else %>
-  <p>config.json doesn't currently exist?</p>
-<% end %>
+<div id="sub-header">
+  <% if qc.running? %>
+  <% admin_status, oper_status = qc.status %>
+  <div id="queue-status">
+    <p><span class="<%= admin_status == "UP" ? "green" : "red" %>"><%= admin_status %></span>:<span class="<%= oper_status == "UP" ? "green" : "red" %>"><%= oper_status %></span>
+    <span class=""> <%=  qc.ping %></span>
+    <span class=""> <%=  qc.read_pid %></span>
+    up for <%= qc.uptime %> seconds</p>
+  <% else %>
+   <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
+  <% end %>
+  </div>
+  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a> ]</p>
+  <% json_path = "queue/#{q}/config.json" %>
+  <% if File.exists?(json_path) %>
+  <pre id="config" class="json hidden">
+  <% File.open(json_path) do |file| %>
+   <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/"\:"/, "\" : \"") %>
+  <% end %>
+  </pre>
+  <% else %>
+    <p>config.json doesn't currently exist?</p>
+  <% end %>
+</div>
 
 <% if admin_status == 'UP' %>
-<h3>Message List</h3>
-<p class="right"><strong><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></strong></p>
+<h2>Message List</h2>
 
 <% num_msgs = qc.num_messages %>
 
-<table id="queue_lists">
+<table id="queue-lists" cellspacing="0" cellpading="5">
   <thead>
     <tr>
       <th class="prep"><h4>PREP</h4><%= num_msgs['prep'] %></th>
@@ -226,7 +226,7 @@
 <% end %>
 
 <script>
-  function config_toggle() {
+  function show_toggle() {
     var cfg = document.getElementById('config');
     if (cfg.className.indexOf('hidden') >= 0) {
       cfg.className = cfg.className.replace('hidden', '').replace(/\s+$/, "");
