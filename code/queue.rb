@@ -1,4 +1,3 @@
-
 require 'socket'
 require 'json'
 require 'fcntl'
@@ -1574,7 +1573,7 @@ module RQ
           return
         end
         if options['state'] == 'prep'
-          status = @prep.map { |m| m['msg_id'] }
+           status = @prep
         elsif options['state'] == 'que'
           status = @que.map { |m| [m['msg_id'], m['due']] }
         elsif options['state'] == 'run'
