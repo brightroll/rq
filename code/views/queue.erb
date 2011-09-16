@@ -54,10 +54,7 @@
 <% msg_ids = qc.messages({'state' => 'prep', 'limit' => 50}) %>
 <% grouped = {} %>
 <% msg_ids.each do |msg_id| %>
-  <%# TODO -- this shouldn't be the case -- fix it (related to run now / clone) %>
-  <% if msg_id.nil? %>
-    <% next %>
-  <% end %>
+  <% next if msg_id.nil? %>
   <% date, rest = msg_id.split('.', 2) %>
   <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
@@ -112,26 +109,18 @@
 <% msgs = qc.messages({'state' => 'run'}) %>
 <% grouped = {} %>
 <% msgs.each do |msg| %>
-  <%# BUG -- msg contains -> ["2011...", nil] !!! %>
-  <%# so next part is ugly =/ %>
-  <% if msg.class == Array %>
-    <% m = msg[0] %>
-    <% next if m.nil? %>
-    <% date, rest = m.split('.', 2) %>
-    <% grouped[date] ||= [] %>
-    <% grouped[date] << rest %>
-  <% else %>
-    <% date, rest = msg.split('.', 2) %>
-    <% grouped[date] ||= [] %>
-    <% grouped[date] << rest %>
-  <% end %>
+  <% m = msg[0] %>
+  <% next if m.nil? %>
+  <% date, rest = m.split('.', 2) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << rest %>
 <% end %>
 <% grouped.sort.reverse.each do |date, msgs| %>
   <h5><%= date %></h5>
   <ul>
   <%# hotfix for indika's problem. this needs to be revisited. %>
   <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
-    <% msg_id = msg.class == Array ? "%s.%s" % [date, msg[0]] : "%s.%s" % [date, msg] %>
+    <% msg_id = msg %>
     <li><a href="<%= "#{url}q/#{q}/#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if q == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
