@@ -1,7 +1,17 @@
-
 require 'vendor/environment'
 
-#p ARGV.inspect
+# needs some sort of error handling -- move out of this file
+# so that higher level up services can handle them (for us -- RqUtils2)
+class RqError < ::StandardError; end
+
+class RqCannotRelay < RqError; def message; 'Cannot relay message'; end; end
+class RqQueueNotFound < RqError; def message; 'Queue not found'; end; end
+
+def get_queue_client(q_name)
+  qc = RQ::QueueClient.new(q_name)
+  raise RqQueueNotFound if not qc.exists? # throw :halt, [404, "404 - Queue not found"]
+  qc
+end
 
 def process_args(arg_list)
   input = { }
@@ -9,7 +19,7 @@ def process_args(arg_list)
   input[:cmd]  = arg_list.shift
   input[:xtra] = []
 
-  # TODO: do this in a functional manner to cleanse 
+  # TODO: do this in a functional manner to cleanse
   i = 0
   while i < arg_list.length
     if arg_list[i].index('--')
@@ -39,7 +49,7 @@ def process_args(arg_list)
 end
 
 args = process_args(ARGV)
-#p args 
+#p args
 
 
 require 'code/queueclient'
@@ -55,7 +65,7 @@ end
 
 
 # Which queue am I bound to?
-# TODO: later 
+# TODO: later
 
 # Create a message
 #   - 'dest' queue
@@ -65,19 +75,13 @@ end
 if args[:cmd] == 'sendmesg'
   q_name = args['dest']
 
-  if (q_name.index('http:') == 0)
-    if args.has_key?('relay-ok')
-      q_name = 'relay'
-    else
-      throw :halt, [404, 'Sorry - cannot relay message']
-    end
+
+  if q_name.index('http:') == 0
+    raise RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
+    q_name = 'relay'
   end
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message
   mesg = {}
@@ -95,19 +99,12 @@ end
 if args[:cmd] == 'prepmesg'
   q_name = args['dest']
 
-  if (q_name.index('http:') == 0)
-    if args.has_key?('relay-ok')
-      q_name = 'relay'
-    else
-      throw :halt, [404, 'Sorry - cannot relay message']
-    end
+  if q_name.index('http:') == 0
+    raise RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
+    q_name = 'relay'
   end
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message
   mesg = {}
@@ -127,11 +124,7 @@ if args[:cmd] == 'attachmesg'
   q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
   msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message for queue mgr
   msg = {'msg_id' => msg_id}
@@ -144,10 +137,7 @@ if args[:cmd] == 'attachmesg'
 
   msg['pathname'] = File.expand_path(msg['pathname'])
   results = check_attachment(msg)
-  if not results[0]
-    p results[1]
-    throw :halt, [404, "404 - #{results[0]}"]
-  end
+  raise RqError(results[0]) if not results[0] # throw :halt, [404, "404 - #{results[0]}"]
   result = qc.attach_message(msg)
   print "#{result[0]} #{result[1]} for Message: #{full_mesg_id} attachment\n"
 end
@@ -158,11 +148,7 @@ if args[:cmd] == 'commitmesg'
   q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
   msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message for queue mgr
   mesg = {'msg_id' => msg_id }
@@ -177,11 +163,7 @@ if args[:cmd] == 'statusmesg'
   q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
   msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message for queue mgr
   mesg = {'msg_id' => msg_id }
@@ -199,11 +181,7 @@ if args[:cmd] == 'statuscountmesg'
   q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
   msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message for queue mgr
   mesg = {'msg_id' => msg_id }
@@ -224,11 +202,7 @@ if args[:cmd] == 'single_que'
   #  throw :halt, [404, 'Sorry - cannot relay message']
   #end
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message
   mesg = {}
@@ -248,11 +222,7 @@ if args[:cmd] == 'attachstatusmesg'
   q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
   msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found"]
-  end
+  qc = get_queue_client(q_name)
 
   # Construct message for queue mgr
   mesg = {'msg_id' => msg_id }
@@ -281,11 +251,7 @@ if args[:cmd] == 'clone'
   q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
   msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-  qc = RQ::QueueClient.new(q_name)
-
-  if not qc.exists?
-    throw :halt, [404, "404 - Queue not found. Only local messages for cloning."]
-  end
+  qc = get_queue_client(q_name)
 
   mesg = {'msg_id' => msg_id }
   result = qc.clone_message(mesg)
