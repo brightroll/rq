@@ -121,7 +121,7 @@
   <%# hotfix for indika's problem. this needs to be revisited. %>
   <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
     <% msg_id = msg %>
-    <li><a href="<%= "#{url}q/#{q}/#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
+    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if q == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
       <% if ok == 'ok' %>
