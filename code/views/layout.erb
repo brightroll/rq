@@ -20,7 +20,7 @@
         <% end %>
       <% end %>
       </div>
-      <span id="env"><%= RQ::QueueMgrClient.environment.upcase %></span>
+      <span id="env"><%= our_env %></span>
       <%= yield %>
       <p><em><%= Time.now %></em></p>
     </div>

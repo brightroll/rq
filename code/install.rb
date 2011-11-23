@@ -21,6 +21,11 @@ module RQ
       './code/views'
     end
 
+    before do
+      @flash = session[:flash] || {}
+      session[:flash] = {}
+    end
+
     def write_file(fname, data)
       File.open(fname + ".tmp", "w") do |f|
         f.write(data)
