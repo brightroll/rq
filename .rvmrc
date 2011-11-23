@@ -1,4 +1,4 @@
-rvm 1.8.7@rq
+rvm use 1.8.7@rq
 
 # NOTE: THIS IS ONLY NEEDED FOR TESTING. RQ HAS ALL GEMS THAT
 #       IT NEEDS 'BURNED IN'
