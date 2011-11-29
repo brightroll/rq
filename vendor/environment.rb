@@ -1,4 +1,6 @@
-dir = File.dirname(__FILE__)
+
+file = File.expand_path(__FILE__)
+dir = File.dirname(file)
 
 def rqrq_rqenv_add_path_if_needed(path)
  if not $LOAD_PATH.include?(path)
