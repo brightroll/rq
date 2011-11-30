@@ -1722,8 +1722,12 @@ module RQ
 
         state = lookup_msg(options, '*')
         if state == 'que'
-          if run_job(options)
-            resp = [ "ok", "msg sent to run" ].to_json
+          # Jump to the front of the queue
+          ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
+          m = @que.find { |e| e['msg_id'] == options['msg_id'] }
+          if (not m.nil?) and (not ready_msg.nil?)
+            m['due'] = ready_msg['due'] - 1.0
+            resp = [ "ok", "msg sent to front of run queue" ].to_json
           else
             resp = [ "fail", "cannot send message to run state" ].to_json
           end
