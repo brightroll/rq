@@ -3,7 +3,9 @@
 # license  - see COPYING
 
 require 'rack/content_length'
-require 'rack/handler'
+if not Rack.const_defined?("Handler")
+  require 'rack/handler'
+end
 require 'time'
 require 'stringio'
 
