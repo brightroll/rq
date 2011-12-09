@@ -51,6 +51,7 @@ for test in \
    send_test_relay_relayid_attach.sh \
    send_test_relay_relayid.sh \
    send_test_resend.sh \
+   send_test_force_remote.sh \
    test_web_attach_err.rb \
    test_web_max_count.rb \
    test_overrides.rb \

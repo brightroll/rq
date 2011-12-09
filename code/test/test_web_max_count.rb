@@ -123,8 +123,8 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
 
     res = Net::HTTP.get_response(URI.parse(msg_id))
     assert_equal("200", res.code)
-    assert_match(/\scount : 2\s/, res.body)
-    assert_match(/\smax_count : 3\s/, res.body)
+    assert_match(/\scount[^:]+:[^2]+2\s/, res.body)
+    assert_match(/\smax_count[^:]+:[^3]+3\s/, res.body)
   end
 
   def test_max_count_present_default_rest_html
@@ -152,8 +152,8 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
 
     res = Net::HTTP.get_response(URI.parse(msg_id))
     assert_equal("200", res.code)
-    assert_match(/\scount : 2\s/, res.body)
-    assert_match(/\smax_count : 15\s/, res.body)
+    assert_match(/\scount[^:]+:[^2]+2\s/, res.body)
+    assert_match(/\smax_count[^:]+:[^1]+15\s/, res.body)
   end
 
   def test_max_count_present_rest_json

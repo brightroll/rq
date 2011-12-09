@@ -52,6 +52,9 @@ table {
 .left-aligned {
   text-align: left;
 }
+.right-aligned {
+  text-align: right;
+}
 #separator-row {
   background: #777;
 }

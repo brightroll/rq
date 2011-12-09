@@ -113,6 +113,12 @@ if not hostnames.any? {|h| dest.index(h) == 0}
   remote_delivery = true
 end
 
+# If this was a force_remote
+if ENV['RQ_FORCE_REMOTE'] == '1'
+  log("FORCE REMOTE")
+  remote_delivery = true
+end
+
 if remote_delivery
   # Get the URL
   remote_q_uri = dest[/(.*?\/q\/[^\/]+)/, 1]

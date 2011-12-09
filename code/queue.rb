@@ -265,6 +265,7 @@ module RQ
           ENV["RQ_PARAM3"] = msg['param3']
           ENV["RQ_PARAM4"] = msg['param4']
           ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id']
+          ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
@@ -413,7 +414,7 @@ module RQ
       msg['max_count'] = (input['max_count'] || 15).to_i
 
       # Copy only these keys from input message
-      keys = %w(src param1 param2 param3 param4 post_run_webhook due)
+      keys = %w(src param1 param2 param3 param4 post_run_webhook due force_remote)
       keys.each do
         |key|
         next unless input.has_key?(key)

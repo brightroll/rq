@@ -15,28 +15,27 @@
     </form>
   </div>
   <p>message.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">raw</a> ]</p>
-<ul id="message-json" class="hidden">
-<%  ['src', 'dest', 'msg_id', 'status', 'state', 'count', 'max_count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup'].each do |key| %>
+<table id="message-json" class="hidden">
+<%  ['src', 'dest', 'msg_id', 'status', 'state', 'count', 'max_count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup', 'force_remote'].each do |key| %>
 <%    next unless locals['msg'].has_key?(key) %>
-<li>
-  <span class="">
+<tr>
+  <td class="left-aligned">
     <% if key == 'status' && locals['msg']['state'] == 'relayed' %>
        <% stuff, url = locals['msg']['status'].split(' - ', 2) %>
-       <%= key %> : relayed - <a href="<%= url %>"><%= url %></a>
+       <%= key %></td><td> : </td><td class="left-aligned"> relayed - <a class="inline" href="<%= url %>"><%= url %></a> </td>
     <% elsif key == 'orig_msg_id' || key == 'dup' %>
-       <%= key %> : <a href="<%= locals['msg'][key] %>"><%= locals['msg'][key] %></a>
+ <%= key %></td><td> : </td><td class="left-aligned"> <a class="inline" href="<%= locals['msg'][key] %>"><%= locals['msg'][key] %></a> </td>
     <% elsif key == 'dups' %>
-      <%= key %> : [
+ <%= key %></td><td> : </td><td class="left-aligned"> [
          <% locals['msg'][key].each do |v| %>
             <a href="<%= v %>"><%= v %></a>
-         <% end %> ]
+         <% end %> ] </td>
     <% else %>
-       <%= key %> : <%= Rack::Utils::escape_html locals['msg'][key] %>
+ <%= key %></td><td> : </td><td class="left-aligned"> <%= Rack::Utils::escape_html locals['msg'][key] %> </td>
     <% end %>
-  </span>
-</li>
+</tr>
 <% end %>
-</ul>
+</table>
 </div>
 
 <h3>Message Attachments</h3>
