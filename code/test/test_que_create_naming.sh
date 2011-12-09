@@ -9,6 +9,8 @@ else
   rq_port=${RQ_PORT}
 fi
 
+rm -rf cookie_jar
+
 curl -0 -sL -o _home.txt http://127.0.0.1:${rq_port}/
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running"
@@ -27,7 +29,7 @@ fi
 
 
 echo "Attempting to create a queue with a space in name"
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]='bad que test' -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_bad1.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]='bad que test' -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_bad1.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -45,7 +47,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Attempting to create a queue with a '.' in name"
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]='bad.que.test' -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_bad2.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]='bad.que.test' -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_bad2.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -63,7 +65,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Attempting to create a queue with a '/' in name"
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]='bad/que/test' -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_bad3.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]='bad/que/test' -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_bad3.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -84,6 +86,7 @@ rm _home.txt
 rm _install_bad1.txt
 rm _install_bad2.txt
 rm _install_bad3.txt
+rm cookie_jar
 
 echo "ALL DONE SUCCESSFULLY"
 

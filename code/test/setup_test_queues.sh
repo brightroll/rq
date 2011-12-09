@@ -15,6 +15,7 @@ rm -rf './scheduler'
 rm -rf './config'
 rm -rf './config'
 rm -rf './test_dirs'
+rm -rf './cookie_jar'
 
 echo "Checking that system is ready for install..."
 if [ "x${RQ_PORT}" = "x" ] ; then
@@ -72,7 +73,7 @@ fi
 
 
 echo "Creating the test queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_test.txt
+curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -85,7 +86,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Creating the test coalesce queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -o _install_test_coalesce.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -o _install_test_coalesce.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -98,7 +99,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Creating the test run queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_run -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=3 -o _install_test_run.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_run -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=3 -o _install_test_run.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -111,14 +112,14 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Creating the test nop queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_nop -F queue[script]=./code/test/test_nop.sh -F queue[num_workers]=1 -o _install_test_nop.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_nop -F queue[script]=./code/test/test_nop.sh -F queue[num_workers]=1 -o _install_test_nop.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
 fi
 
 echo "Creating the ansi test queue..."
-curl -0 http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_ansi -F queue[script]=./code/test/ansi_script.sh -F queue[num_workers]=1 -o _install_ansi_script.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_ansi -F queue[script]=./code/test/ansi_script.sh -F queue[num_workers]=1 -o _install_ansi_script.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -137,6 +138,7 @@ rm _install_test_coalesce.txt
 rm _install_test_run.txt
 rm _install_test_nop.txt
 rm _install_ansi_script.txt
+rm cookie_jar
 
 echo "ALL DONE SUCCESSFULLY"
 
