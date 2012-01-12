@@ -14,6 +14,9 @@ module RQ
       parts = self.msg_id_parts(msg_id)
       # parts = [ "YYYYmmDD", "HH", "MM" ]
 
+      # If we got bad data, return false
+      return false unless parts
+
       File.exists?("#{path}/#{parts[0]}/#{parts[1]}/#{parts[2]}/#{msg_id}")
     end
     
