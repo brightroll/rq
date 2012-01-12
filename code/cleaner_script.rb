@@ -1,8 +1,14 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 require 'fileutils'
 require 'date'
 require 'time'
+
+$rq_msg_dir = Dir.pwd
+Dir.chdir("#{File.dirname(__FILE__)}")
+require 'hashdir'
+Dir.chdir($rq_msg_dir)
+
 ################################################################################
 # Stuff that goes everywhere in RQ
 ################################################################################
@@ -18,6 +24,8 @@ require 'rubygems'
 gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
 Gem.clear_paths
 Gem.send :set_paths, gem_paths.join(":")
+
+
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
 
@@ -117,6 +125,33 @@ def remove_old(qname, days)
   
 end
   
+def trim_relay(qpath, num)
+  puts "Trimming Relay to #{num} entries"
+  STDOUT.flush
+
+  all_msgs = RQ::HashDir.entries(qpath + "/relayed")
+
+  msgs = all_msgs[num..-1]
+
+  if msgs == nil
+    puts "relay relayed is under #{num} entries"
+    STDOUT.flush
+  end
+
+  msgs.each do
+    |ent|
+
+    path = RQ::HashDir.path_for(qpath + "/relayed", ent)
+
+    #puts "status: removing " + path
+    #STDOUT.flush
+    FileUtils.rm_rf(path)
+  end
+
+  puts "status: removed #{msgs.length} entries from relayed"
+  STDOUT.flush
+end
+
 
 ##################################################################
 # My MAIN
@@ -141,5 +176,7 @@ queues.each do |q|
   mv_logs(q)
   remove_old(q, 2)
 end
+
+trim_relay(basedir + "/queue/relay", 60000)
 
 write_status('done', "successfully ran this script")
