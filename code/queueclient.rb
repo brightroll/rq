@@ -85,7 +85,7 @@ module RQ
       result = UnixRack::Socket.read_sock_num_bytes(client, size, lambda {|s| puts s})
 
       if result[0] == false
-        return nil
+        return ["fail", result[1]]
       end
 
       client.close
