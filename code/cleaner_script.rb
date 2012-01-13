@@ -136,6 +136,7 @@ def trim_relay(qpath, num)
   if msgs == nil
     puts "relay relayed is under #{num} entries"
     STDOUT.flush
+    return
   end
 
   msgs.each do
@@ -143,6 +144,7 @@ def trim_relay(qpath, num)
 
     path = RQ::HashDir.path_for(qpath + "/relayed", ent)
 
+    # TODO: put progress
     #puts "status: removing " + path
     #STDOUT.flush
     FileUtils.rm_rf(path)
