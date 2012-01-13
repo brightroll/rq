@@ -310,7 +310,7 @@ cmds = Commands.new
 if cmds.respond_to? cmd
   retval = cmds.send cmd, args
 else
-  puts "Command not found: #{args[:cmd]} (#{cmd})"
+  warn "Command not found: #{args[:cmd]} (#{cmd})"
   retval = 1
 end
 
