@@ -173,10 +173,16 @@ else
   end
 end
 
+log_days = 2
+if ENV['RQ_PARAM2'] && ENV['RQ_PARAM2'].match(/\d/)
+  log_days = $&.to_i
+  puts "OVERRIDE: log_age to #{log_days} days"
+  STDOUT.flush
+end
 queues.each do |q|
-  rm_logs_older_than(q, "/queue.log.?*", 2*24)
+  rm_logs_older_than(q, "/queue.log.?*", log_days*24)
   mv_logs(q)
-  remove_old(q, 2)
+  remove_old(q, log_days)
 end
 
 trim_relay(basedir + "/queue/relay", 60000)
