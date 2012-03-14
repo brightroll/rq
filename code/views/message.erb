@@ -14,9 +14,30 @@
       <button id="clone-message">Run message (risky)</button>
     </form>
   </div>
-  <p>message.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">raw</a> ]</p>
+  <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">raw</a> ]</p>
+<table id="message-json-default" class="">
+<%  ['dest', 'status', 'state' ].each do |key| %>
+<%    next unless locals['msg'].has_key?(key) %>
+<tr>
+  <td class="left-aligned">
+    <% if key == 'status' && locals['msg']['state'] == 'relayed' %>
+       <% stuff, url = locals['msg']['status'].split(' - ', 2) %>
+       <%= key %></td><td> : </td><td class="left-aligned"> relayed - <a class="inline" href="<%= url %>"><%= url %></a> </td>
+    <% elsif key == 'orig_msg_id' || key == 'dup' %>
+ <%= key %></td><td> : </td><td class="left-aligned"> <a class="inline" href="<%= locals['msg'][key] %>"><%= locals['msg'][key] %></a> </td>
+    <% elsif key == 'dups' %>
+ <%= key %></td><td> : </td><td class="left-aligned"> [
+         <% locals['msg'][key].each do |v| %>
+            <a href="<%= v %>"><%= v %></a>
+         <% end %> ] </td>
+    <% else %>
+ <%= key %></td><td> : </td><td class="left-aligned"> <%= Rack::Utils::escape_html locals['msg'][key] %> </td>
+    <% end %>
+</tr>
+<% end %>
+</table>
 <table id="message-json" class="hidden">
-<%  ['src', 'dest', 'msg_id', 'status', 'state', 'count', 'max_count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup', 'force_remote'].each do |key| %>
+<%  ['src', 'msg_id', 'count', 'max_count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup', 'force_remote'].each do |key| %>
 <%    next unless locals['msg'].has_key?(key) %>
 <tr>
   <td class="left-aligned">
