@@ -315,7 +315,7 @@ module Rack
 
             puts "#{$$}: #{client_ip} - - #{Time.now.strftime('[%d/%b/%Y:%k:%M:%S %z]')} \"#{sock.hdr_method.inspect}\""
             $stdout.flush
-            Alarm.alarm(60)               # if command not handled in 60 seconds
+            Alarm.alarm(120)               # if command not handled in 120 seconds
 
             if not allowed_ips.empty?
               if not (allowed_ips.any? { |e| client_ip.include? e })
