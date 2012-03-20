@@ -56,11 +56,13 @@
   <span class="green"><%= RQ::QueueMgrClient.ping %></span>
   <span class="green"><%= RQ::QueueMgrClient.read_pid %></span>
   <span>uptime <%= RQ::QueueMgrClient.uptime %> seconds</span> |
-  <% vver = RQ::QueueMgrClient.version %>
-  <% if vver == VERSION_NUMBER %>
-    <span>server: <strong>v<%= vver %></strong></span>
+  <% vver_array = RQ::QueueMgrClient.version %>
+  <% if vver_array[0] == VERSION_NUMBER %>
+    <span>server: <strong>v<%= vver_array[0] %></strong></span>
+    <span>semantic: <strong><%= vver_array[1] %></strong></span>
   <% else %>
-    <span class="red">sever: <strong>v<%= vver %></strong> != web: <strong>v<%= VERSION_NUMBER %></strong></span>
+    <span class="red">server: <strong>v<%= vver_array[0] %></strong> != web: <strong>v<%= VERSION_NUMBER %></strong></span>
+    <span class="red">semantic: <strong><%= vver_array[1] %></strong> != web: <strong>v<%= SEMANTIC_VERSION_NUMBER %></strong></span>
   <% end %>
 <% else %>
   <span class="red">QUEUE MGR is DOWN</span>
