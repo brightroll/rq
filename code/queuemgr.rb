@@ -110,7 +110,7 @@ module RQ
         return
       end
 
-      if data[0].index('restart_queue') == 0
+      if data[0].index('restart_queue ') == 0
         queuename = data[0].split(' ', 2)[1]
         log("RESP [ restart_queue - #{queuename} ]")
         worker = @queues.find { |i| i.name == queuename }
@@ -138,7 +138,7 @@ module RQ
         return
       end
 
-      if data[0].index('create_queue') == 0
+      if data[0].index('create_queue ') == 0
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
         # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }} 
@@ -171,6 +171,118 @@ module RQ
             end
           end
         end
+        log("RESP [ #{resp} ]")
+        sock.send(resp, 0)
+        sock.close
+        return
+      end
+
+      if data[0].index('create_queue_link ') == 0
+        json_path = data[0].split(' ', 2)[1]
+
+        options = {}
+        err = false
+
+        # Validate path
+        json_data = false
+        begin
+          json_data = File.read(json_path)
+        rescue
+          resp = ['fail', 'could not read json config'].to_json
+          err = true
+        end
+
+        # Lightweight validate json
+
+        if not err
+          begin
+            options = JSON.parse(json_data)
+          rescue
+            resp = ['fail', 'could not parse json config'].to_json
+            err = true
+          end
+        end
+
+        if not err
+          if options.include?('name')
+            if (1..128).include?(options['name'].size)
+              if options['name'].class != String
+                resp = ['fail', "json config has invalid name (not String)"].to_json
+                err = true
+              end
+            else
+              resp = ['fail', "json config has invalid name (size)"].to_json
+              err = true
+            end
+          else
+            resp = ['fail', 'json config is missing name field'].to_json
+            err = true
+          end
+        end
+
+        if not err
+          if options.include?('num_workers')
+            if not ( (1..128).include?(options['num_workers'].to_i) )
+              resp = ['fail', "json config has invalid num_workers field (out of range 1..128)"].to_json
+              err = true
+            end
+          else
+            resp = ['fail', 'json config is missing num_workers field'].to_json
+            err = true
+          end
+        end
+
+        if not err
+          if options.include?('script')
+            if (1..1024).include?(options['script'].size)
+              if options['script'].class != String
+                resp = ['fail', "json config has invalid script (not String)"].to_json
+                err = true
+              end
+            else
+              resp = ['fail', "json config has invalid script (size)"].to_json
+              err = true
+            end
+          else
+            resp = ['fail', 'json config is missing script field'].to_json
+            err = true
+          end
+        end
+
+        if not err
+          if @queues.any? { |q| q.name == options['name'] }
+            resp = ['fail', 'already created'].to_json
+            err = true
+          end
+        end
+
+        if not err
+          name_test = options['name'].tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*')
+          if name_test.index("*")
+            resp = ['fail', "queue name has invalid characters"].to_json
+            err = true
+          end
+        end
+
+        if not err
+          resp = ['fail', 'queue not created'].to_json
+          results = RQ::Queue.create(options, json_path)
+          log("create_queue STARTED [ #{options['name']}#{results[0]} ]")
+          if results
+            qc = QueueClient.new(options['name'])
+            worker = Worker.new
+            worker.name = options['name']
+            worker.qc = qc
+            worker.options = options
+            worker.status = "RUNNING"
+            worker.pid = results[0]
+            worker.child_write_pipe = results[1]
+            worker.num_restarts = 0
+            @queues << worker
+            resp = ['success', 'queue created - awesome'].to_json
+          end
+        end
+
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close
