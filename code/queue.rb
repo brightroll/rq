@@ -7,6 +7,7 @@ require 'code/unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
+require 'pathname'
 
 module RQ
   class Queue
@@ -51,7 +52,7 @@ module RQ
       @status.update!
     end
 
-    def self.create(options)
+    def self.create(options,config_path=nil)
       # Create a directories and config
       queue_path = "queue/#{options['name']}"
       FileUtils.mkdir_p(queue_path)
@@ -62,10 +63,16 @@ module RQ
       RQ::HashDir.make(queue_path + '/done')
       RQ::HashDir.make(queue_path + '/relayed')
       FileUtils.mkdir_p(queue_path + '/err')
-      # Write config to dir
-      File.open(queue_path + '/config.json', "w") do
-        |f|
-        f.write(options.to_json)
+
+      if config_path
+        old_path = Pathname.new(config_path).realpath.to_s
+        File.symlink(old_path, queue_path + '/config.json')
+      else
+        # Write config to dir
+        File.open(queue_path + '/config.json', "w") do
+          |f|
+          f.write(options.to_json)
+        end
       end
       RQ::Queue.start_process(options)
     end
