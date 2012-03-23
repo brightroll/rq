@@ -100,7 +100,6 @@ module RQ
       # TODO: validation
 
       # This creates and starts a queue
-      params['queue']['url'] = url
       result = RQ::QueueMgrClient.create_queue(params['queue'])
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{params['queue']['name']}"
