@@ -87,6 +87,15 @@ module RQ
       result ? JSON.parse(result[0]) : nil
     end
 
+    def self.create_queue_link(json_path)
+      client = UNIXSocket.open('config/queuemgr.sock')
+      client.send("create_queue_link #{json_path}", 0)
+      result = client.recvfrom(1024)
+      client.close
+      p result
+      result ? JSON.parse(result[0]) : nil
+    end
+
     def self.restart_queue(queue_name)
       client = UNIXSocket.open('config/queuemgr.sock')
       client.send("restart_queue #{queue_name}", 0)

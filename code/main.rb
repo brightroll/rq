@@ -100,11 +100,27 @@ module RQ
       # TODO: validation
 
       # This creates and starts a queue
-      params['queue']['url'] = url
       result = RQ::QueueMgrClient.create_queue(params['queue'])
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{params['queue']['name']}"
     end
+
+    post '/new_queue_link' do
+      # This creates and starts a queue via a config file in json
+      js_data = {}
+      begin
+        js_data = JSON.parse(File.read(params['queue']['json_path']))
+      rescue
+        p $!
+        p "BAD config.json - could not parse"
+        throw :halt, [404, "404 - Couldn't parse json file (#{params['queue']['json_path']})."]
+        end
+      result = RQ::QueueMgrClient.create_queue_link(params['queue']['json_path'])
+      #TODO - do the right thing with the result code
+      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      redirect "/q/#{js_data['name']}"
+    end
+
 
     get '/q.txt' do
       content_type 'text/plain', :charset => 'utf-8'
