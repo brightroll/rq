@@ -18,14 +18,19 @@ fi
 
 case $1 in
 	start)
-		ulimit -c unlimited
-		cd /rq/current
-		/rq/current/bin/web_server.sh
-		/rq/current/bin/queuemgr_ctl start
+		# don't start unless not running already
+		if [ `ps ax | grep '\[rq' | grep -v grep | wc -l` -eq 0 ]
+		then
+			ulimit -c unlimited
+			cd /rq/current
+			/rq/current/bin/web_server.sh
+			/rq/current/bin/queuemgr_ctl start
+		fi
 	;;
 	stop)
 		cd /rq/current
 		/rq/current/bin/queuemgr_ctl stop
+		# kill any procs still running
 		for pid in `ps ax | grep '\[rq' | grep -v grep | awk '{print $1}'`
 		do
 			kill $pid
