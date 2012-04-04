@@ -26,10 +26,18 @@ case $1 in
 	stop)
 		cd /rq/current
 		/rq/current/bin/queuemgr_ctl stop
-		ps ax | grep '\[rq' | grep -v grep | \
-		    awk '{print $1}' | xargs kill
-		ps ax | grep 'web_server' | grep -v grep | \
-		    awk '{print $1}' | xargs kill
+		for pid in `ps ax | grep '\[rq' | grep -v grep | awk '{print $1}'`
+		do
+			kill $pid
+		done
+		for pid in `ps ax | grep 'web_server' | grep -v grep | awk '{print $1}'`
+		do
+			kill $pid
+		done
+	;;
+	restart)
+		stop
+		start
 	;;
 esac
 
