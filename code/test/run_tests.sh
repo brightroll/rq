@@ -26,6 +26,7 @@ for test in \
    test_rq.sh \
    send_test_coalesce.sh \
    send_test_sneaky.sh \
+   send_test_symlink.sh \
    test_que_create_naming.sh \
    test_run_admin_down.sh \
    test_run_admin_pause.sh \

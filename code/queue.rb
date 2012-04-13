@@ -146,7 +146,10 @@ module RQ
       Dir.mkdir(job_path) unless File.exists?(job_path)
 
       # Identify executable to run, if there is no script, go oper down
-      script_path = File.expand_path(@config['script'])
+      # Also, fix an old issue where we didn't deref the symlink when executing a script
+      # This meant that a script would see a new directory on a code deploy if that 
+      # script lived under a symlinked path
+      script_path = Pathname.new(@config['script']).realpath.to_s
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
         if @status.oper_status != 'SCRIPTERROR'

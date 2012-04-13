@@ -149,7 +149,6 @@ if [ "$RQ_PARAM1" == "dup_fail" ]; then
   write_status 'run' "done dup"
 fi
 
-
 if [ "$RQ_PARAM1" == "resend1" ]; then
     if [ "$RQ_COUNT" == "0" ]; then
         echo "This script should resend the current job at a new time"
@@ -173,6 +172,13 @@ if [ "$RQ_PARAM2" == "resend1" ]; then
         write_status 'resend' "8"
         exit 0
     fi
+fi
+
+if [ "$RQ_PARAM1" == "symlink" ]; then
+  echo "This script should end up with a done status"
+  echo $0
+  write_status 'done' "${0}"
+  exit 0
 fi
 
 echo "done"
