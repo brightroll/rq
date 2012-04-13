@@ -8,7 +8,7 @@
 <%   queues = RQ::QueueMgrClient.queues.sort %>
 <%   builtin_queues, custom_queues = [], []  %>
 <%   queues.each do |q| %>
-<%     if q =~ /relay|cleaner|webhook/ %>
+<%     if q =~ /relay|cleaner|webhook|rq_router/ %>
 <%       builtin_queues << q %>
 <%     else %>
 <%       custom_queues << q %>

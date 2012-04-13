@@ -85,6 +85,19 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+echo "Creating the test symlink queue..."
+curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_symlink -F queue[script]=./code/test/test_symlink/test_script_symlink.sh -F queue[num_workers]=1 -F queue[coalesce]=no -o _install_test_symlink.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ failed to respond correctly"
+  exit 1
+fi
+
+egrep "successqueue created" _install_test_symlink.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system didn't create test_symlink queue"
+  exit 1
+fi
+
 echo "Creating the test coalesce queue..."
 curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -o _install_test_coalesce.txt
 if [ "$?" -ne "0" ]; then
@@ -134,6 +147,7 @@ fi
 rm _home.txt
 rm _install.txt
 rm _install_test.txt
+rm _install_test_symlink.txt
 rm _install_test_coalesce.txt
 rm _install_test_run.txt
 rm _install_test_nop.txt
