@@ -26,6 +26,7 @@ module UnixRack
   class Socket
 
     attr_accessor :hdr_method, :headers
+    attr_accessor :sock
 
     def initialize(sock)
       @sock = sock
@@ -49,6 +50,10 @@ module UnixRack
         out_buff = out_buff.slice(nw..-1)
       end
       nwritten
+    end
+
+    def self.close(io)
+      io.close
     end
 
     def self.read_sock_num_bytes(sock, num, log = lambda {|x| x})
@@ -82,40 +87,6 @@ module UnixRack
       retval
     end
 
-
-    def error_reply(num, txt)
-      puts "#{$$}: Error: #{num} #{txt}"
-      $stdout.flush
-
-      bod = [
-      "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
-      "<html><head>",
-      "<title>#{num} #{txt}</title>",
-      "</head><body>",
-      "<h1>#{num} - #{txt}</h1>",
-      "<hr>",
-      "</body></html>",
-      ]
-
-      bod_txt = bod.join("\r\n")
-
-      hdr = [
-      "HTTP/1.1 #{num} #{txt}",
-      "Date: #{Time.now.httpdate}",
-      "Server: UnixRack",
-      "Content-Length: #{bod_txt.length}",
-      "Connection: close",
-      "Content-Type: text/html; charset=iso-8859-1",
-      ]
-
-      hdr_txt = hdr.join("\r\n")
-
-      res = hdr_txt + "\r\n\r\n" + bod_txt
-
-      Socket.write_buff(@sock, res)
-
-      exit! 0
-    end
 
     def do_read
       begin
@@ -189,7 +160,7 @@ module UnixRack
       while true
         r = do_read
         break if @buff.index "\r\n\r\n"
-        error_reply(400, "Bad Request") if r == nil
+        return false if r == nil
       end
 
       a, b = @buff.split("\r\n\r\n", 2)
@@ -203,33 +174,7 @@ module UnixRack
 
       @hdr_field_lines = @hdr_lines.slice(1..-1)   # would prefer first, and rest
       @headers = @hdr_field_lines.inject( {} ) { |h, line| k,v = line.split(": "); h[k] = v; h }
-    end
-
-    def send_response(status, headers, body)
-      out = []
-
-      msg = Rack::Utils::HTTP_STATUS_CODES[status.to_i]
-
-      puts "#{$$}: Response: #{status} #{msg}"
-      $stdout.flush
-      hdr_ary = [ "HTTP/1.0 #{status} #{msg}" ]
-
-      headers['Connection'] ||= 'close'
-
-      headers.each do
-        |k,vs|
-        vs.split("\n").each { |v| hdr_ary << [ "#{k}: #{v}" ] }
-      end
-
-      hdr = hdr_ary.join("\r\n")
-
-      out = [ hdr, "\r\n\r\n" ]
-
-      body.each { |part| out << part.to_s }
-
-      out_buff = out.join("")
-
-      Socket.write_buff(@sock, out_buff)
+      true
     end
 
   end
@@ -240,6 +185,9 @@ module Rack
     class UnixRack
 
       @@chdir = ''
+      @@client_ip = nil
+      @@pid = nil
+      @@start_time = Time.now
 
       # Set this in config.ru when in daemon mode
       # Why? It appears that the behaviour of most servers
@@ -250,6 +198,77 @@ module Rack
       def self.set_chdir(dir)
         @@chdir = dir
       end
+
+      def self.log(response_code, message='-', method='-', url='-', options={})
+        ip = @@client_ip || '-'
+        now = Time.now
+        duration = ((now.to_f - @@start_time.to_f) * 1000).to_i / 1000.0
+        puts "#{now.strftime('%Y-%m-%dT%H:%M:%S%z')},#{@@pid},#{@@client_ip},#{sprintf("%0.03f", duration)},#{response_code},\"#{message}\",#{method},\"#{url}\""
+        $stdout.flush
+      end
+
+      def self.send_error_response!(sock, num, txt, method, url)
+        log(num, txt, method, url)
+
+        bod = [
+          "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
+          "<html><head>",
+          "<title>#{num} #{txt}</title>",
+          "</head><body>",
+          "<h1>#{num} - #{txt}</h1>",
+          "<hr>",
+          "</body></html>"
+        ]
+
+        bod_txt = bod.join("\r\n")
+
+        hdr = [
+          "HTTP/1.1 #{num} #{txt}",
+          "Date: #{@@start_time.httpdate}",
+          "Server: UnixRack",
+          "Content-Length: #{bod_txt.length}",
+          "Connection: close",
+          "Content-Type: text/html; charset=iso-8859-1"
+        ]
+
+        hdr_txt = hdr.join("\r\n")
+
+        res = hdr_txt + "\r\n\r\n" + bod_txt
+
+        ::UnixRack::Socket.write_buff(sock.sock, res)
+        ::UnixRack::Socket.close(sock.sock)
+        exit! 0
+      end
+
+      def self.send_response!(sock, status, method, url, headers, body)
+        out = []
+
+        msg = Rack::Utils::HTTP_STATUS_CODES[status.to_i]
+
+        log(status, msg, method, url)
+
+        hdr_ary = [ "HTTP/1.0 #{status} #{msg}" ]
+
+        headers['Connection'] ||= 'close'
+
+        headers.each do
+          |k,vs|
+          vs.split("\n").each { |v| hdr_ary << [ "#{k}: #{v}" ] }
+        end
+
+        hdr = hdr_ary.join("\r\n")
+
+        out = [ hdr, "\r\n\r\n" ]
+
+        body.each { |part| out << part.to_s }
+
+        out_buff = out.join("")
+
+        ::UnixRack::Socket.write_buff(sock.sock, out_buff)
+        ::UnixRack::Socket.close(sock.sock)
+        exit! 0
+      end
+
 
       def self.run(app, options={})
 
@@ -267,15 +286,16 @@ module Rack
               if pid == nil
                 break
               end
-              puts "#{pid}: exited - status #{status}"
-              $stdout.flush
+              log(-status,'child exited non-zero') if status != 0
+              #puts "#{pid}: exited - status #{status}"
+              #$stdout.flush
             end
           rescue Errno::ECHILD
           end
         end
 
-        trap(:TERM) { puts "#{$$}: Listener received TERM. Exiting."; $stdout.flush; exit! 0  }
-        trap("SIGINT") { puts "#{$$}: Listener received INT. Exiting."; $stdout.flush; exit! 0  }
+        trap(:TERM)    { log(0, "Listener received TERM. Exiting."); exit! 0  }
+        trap("SIGINT") { log(0, "Listener received INT. Exiting."); exit! 0  }
 
         if not @@chdir.empty?
           Dir.chdir @@chdir
@@ -296,30 +316,33 @@ module Rack
 
           pid = fork
 
-          if pid == nil
+          if pid != nil
+            # We are in parent
+            conn.close
+          else
             # We are in child
+            @@pid = $$
             server.close
-            trap("ALRM") { puts "#{$$}: Child took too long. Goodbye"; $stdout.flush; exit! 2  }
-            trap(:TERM)  { puts "#{$$}: TERM. Time to go... Goodbye"; $stdout.flush; exit! 0  }
+            @@start_time = Time.now
 
-            puts "#{$$}: child started"
-            $stdout.flush
+            trap("ALRM") { log(0, "Child received ALARM. Exiting."); exit! 2  }
+            trap(:TERM)  { log(0, "Child received TERM. Exiting."); exit! 0  }
 
             Alarm.alarm(5)                # if no command received in 5 secs
 
             sock = ::UnixRack::Socket.new(conn)
 
-            sock.read_headers()
+            if not sock.read_headers()
+              send_error_response!(sock, 400, "Bad Request")
+            end
 
-            client_ip = sock.peeraddr.last
+            @@client_ip = sock.peeraddr.last
 
-            puts "#{$$}: #{client_ip} - - #{Time.now.strftime('[%d/%b/%Y:%k:%M:%S %z]')} \"#{sock.hdr_method.inspect}\""
-            $stdout.flush
             Alarm.alarm(120)               # if command not handled in 120 seconds
 
             if not allowed_ips.empty?
-              if not (allowed_ips.any? { |e| client_ip.include? e })
-                sock.error_reply(403, "Forbidden")
+              if not (allowed_ips.any? { |e| @@client_ip.include? e })
+                send_error_response!(sock, 403, "Forbidden", sock.hdr_method[0], sock.hdr_method[1])
               end
             end
 
@@ -331,10 +354,10 @@ module Rack
                 content = StringIO.new("")
               elsif sock.hdr_method[0] == "POST"
                 if not sock.headers.include?('Content-Length')
-                  sock.error_reply(400, "Bad Request no content-length")
+                  send_error_response!(sock, 400, "Bad Request no content-length", sock.hdr_method[0], sock.hdr_method[1])
                 end
                 if not sock.headers.include?('Content-Type')
-                  sock.error_reply(400, "Bad Request no content-type")
+                  send_error_response!(sock, 400, "Bad Request no content-type", sock.hdr_method[0], sock.hdr_method[1])
                 end
 
                 env["CONTENT_LENGTH"] = sock.headers['Content-Length']
@@ -342,14 +365,14 @@ module Rack
 
                 # F the 1.1
                 if sock.headers.include?('Expect')
-                  sock.error_reply(417, "Expectation Failed")
+                  send_error_response!(sock, 417, "Expectation Failed", sock.hdr_method[0], sock.hdr_method[1])
                 end
 
                 # It is required that we read all of the content prior to responding
                 content = sock.read_content
 
                 if content == nil
-                  sock.error_reply(400, "Bad Request not enough content")
+                  send_error_response!(sock, 400, "Bad Request not enough content", sock.hdr_method[0], sock.hdr_method[1])
                 end
               end
 
@@ -375,7 +398,7 @@ module Rack
 
               env["SERVER_NAME"] = host
               env["SERVER_PORT"] = port
-              env["REMOTE_ADDR"] = client_ip
+              env["REMOTE_ADDR"] = @@client_ip
 
               if sock.headers['User-Agent']
                 env["HTTP_USER_AGENT"] = sock.headers['User-Agent']
@@ -405,44 +428,13 @@ module Rack
               #end
               status, headers, body = app.call(env)
 
-              sock.send_response(status, headers, body)
+              send_response!(sock, status, sock.hdr_method[0], sock.hdr_method[1], headers, body)
 
-              conn.close
-              exit! 0
             end
 
-            sock.error_reply(500, "Server Error")
-            conn.close
-            exit! 0
+            send_error_response!(sock, 500, "Server Error", sock.hdr_method[0], sock.hdr_method[1])
           end
-          # We are in parent
-          conn.close
         end
-      end
-
-      def old_debug
-        # Old Debug Codes
-        conn.print "HTTP/1.1 200/OK\r\nContent-type: text/html\r\n\r\n"
-        conn.print "<html><body><h1>#{Time.now}</h1>\r\n"
-        conn.print "<ul>\r\n"
-        conn.print "<li>#{RUBY_PLATFORM}</li>\r\n"
-        ENV.keys.sort.each do
-          |k|
-          conn.print "<li>#{k} - #{ENV[k]}</li>\r\n"
-        end
-        conn.print "</ul>\r\n"
-
-        conn.print "<ul>\r\n"
-        conn.print "<li>#{sock.hdr_method.inspect}</li>\r\n"
-        sock.headers.keys.sort.each do
-          |k|
-          conn.print "<li>#{k} - #{sock.headers[k]}</li>\r\n"
-        end
-        conn.print "</ul>\r\n"
-
-        conn.print "</body></html>\r\n"
-        conn.close
-        exit! 0
       end
 
     end
