@@ -65,7 +65,6 @@ module RQ
       client.send("queues", 0)
       result = client.recvfrom(1024)
       client.close
-      p result
       result ? JSON.parse(result[0]) : nil
     end
 
@@ -83,7 +82,6 @@ module RQ
       client.send("create_queue #{json_params}", 0)
       result = client.recvfrom(1024)
       client.close
-      p result
       result ? JSON.parse(result[0]) : nil
     end
 
@@ -92,7 +90,6 @@ module RQ
       client.send("create_queue_link #{json_path}", 0)
       result = client.recvfrom(1024)
       client.close
-      p result
       result ? JSON.parse(result[0]) : nil
     end
 
@@ -101,7 +98,6 @@ module RQ
       client.send("restart_queue #{queue_name}", 0)
       result = client.recvfrom(1024)
       client.close
-      p result
       result ? JSON.parse(result[0]) : nil
     end
 
