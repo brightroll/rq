@@ -279,6 +279,7 @@ module Rack
         allowed_ips = options[:allowed_ips] || []
         server = TCPServer.new(listen, port)
 
+        @@pid = $$
         trap(:CHLD) do
           begin
             while true
@@ -286,7 +287,8 @@ module Rack
               if pid == nil
                 break
               end
-              log(-status,'child exited non-zero') if status != 0
+              @@start_time = Time.now
+              log(-(status.exitstatus),'child exited non-zero') if status.exitstatus != 0
               #puts "#{pid}: exited - status #{status}"
               #$stdout.flush
             end
@@ -310,6 +312,7 @@ module Rack
           rescue
             p "DRU"
             p $!
+            p $!.backtrace
             $stdout.flush
             exit
           end
