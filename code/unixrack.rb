@@ -203,7 +203,7 @@ module Rack
         ip = @@client_ip || '-'
         now = Time.now
         duration = ((now.to_f - @@start_time.to_f) * 1000).to_i / 1000.0
-        puts "#{now.strftime('%Y-%m-%dT%H:%M:%S%z')},#{@@pid},#{@@client_ip},#{sprintf("%0.03f", duration)},#{response_code},\"#{message}\",#{method},\"#{url}\""
+        puts "#{now.strftime('%Y-%m-%dT%H:%M:%S%z')},#{@@pid},#{ip},#{sprintf("%0.03f", duration)},#{response_code},\"#{message}\",#{method},\"#{url}\""
         $stdout.flush
       end
 
@@ -328,19 +328,19 @@ module Rack
             server.close
             @@start_time = Time.now
 
-            trap("ALRM") { log(0, "Child received ALARM. Exiting."); exit! 2  }
+            trap("ALRM") { log(0, "Child received ALARM during read_headers. Exiting."); exit! 2  }
             trap(:TERM)  { log(0, "Child received TERM. Exiting."); exit! 0  }
 
             Alarm.alarm(5)                # if no command received in 5 secs
 
             sock = ::UnixRack::Socket.new(conn)
+            @@client_ip = sock.peeraddr.last
 
             if not sock.read_headers()
               send_error_response!(sock, 400, "Bad Request")
             end
 
-            @@client_ip = sock.peeraddr.last
-
+            trap("ALRM") { log(0, "Child received ALARM during response. Exiting."); exit! 2  }
             Alarm.alarm(120)               # if command not handled in 120 seconds
 
             if not allowed_ips.empty?
