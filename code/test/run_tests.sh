@@ -33,6 +33,7 @@ for test in \
    test_run_msgs_moved_on_kill.rb \
    test_hashdir.rb \
    test_adminoper.rb \
+   test_jsonconfigfile.rb \
    send_test_large.sh \
    send_test_web_done.rb \
    send_test_web_prepattachdone.rb \
