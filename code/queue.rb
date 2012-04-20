@@ -35,6 +35,18 @@ module RQ
 
       @temp_que_dups = {}
 
+      @signal_hup_rd, @signal_hup_wr = IO.pipe
+
+      Signal.trap("TERM") do
+        log("received TERM signal")
+        shutdown!
+      end
+
+      Signal.trap("HUP") do
+        # Ye Ole DJB self_pipe trick again
+        @signal_hup_wr.syswrite('.')
+      end
+
       if load_rq_config() == nil
         sleep 5
         log("Invalid main rq config for #{@name}. Exiting." )
@@ -1204,11 +1216,6 @@ module RQ
 
     def run_loop
 
-      Signal.trap("TERM") do
-        log("received TERM signal")
-        shutdown!
-      end
-
       # Keep this here, cruft loves crufty company
       require 'fcntl'
       flag = File::NONBLOCK
@@ -1224,6 +1231,7 @@ module RQ
         io_list.compact!
         io_list << @sock
         io_list << @parent_pipe
+        io_list << @signal_hup_rd
         #log('sleeping') if @wait_time == 60
         begin
           ready = IO.select(io_list, nil, nil, @wait_time)
@@ -1256,6 +1264,17 @@ module RQ
             elsif io.fileno == @parent_pipe.fileno
               log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
               shutdown!
+              next
+            elsif io.fileno == @signal_hup_rd.fileno
+              log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL HUP")
+              # Linux Doesn't inherit and BSD does... recomended behavior is to set again
+              flag = 0xffffffff ^ File::NONBLOCK
+              if defined?(Fcntl::F_GETFL)
+                flag &= @signal_hup_rd.fcntl(Fcntl::F_GETFL)
+              end
+              @signal_hup_rd.fcntl(Fcntl::F_SETFL, flag)
+              dat = do_read(@signal_hup_rd, 1)
+              log("Strange Result from HUP signal pipe.") if dat.size != 1
               next
             end
 
