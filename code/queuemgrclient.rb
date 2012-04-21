@@ -101,6 +101,14 @@ module RQ
       result ? JSON.parse(result[0]) : nil
     end
 
+    def self.delete_queue(queue_name)
+      client = UNIXSocket.open('config/queuemgr.sock')
+      client.send("delete_queue #{queue_name}", 0)
+      result = client.recvfrom(1024)
+      client.close
+      result ? JSON.parse(result[0]) : nil
+    end
+
   end
 end
 

@@ -7,6 +7,7 @@ require 'code/unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
+require 'code/jsonconfigfile'
 require 'pathname'
 
 module RQ
@@ -29,11 +30,21 @@ module RQ
 
       @wait_time = 1
 
-      @config = {}
-
       @status = RQ::AdminOper.new(@rq_config_path + @name)
 
       @temp_que_dups = {}
+
+      @signal_hup_rd, @signal_hup_wr = IO.pipe
+
+      Signal.trap("TERM") do
+        log("received TERM signal")
+        shutdown!
+      end
+
+      Signal.trap("HUP") do
+        # Ye Ole DJB self_pipe trick again
+        @signal_hup_wr.syswrite('.')
+      end
 
       if load_rq_config() == nil
         sleep 5
@@ -41,7 +52,7 @@ module RQ
         exit! 1
       end
 
-      if load_config() == false
+      if not load_config()
         sleep 5
         log("Invalid config for #{@name}. Exiting." )
         exit! 1
@@ -50,6 +61,17 @@ module RQ
       load_messages
 
       @status.update!
+    end
+
+    def self.delete(name)
+      queue_path = "queue/#{name}"
+
+      stat = File.stat(queue_path)
+
+      # Throw in the inode for uniqueness
+      new_queue_path = "queue/#{name}.deleted.#{stat.ino}"
+
+      FileUtils.mv(queue_path, new_queue_path)
     end
 
     def self.create(options,config_path=nil)
@@ -149,7 +171,7 @@ module RQ
       # Also, fix an old issue where we didn't deref the symlink when executing a script
       # This meant that a script would see a new directory on a code deploy if that 
       # script lived under a symlinked path
-      script_path = Pathname.new(@config['script']).realpath.to_s
+      script_path = Pathname.new(@config.conf['script']).realpath.to_s
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
         if @status.oper_status != 'SCRIPTERROR'
@@ -357,13 +379,9 @@ module RQ
     end
 
     def load_config
-      begin
-        data = File.read(@queue_path + '/config.json')
-        @config = JSON.parse(data)
-      rescue
-        return false
-      end
-      return true
+      @config_check = Time.now
+      @config = JSONConfigFile.new(@queue_path + '/config.json')
+      @config.load_config
     end
 
 #    def write_status
@@ -480,16 +498,16 @@ module RQ
     end
 
     def is_duplicate?(msg1, msg2)
-      if @config['coalesce_param1'] == '1'
+      if @config.conf['coalesce_param1'] == '1'
         return false if msg1['param1'] != msg2['param1']
       end
-      if @config['coalesce_param2'] == '1'
+      if @config.conf['coalesce_param2'] == '1'
         return false if msg1['param2'] != msg2['param2']
       end
-      if @config['coalesce_param3'] == '1'
+      if @config.conf['coalesce_param3'] == '1'
         return false if msg1['param3'] != msg2['param3']
       end
-      if @config['coalesce_param4'] == '1'
+      if @config.conf['coalesce_param4'] == '1'
         return false if msg1['param4'] != msg2['param4']
       end
       true
@@ -529,7 +547,7 @@ module RQ
     end
 
     def handle_dups(msg)
-      return if @config['coalesce'] != 'yes'
+      return if @config.conf['coalesce'] != 'yes'
 
       duplicates = @que.select { |i| is_duplicate?(msg, i) }
 
@@ -1145,7 +1163,7 @@ module RQ
     end
 
     def run_scheduler!
-      @wait_time = 60
+      @wait_time = 5
 
       @status.update!
 
@@ -1163,7 +1181,7 @@ module RQ
         acc
       end
 
-      if active_count >= @config['num_workers'].to_i
+      if active_count >= @config.conf['num_workers'].to_i
         #log("Already running #{active_count} config is max: #{@config['num_workers']}")
         return
       end
@@ -1204,11 +1222,6 @@ module RQ
 
     def run_loop
 
-      Signal.trap("TERM") do
-        log("received TERM signal")
-        shutdown!
-      end
-
       # Keep this here, cruft loves crufty company
       require 'fcntl'
       flag = File::NONBLOCK
@@ -1224,6 +1237,7 @@ module RQ
         io_list.compact!
         io_list << @sock
         io_list << @parent_pipe
+        io_list << @signal_hup_rd
         #log('sleeping') if @wait_time == 60
         begin
           ready = IO.select(io_list, nil, nil, @wait_time)
@@ -1235,6 +1249,7 @@ module RQ
         # TODO: handle children that have reported a state change, but have
         #       not exited
 
+        now = Time.now
         # If no timeout occurred
         if ready
           ready[0].each do |io|
@@ -1256,6 +1271,21 @@ module RQ
             elsif io.fileno == @parent_pipe.fileno
               log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
               shutdown!
+              next
+            elsif io.fileno == @signal_hup_rd.fileno
+              log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL HUP")
+
+              # Force a new config check
+              @config_check = now - 10
+
+              # Linux Doesn't inherit and BSD does... recomended behavior is to set again
+              flag = 0xffffffff ^ File::NONBLOCK
+              if defined?(Fcntl::F_GETFL)
+                flag &= @signal_hup_rd.fcntl(Fcntl::F_GETFL)
+              end
+              @signal_hup_rd.fcntl(Fcntl::F_SETFL, flag)
+              dat = do_read(@signal_hup_rd, 1)
+              log("Strange Result from HUP signal pipe.") if dat.size != 1
               next
             end
 
@@ -1388,6 +1418,13 @@ module RQ
           end
         end
 
+        # Check if it has been > 5 seconds since last config file check
+        if (now - @config_check) > 5
+          if @config.check_for_change == JSONConfigFile::CHANGED
+            log('Config file changed. Using new config')
+          end
+          @config_check = now
+        end
 
       end
     end
@@ -1494,8 +1531,8 @@ module RQ
         return
       end
 
-      if packet.index('options') == 0
-        resp = @config.to_json
+      if packet.index('config ') == 0
+        resp = [ 'ok', @config.conf].to_json
         send_packet(sock, resp)
         return
       end

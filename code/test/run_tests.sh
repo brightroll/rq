@@ -27,12 +27,14 @@ for test in \
    send_test_coalesce.sh \
    send_test_sneaky.sh \
    send_test_symlink.sh \
+   test_config_change.rb \
    test_que_create_naming.sh \
    test_run_admin_down.sh \
    test_run_admin_pause.sh \
    test_run_msgs_moved_on_kill.rb \
    test_hashdir.rb \
    test_adminoper.rb \
+   test_jsonconfigfile.rb \
    send_test_large.sh \
    send_test_web_done.rb \
    send_test_web_prepattachdone.rb \

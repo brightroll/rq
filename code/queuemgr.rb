@@ -289,6 +289,25 @@ module RQ
         return
       end
 
+      if data[0].index('delete_queue ') == 0
+        queuename = data[0].split(' ', 2)[1]
+        worker = @queues.find { |i| i.name == queuename }
+        status = 'fail'
+        msg = 'no such queue'
+        if worker
+          worker.status = "DELETE"
+          Process.kill("TERM", worker.pid) rescue nil
+          status = 'ok'
+          msg = 'started deleting queue'
+        end
+        resp = [ status, msg ].to_json #['ok','brserv_push'].to_json
+        sock.send(resp, 0)
+        sock.close
+        log("RESP [ #{resp} ]")
+        return
+      end
+
+
       sock.send("ERROR", 0)
       sock.close
       log("RESP [ ERROR ] - Unhandled message")
@@ -388,6 +407,9 @@ def run_loop
     qmgr.shutdown
   end
 
+  Signal.trap("CHLD") do
+    log("received CHLD signal")
+  end
 
   qmgr.load_queues
 
@@ -445,7 +467,7 @@ def run_loop
         if worker
           res = Process.wait2(worker.pid, Process::WNOHANG)
           if res
-            log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]}")
+            log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]} - #{worker.status}")
             worker.child_write_pipe.close
             if worker.status == "RUNNING"
               worker.num_restarts += 1
@@ -465,14 +487,20 @@ def run_loop
                 worker.pid = results[0]
                 worker.child_write_pipe = results[1]
               end
-            else
+            elsif worker.status == "DELETE"
+              RQ::Queue.delete(worker.name)
+              qmgr.queues.delete(worker)
+              log("DELETED [ #{worker.name} ]")
+            elsif worker.status == "SHUTDOWN"
               qmgr.queues.delete(worker)
               if qmgr.queues.empty?
                 qmgr.final_shutdown!
               end
+            else
+              log("STRANGE: queue #{worker.pid } status = #{worker.status}")
             end
           else
-            log("EXITING: queue #{worker.pid } was not ready to be reaped")
+            log("EXITING: queue #{worker.pid} was not ready to be reaped #{res}")
           end
         else
           log("VERY STRANGE: got a read ready on an io that we don't track!")
