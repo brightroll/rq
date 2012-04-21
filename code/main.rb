@@ -121,10 +121,20 @@ module RQ
       redirect "/q/#{js_data['name']}"
     end
 
+    post '/delete_queue' do
+      # This creates and starts a queue
+      result = RQ::QueueMgrClient.delete_queue(params['queue_name'])
+      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      redirect "/"
+    end
 
     get '/q.txt' do
       content_type 'text/plain', :charset => 'utf-8'
       erb :queue_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues}
+    end
+
+    get '/q.json' do
+      RQ::QueueMgrClient.queues.to_json
     end
 
     get '/proc.txt' do
@@ -280,6 +290,12 @@ module RQ
       end
 
       send_file(path)
+    end
+
+    get '/q/:name/config' do
+      qc = get_queueclient(params[:name])
+      ok, config = qc.get_config()
+      config.to_json
     end
 
     get '/q/:name/:msg_id' do

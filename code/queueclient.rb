@@ -103,10 +103,6 @@ module RQ
       return send_recv('uptime')
     end
 
-    def options
-      return send_recv('options')
-    end
-
     def status
       return send_recv('status')
     end
@@ -158,6 +154,11 @@ module RQ
     def clone_message(params)
       return send_recv('clone_message', params.to_json)
     end
+
+    def get_config
+      return send_recv('config')
+    end
+
   end
 end
 
