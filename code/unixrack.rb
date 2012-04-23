@@ -409,6 +409,9 @@ module Rack
               if sock.headers['Cookie']
                 env["HTTP_COOKIE"] = sock.headers['Cookie']
               end
+              if sock.headers['Authorization']
+                env["HTTP_AUTHORIZATION"] = sock.headers['Authorization']
+              end
 
               env["HTTP_VERSION"] = "HTTP/1.1"
               if sock.headers['If-Modified-Since']

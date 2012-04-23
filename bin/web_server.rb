@@ -27,7 +27,17 @@ def run(daemon = false)
     Process.kill("KILL", Process.pid)
   end
 
-  router = MiniRouter.new
+  minirouter = MiniRouter.new
+  router = minirouter
+
+  if $basic_auth
+    protected_router = Rack::Auth::Basic.new(minirouter) do |username, password|
+      $basic_auth['users'][username] == password
+    end
+    protected_router.realm = $basic_auth['realm']
+    router = protected_router
+  end
+
   Rack::Handler::UnixRack.run(router, {:Port => $port,
                                        :Hostname => $host,
                                        :allowed_ips => $allowed_ips,
@@ -43,6 +53,7 @@ if ARGV[0] == "install"
   $port = "3333"
   $addr = "0.0.0.0"
   $allowed_ips = []
+  $basic_auth = nil
 else
   begin
     data = File.read('config/config.json')
@@ -51,6 +62,7 @@ else
     $port = config['port']
     $addr = config['addr']
     $allowed_ips = config['allowed_ips'] || []
+    $basic_auth = config['basic_auth']
     if config['tmpdir']
       dir = File.expand_path(config['tmpdir'])
       if File.directory?(dir) and File.writable?(dir)
