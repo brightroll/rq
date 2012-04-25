@@ -878,6 +878,33 @@ module RQ
       return result
     end
 
+    def del_attach_msg(msg)
+      msg_id = msg['msg_id']
+      attach_name = msg['attachment_name']
+      # validate attachment
+      result = [false, 'Unknown error']
+      begin
+        basename = @queue_path + "/prep/" + msg_id
+        return [false, "No message on disk"] unless File.exists? basename
+
+        # simple check for attachment dir
+        attach_path = basename + '/attach/'
+        return [false, "No attach directory for msg"] unless File.exists?(attach_path)
+
+        new_path = attach_path + attach_name
+        return [false, "No attachment with that named for msg"] unless File.exists?(new_path)
+
+        File.unlink(new_path)
+
+        result = ["ok", "Attachment deleted successfully"]
+      rescue
+        log("FATAL - couldn't delete attachment #{attach_name} from message #{msg_id}")
+        log("        [ #{$!} ]")
+      end
+
+      return result
+    end
+
     def file_md5(path)
       hasher = Digest::MD5.new
 
@@ -1676,6 +1703,32 @@ module RQ
           end
         else
           resp = [ "fail", "cannot find message"].to_json
+        end
+        send_packet(sock, resp)
+        return
+      end
+
+      if packet.index('delete_attach_message') == 0
+        # Params: msg_id, attachment_name
+        json = packet.split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        state = lookup_msg(options, '*')
+        if state
+          if state != 'prep'
+            resp = [ "fail", "msg not in prep" ].to_json
+          else
+            success, del_attach_result = del_attach_msg(options)
+            resp = [ success, del_attach_result ].to_json
+          end
+        else
+          resp = [ "fail", "msg not found" ].to_json
         end
         send_packet(sock, resp)
         return

@@ -247,7 +247,7 @@ module Rack
 
         log(status, msg, method, url)
 
-        hdr_ary = [ "HTTP/1.0 #{status} #{msg}" ]
+        hdr_ary = [ "HTTP/1.1 #{status} #{msg}" ]
 
         headers['Connection'] ||= 'close'
 
@@ -368,7 +368,11 @@ module Rack
 
                 # F the 1.1
                 if sock.headers.include?('Expect')
-                  send_error_response!(sock, 417, "Expectation Failed", sock.hdr_method[0], sock.hdr_method[1])
+                  if sock.headers['Expect'] == '100-continue'
+                    ::UnixRack::Socket.write_buff(sock.sock,"HTTP/1.1 100 Continue\r\n\r\n")
+                  else
+                    send_error_response!(sock, 417, "Expectation Failed", sock.hdr_method[0], sock.hdr_method[1])
+                  end
                 end
 
                 # It is required that we read all of the content prior to responding

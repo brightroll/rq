@@ -18,7 +18,11 @@ body.production {
 }
 
 table {
-  text-align: center;
+  text-align: left;
+}
+
+td {
+  border-top: 1px solid #DDDDDD;
 }
 
 #queue-list {
@@ -65,11 +69,11 @@ table {
 
 ul {list-style: none;}
 #message-json {
+
   background: white;
   line-height: 1.5;
   padding: 20px 0 20px 40px;
   font-family: monospace;
-
 }
 #message-json-default {
   background: white;
@@ -78,6 +82,24 @@ ul {list-style: none;}
   font-family: monospace;
 
 }
+
+#attachments {
+  background: white;
+  line-height: 18px;
+  xpadding: 20px 0 20px 40px;
+  padding: 8px;
+  color: #333333;
+  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-size: 13px;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+#attachments th, #attachments td {
+  line-height: 18px;
+  padding: 8px;
+}
+
 h1 {font-size: 2.5em; margin-top: 0; margin-bottom: 2px; font-weight: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; overflow: hidden; zoom: 1}
 h2 {display: none}

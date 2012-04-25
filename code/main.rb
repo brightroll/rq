@@ -254,7 +254,7 @@ module RQ
       elsif the_method == 'commit'
         result = qc.create_message(prms)
       else
-        throw :halt, [404, "404 - Queue not found"]
+        throw :halt, [400, "400 - Invalid method param"]
       end
 
       if result == [ "fail", "oper_status: DOWN"]
@@ -322,7 +322,11 @@ module RQ
       end
 
       if fmt == :html
-        erb :message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+        if msg['state'] == 'prep'
+          erb :prep_message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+        else
+          erb :message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+        end
       else
         #content_type 'application/json'
         msg.to_json
@@ -363,6 +367,7 @@ module RQ
     end
 
     post '/q/:name/:msg_id/attach/new' do
+      # TODO: change URL for this call
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = get_queueclient(params[:name])
@@ -414,7 +419,40 @@ module RQ
       if api_call == 'json'
         result.to_json
       else
-        "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
+        if result[0] == "ok"
+          flash :notice, "Attached message successfully"
+          redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+        else
+          "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
+        end
+      end
+    end
+
+    post '/q/:name/:msg_id/attach/:attachment_name' do
+      qc = get_queueclient(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      api_call = params.fetch('x_format', 'html')
+
+      result = ['fail', 'unknown']
+      if params[:_method] == 'delete'
+        result = qc.delete_attach_message( {'msg_id' => params[:msg_id],
+                                            'attachment_name' => params[:attachment_name]} )
+        if api_call == 'json'
+          result.to_json
+        else
+          if result[0] == "ok"
+            flash :notice, "Attachment deleted successfully"
+            redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+          else
+            "Delete of attach #{params[:attachment_name]} on #{params[:name]}/#{params[:msg_id]} got #{result}"
+          end
+        end
+      else
+        throw :halt, [400, "400 - Invalid method param"]
       end
     end
 
@@ -508,16 +546,31 @@ module RQ
 
       if params[:_method] == 'delete'
         result = qc.delete_message( {'msg_id' => params[:msg_id]} )
-        "Delete #{params[:name]}/#{params[:msg_id]} got #{result}"
+        if api_call == 'json'
+          result.to_json
+        else
+          if result[0] == "ok"
+            flash :notice, "Message deleted successfully"
+            redirect "/q/#{params[:name]}"
+          else
+            flash :error, "Delete got #{result.inspect}"
+            redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+          end
+        end
       elsif params[:_method] == 'commit'
         result = qc.commit_message( {'msg_id' => params[:msg_id]} )
         if api_call == 'json'
           result.to_json
         else
-          "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
+          if result[0] == "ok"
+            flash :notice, "Message committed successfully"
+          else
+            flash :error, "Commit got #{result.inspect}"
+          end
+          redirect "/q/#{params[:name]}/#{params[:msg_id]}"
         end
       else
-        "Post #{params[:name]}/#{params[:msg_id]}"
+        throw :halt, [400, "400 - Invalid method param"]
       end
     end
 

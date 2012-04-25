@@ -135,6 +135,10 @@ module RQ
       return send_recv('attach_message', params.to_json)
     end
 
+    def delete_attach_message(params)
+      return send_recv('delete_attach_message', params.to_json)
+    end
+
     def commit_message(params)
       return send_recv('commit_message', params.to_json)
     end

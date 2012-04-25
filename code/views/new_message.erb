@@ -45,6 +45,8 @@
 <p class="note"><%= o.text('mesg_param4', 'help', 'optional parameter') %></p>
 </div>
 
+<p class="note">*NOTE*: To create attachments, first create a message in prep state. Then the message will allow you to add/remove attachments.</p>
+
 <div class="field" id="mesg_status_field" <%= o.show_field('mesg_status') ? '' : "style=\"display: none;\"" %>>
 <label class="field_label" for="mesg_status"><%= o.text('mesg_status', 'label', 'Status') %></label>
 <label for="mesg_status">commit</label>
