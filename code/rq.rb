@@ -184,6 +184,26 @@ class Commands
     result[0] == "ok" ? 0 : 1
   end
 
+  def cmd_state(args)
+    full_mesg_id = args['msg_id']
+    raise RqMissingArgument if not full_mesg_id
+
+    q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
+    msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
+
+    qc = get_queue_client(q_name)
+
+    # Construct message for queue mgr
+    mesg = {'msg_id' => msg_id }
+    result = qc.get_message_state(mesg)
+    if result[0] == 'ok'
+      print "#{result[0]} #{result[1]}\n"
+    else
+      print "#{result[0]} #{result[1]}\n"
+    end
+    result[0] == "ok" ? 0 : 1
+  end
+
   def cmd_statuscountmesg(args)
     full_mesg_id = args['msg_id']
     raise RqMissingArgument if not full_mesg_id

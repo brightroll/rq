@@ -163,6 +163,10 @@ module RQ
       return send_recv('config')
     end
 
+    def get_message_state(params)
+      return send_recv('get_message_state', params.to_json)
+    end
+
   end
 end
 
