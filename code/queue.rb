@@ -613,7 +613,7 @@ module RQ
       return true
     end
 
-    def lookup_msg(msg, state = 'prep')
+    def lookup_msg(msg, state = 'prep', options={:consistency => true})
       msg_id = msg['msg_id']
       basename = nil
       if state == 'prep'
@@ -661,10 +661,12 @@ module RQ
         return false unless state != '*'
         basename ||= @queue_path + "/#{state}/" + msg_id
       end
-      if not File.exists?(basename)
-        log("WARNING - serious queue inconsistency #{msg_id}")
-        log("WARNING - #{msg_id} in memory but not on disk")
-        return false
+      if options[:consistency]
+        if not File.exists?(basename)
+          log("WARNING - serious queue inconsistency #{msg_id}")
+          log("WARNING - #{msg_id} in memory but not on disk")
+          return false
+        end
       end
       return state
     end
@@ -1758,7 +1760,7 @@ module RQ
         return
       end
 
-      if packet.index('get_message') == 0
+      if packet.index('get_message ') == 0
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1785,6 +1787,31 @@ module RQ
         send_packet(sock, resp)
         return
       end
+
+      if packet.index('get_message_state ') == 0
+        json = packet.split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        # turn off consistency for a little more speed
+        state = lookup_msg(options, '*', {:consistency => false})
+        if state
+          resp = [ "ok", state ].to_json
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        send_packet(sock, resp)
+        return
+      end
+
 
       if packet.index('delete_message') == 0
         json = packet.split(' ', 2)[1]
