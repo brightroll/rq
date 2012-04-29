@@ -175,7 +175,7 @@ class Commands
 
     # Construct message for queue mgr
     mesg = {'msg_id' => msg_id }
-    result = qc.get_message(mesg)
+    result = qc.get_message_status(mesg)
     if result[0] == 'ok'
       print "#{result[0]} #{result[1]['status']}\n"
     else
