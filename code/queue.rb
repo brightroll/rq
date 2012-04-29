@@ -740,7 +740,9 @@ module RQ
       resp
     end
 
-    def get_message(params, state)
+    def get_message(params, state,
+                    options={ :read_message => true,
+                              :check_attachments => true})
       if ['done', 'relayed'].include? state
         basename = RQ::HashDir.path_for("#{@queue_path}/#{state}", params['msg_id'])
       else
@@ -749,8 +751,12 @@ module RQ
 
       msg = nil
       begin
-        data = File.read(basename + "/msg")
-        msg = JSON.parse(data)
+        if options[:read_message]
+          data = File.read(basename + "/msg")
+          msg = JSON.parse(data)
+        else
+          msg = {}
+        end
         msg['status'] = state
         msg['state'] = state
         if File.exists?(basename + "/status")
@@ -760,7 +766,7 @@ module RQ
         end
 
         # Now check for attachments
-        if File.directory?(basename + "/attach/")
+        if options[:read_message] && options[:check_attachments] && File.directory?(basename + "/attach/")
           cwd = Dir.pwd
           ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
           if not ents.empty?
@@ -1812,6 +1818,36 @@ module RQ
         return
       end
 
+      if packet.index('get_message_status ') == 0
+        json = packet.split(' ', 2)[1]
+        options = JSON.parse(json)
+
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        resp = [ "fail", "unknown reason"].to_json
+
+        # turn off consistency for a little more speed
+        state = lookup_msg(options, '*', {:consistency => false})
+        if state
+          msg, msg_path = get_message(options,
+                                      state,
+                                      {:read_message => false})
+          if msg
+            resp = [ "ok", msg ].to_json
+          else
+            resp = [ "fail", "msg couldn't be read" ].to_json
+          end
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        send_packet(sock, resp)
+        return
+      end
 
       if packet.index('delete_message') == 0
         json = packet.split(' ', 2)[1]
