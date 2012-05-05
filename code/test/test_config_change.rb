@@ -7,7 +7,7 @@ require 'uri'
 
 $LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
 require 'json'
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/rack-1.0.0/lib"))
+$LOAD_PATH.unshift(File.expand_path("./vendor/gems/rack-1.4.1/lib"))
 
 require 'code/queueclient'
 require 'test/unit'
@@ -42,7 +42,7 @@ class TC_ConfigChangeTest < Test::Unit::TestCase
       uri_str = "http://127.0.0.1:#{@rq_port}/delete_queue"
       res = Net::HTTP.post_form(URI.parse(uri_str),
                                 { 'queue_name' => 'test_change' })
-      assert_equal("302", res.code)
+      assert_equal("303", res.code)
     end
 
     # Poll to make sure queue is deleted
@@ -60,7 +60,7 @@ class TC_ConfigChangeTest < Test::Unit::TestCase
     uri_str = "http://127.0.0.1:#{@rq_port}/new_queue_link"
     res = Net::HTTP.post_form(URI.parse(uri_str),
                               { 'queue[json_path]' => './code/test/fixtures/jsonconfigfile/good.json'})
-    assert_equal("302", res.code)
+    assert_equal("303", res.code)
 
 
     # Get queue's config

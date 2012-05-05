@@ -5,12 +5,14 @@ load 'code/queueclient.rb'
 load 'code/hashdir.rb'
 load 'code/portaproc.rb'
 load 'code/overrides.rb'
-load 'code/htmlutils.rb'
 
 module RQ
   class Main < Sinatra::Base
 
+    disable :protection
     enable :sessions
+    set :session_secret, 'super secret'  # we are forking, so we must set
+    set :erb, :trim => '-'
 
     def self.views
       './code/views'
@@ -63,22 +65,22 @@ module RQ
         html += "</tr>"
       end
 
-      def hash_insert(hash, type, msg)
-        hash ||= {}
-        hash[type] = msg
-      end
-
       def flash(type, msg)
-        hash_insert(session[:flash], type, msg)
+        h = session[:flash] || {}
+        h[type] = msg
+        session[:flash] = h
       end
 
       def flash_now(type, msg)
-        hash_insert(@flash, type, msg)
+        h = @flash || {}
+        h[type] = msg
+        @flash = h
       end
     end
 
     before do
-      @flash = session[:flash] || {}
+      val = session[:flash]
+      @flash = val || {}
       session[:flash] = {}
     end
 
@@ -333,6 +335,24 @@ module RQ
       end
     end
 
+    get '/q/:name/:msg_id/state.json' do
+      fmt = :json
+      msg_id = params['msg_id']
+
+      qc = get_queueclient(params[:name])
+
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+
+      ok, state = qc.get_message_state({ 'msg_id' => msg_id })
+
+      if ok != 'ok'
+        throw :halt, [404, "404 - Message ID not found"]
+      end
+
+      [ state ].to_json
+    end
+
+
     post '/q/:name/:msg_id/clone' do
       qc = get_queueclient(params[:name])
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
@@ -485,19 +505,7 @@ module RQ
         throw :halt, [404, "404 - Message ID log '#{params['log_name']}' not found"]
       end
 
-      data = File.read(path)
-
-      # Assumption: log output does not contain HTML. This is a good safe assumption
-      # First escape any HTML unsafe chars
-      data2 = RQ::HtmlUtils.escape_html(data)
-      # OK, now we can linkify (aka add html), to make urls actual links
-      data3 = RQ::HtmlUtils.linkify_text(data2)
-      # Finally, do the necessary work to colorize via html text that used ANSI escape codes
-      data4 = RQ::HtmlUtils.ansi_to_html(data3)
-
-      tmpurl = "http://#{request.host}:#{request.port}#{request.path_info}"
-
-      ["<html><head><title>#{tmpurl}</title></head><body><pre>", data4, '</pre></body></html>'].join("\n")
+      send_file(path)
     end
 
     get '/q/:name/:msg_id/attach/:attach_name' do
@@ -532,6 +540,65 @@ module RQ
 
       send_file(path)
     end
+
+    get '/q/:name/:msg_id/tailview/:attach_name' do
+
+      msg_id = params['msg_id']
+
+      qc = get_queueclient(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      ok, msg = qc.get_message({ 'msg_id' => msg_id })
+
+      if ok != 'ok'
+        throw :halt, [404, "404 - Message ID not found"]
+      end
+
+      # TODO: use path from get_message instead of below
+      if ['done', 'relayed'].include? msg['state']
+        path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
+        path += "/attach/#{params['attach_name']}"
+      else
+        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/attach/#{params['attach_name']}"
+      end
+
+      # send_file does this check, but we provide a much more contextually relevant error
+      # TODO: finer grained checking (que, msg_id exists, etc.)
+      if not File.exists? path
+        throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
+      end
+
+      erb :tailview, { :layout => false, :locals => { 'msg_id' => msg_id, 'msg' => msg, 'attach_name' => params['attach_name'] } }
+    end
+
+    get '/q/:name/:msg_id/tailviewlog/:log_name' do
+
+      msg_id = params['msg_id']
+
+      qc = get_queueclient(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      ok, msg = qc.get_message({ 'msg_id' => msg_id })
+
+      if ok != 'ok'
+        throw :halt, [404, "404 - Message ID not found"]
+      end
+
+      erb :tailview, {
+                       :layout => false,
+                       :locals => {
+                         'path' => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                         'msg_path' => "/q/#{params[:name]}/#{msg_id}"
+                       },
+                     }
+    end
+
 
     post '/q/:name/:msg_id' do
       # check for queue

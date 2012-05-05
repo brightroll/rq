@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <% if params[:name] && !params[:name].empty? %>
+      <title>RQ :: <%= params[:name] %></title>
+    <% else %>
+      <title>RQ</title>
+    <% end %>
+    <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
+    <script data-main="/scripts/main" src="/scripts/require.js"></script>
+    <script>
+      define('config', function() {
+        return {
+          path: "<%= locals['path'] %>",
+          msg_path: "<%= locals['msg_path'] %>"
+        };
+      });
+    </script>
+  </head>
+  <body class="tailview">
+    <div id="filedata" />
+      <pre id="ansitxt">
+      </pre>
+    </div>
+  </body>
+</html>

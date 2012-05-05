@@ -9,5 +9,7 @@ def rqrq_rqenv_add_path_if_needed(path)
 end
 
 rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/json_pure-1.1.6/lib"))
-rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/rack-1.0.0/lib"))
-rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/sinatra-0.9.4/lib"))
+rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/rack-1.4.1/lib"))
+rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/tilt-1.3.3/lib"))
+rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/rack-protection/lib"))
+rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/sinatra-1.3.2/lib"))
