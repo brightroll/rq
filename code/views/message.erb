@@ -75,22 +75,10 @@
   <p>No attachments.</p>
 <% end %>
 
-<h3>Log [<code>tail -n 256</code>] [ <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">raw</a> ]</h3>
-<% if locals['msg']['state'] == 'relayed' || locals['msg']['state'] == 'done' %>
-  <% datestamp = locals['msg_id'].split('.', 3) %>
-  <% date_dirs = "%s/%s/%s" % [datestamp[0], datestamp[1][0,2], datestamp[1][-2..-1]] %>
-  <% log_path = "queue/#{q}/#{locals['msg']['state']}/#{date_dirs}/#{locals['msg_id']}/job/stdio.log" %>
-<% else %>
-  <% log_path = "queue/#{q}/#{locals['msg']['state']}/#{locals['msg_id']}/job/stdio.log" %>
-<% end %>
-<% if File.exists?(log_path) %>
-<pre id="log-output">
-  <%= CGI.escapeHTML(`tail -n 256 #{log_path}`.strip) %>
-</pre>
-<% else %>
-  <p>Log file doesn't currently exist.</p>
-<% end %>
-
+<h3>Log Tail Window [ <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">raw</a> ] [ <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/tailviewlog/stdio.log" %>">Full Tail</a> ] </h3>
+<iframe src="<%= "#{url}q/#{q}/#{locals['msg_id']}/tailviewlog/stdio.log" %>" 
+  width="100%" height="400" frameborder="0">
+</iframe>
 <script>
   function show_toggle() {
     var cfg = document.getElementById('message-json');

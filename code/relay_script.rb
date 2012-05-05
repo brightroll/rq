@@ -16,7 +16,7 @@ log(Dir.pwd.inspect)
 
 $LOAD_PATH.unshift(File.expand_path("../../../../.."))
 $LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/json_pure-1.1.6/lib"))
-$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/rack-1.0.0/lib"))
+$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/rack-1.4.1/lib"))
 require 'json'
 
 # Setup a global binding so the GC doesn't close the file

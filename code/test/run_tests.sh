@@ -64,7 +64,6 @@ for test in \
    test_web_overrides.rb \
    send_dup.rb \
    test_rule_processor.rb \
-   test_web_html_log.rb \
    test_htmlutils.rb \
    test_web_done_json.rb ; do
 
@@ -80,6 +79,7 @@ for test in \
       echo " PASSED"
 done
 
+#   test_web_html_log.rb \
 
 echo "-=-=-=-=-=-=-=-=-"
 echo " ALL TESTS DONE  "

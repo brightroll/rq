@@ -1,5 +1,5 @@
 html {
-  overflow-y: scroll;
+  height: 100%;
 }
 
 body {
@@ -7,6 +7,7 @@ body {
   margin-bottom: 100px;
   font-family: arial, sans-serif;
   font-size: 13px;
+  height: 100%;
 }
 
 body.stage {
@@ -15,6 +16,11 @@ body.stage {
 
 body.production {
   background-color: white;
+}
+
+body.tailview {
+  background-color: black;
+  margin: 0;
 }
 
 table {
@@ -127,6 +133,27 @@ a:visited {}
 .flash {font-size: 1.4em; font-weight: bold; color: white; text-align: center; padding: 5px; margin-bottom: 10px}
 #flash-error {background: red}
 #flash-notice {background: green}
+
+#filedata {
+  padding: 0; margin: 0 auto;
+  font-family: monaco, "Courier New", Courier, monospace;
+  color: #EEE;
+  zoom: 1;
+  font-size: 14px;
+  height: 100%;
+}
+
+#filedata pre {
+  margin: 0;
+  font-family: monaco, "Courier New", Courier, monospace;
+  line-height: 1.3;
+  background: black;
+  height: 100%;
+}
+#filedata a {color: yellow; text-decoration: none}
+#filedata a:hover {text-decoration: underline}
+#filedata a:visited {}
+
 form label.field_label {
   display: block;
   float: left;

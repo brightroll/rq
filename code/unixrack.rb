@@ -416,6 +416,10 @@ module Rack
               if sock.headers['Authorization']
                 env["HTTP_AUTHORIZATION"] = sock.headers['Authorization']
               end
+              if sock.headers['Range']
+                env["HTTP_RANGE"] = sock.headers['Range']
+              end
+
 
               env["HTTP_VERSION"] = "HTTP/1.1"
               if sock.headers['If-Modified-Since']
