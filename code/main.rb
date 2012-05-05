@@ -335,6 +335,24 @@ module RQ
       end
     end
 
+    get '/q/:name/:msg_id/state.json' do
+      fmt = :json
+      msg_id = params['msg_id']
+
+      qc = get_queueclient(params[:name])
+
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+
+      ok, state = qc.get_message_state({ 'msg_id' => msg_id })
+
+      if ok != 'ok'
+        throw :halt, [404, "404 - Message ID not found"]
+      end
+
+      [ state ].to_json
+    end
+
+
     post '/q/:name/:msg_id/clone' do
       qc = get_queueclient(params[:name])
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
@@ -523,7 +541,7 @@ module RQ
       send_file(path)
     end
 
-    get '/q/:name/:msg_id/attach/:attach_name' do
+    get '/q/:name/:msg_id/tailview/:attach_name' do
 
       msg_id = params['msg_id']
 
@@ -553,8 +571,34 @@ module RQ
         throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
       end
 
-      send_file(path)
+      erb :tailview, { :layout => false, :locals => { 'msg_id' => msg_id, 'msg' => msg, 'attach_name' => params['attach_name'] } }
     end
+
+    get '/q/:name/:msg_id/tailviewlog/:log_name' do
+
+      msg_id = params['msg_id']
+
+      qc = get_queueclient(params[:name])
+
+      if not qc.exists?
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      ok, msg = qc.get_message({ 'msg_id' => msg_id })
+
+      if ok != 'ok'
+        throw :halt, [404, "404 - Message ID not found"]
+      end
+
+      erb :tailview, {
+                       :layout => false,
+                       :locals => {
+                         'path' => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                         'msg_path' => "/q/#{params[:name]}/#{msg_id}"
+                       },
+                     }
+    end
+
 
     post '/q/:name/:msg_id' do
       # check for queue
