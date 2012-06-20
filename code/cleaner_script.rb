@@ -23,7 +23,12 @@ end
 require 'rubygems'
 gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
 Gem.clear_paths
-Gem.send :set_paths, gem_paths.join(":")
+if Gem::Version.new(Gem::VERSION) < Gem::Version.new('1.8.0')
+  Gem.send :set_paths, gem_paths.join(":")
+else
+  Gem.paths = gem_paths.join(":")
+end
+
 
 
 # Setup a global binding so the GC doesn't close the file
