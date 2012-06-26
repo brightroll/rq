@@ -299,6 +299,8 @@ module RQ
           ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id']
           ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
+	  ENV['RBENV_VERSION'] = @config.conf['rbenv_ruby_ver'] if @config.conf['rbenv_ruby_ver']
+
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
 
