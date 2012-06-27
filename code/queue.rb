@@ -299,7 +299,12 @@ module RQ
           ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id']
           ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
-	  ENV['RBENV_VERSION'] = @config.conf['rbenv_ruby_ver'] if @config.conf['rbenv_ruby_ver']
+          # Set env vars specified in queue config file
+          if @config.conf['env_vars']
+            @config.conf['env_vars'].each do |varname,value|
+              ENV[varname] = value unless varname.match(/^RQ_/) # Don't let the config override RQ-specific env vars though
+            end
+          end
 
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
