@@ -22,7 +22,7 @@ mkdir -p config
 echo "{\"env\":\"production\",\"port\":\"4444\",\"host\":\"127.0.0.1\",\"addr\":\"0.0.0.0\",\"tmpdir\":\"$TMPDIR\"}" > config/config.json
 echo "***** Config file written"
 
-echo "***** Starting web_server..."
+echo "***** Starting test web_server..."
 cp /dev/null /tmp/webserver.log
 ruby bin/web_server.rb > /tmp/webserver.log 2>&1 &
 
@@ -31,13 +31,6 @@ sleep 8
 
 echo "***** Deleting old queues and configs..."
 /bin/rm -rf queue queue.noindex
-
-echo "***** Setting up test queues..."
-./code/test/setup_test_queues.sh
-if [ $? -ne 0 ] ; then
-	echo "***** FAILED!"
-	STAT=1
-fi
 
 echo "***** Running tests..."
 ./code/test/run_tests.sh
@@ -49,8 +42,11 @@ fi
 echo "***** Stopping queue mgr..."
 bin/queuemgr_ctl stop
 
-echo "***** Stopping web_server..."
+echo "***** Stopping test web_server..."
 pkill -9 -u $USER -f web_server.rb
+
+echo "***** Starting system web_server again..."
+/rq/current/bin/web_server.rb server
 
 if [ $STAT == 1 ]; then
     exit 1

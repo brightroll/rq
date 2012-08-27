@@ -144,6 +144,19 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
+echo "Creating the test_env_var test queue..."
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue_link -sL -F queue[json_path]=./code/test/fixtures/jsonconfigfile/good_env_var.json -o _install_env_var_script.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ failed to respond correctly"
+  exit 1
+fi
+
+egrep "successqueue created" _install_env_var_script.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system didn't create test_env_var queue"
+  exit 1
+fi
+
 rm _home.txt
 rm _install.txt
 rm _install_test.txt
@@ -152,6 +165,7 @@ rm _install_test_coalesce.txt
 rm _install_test_run.txt
 rm _install_test_nop.txt
 rm _install_ansi_script.txt
+rm _install_env_var_script.txt
 rm cookie_jar
 
 echo "ALL DONE SUCCESSFULLY"

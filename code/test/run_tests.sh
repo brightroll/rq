@@ -65,7 +65,8 @@ for test in \
    send_dup.rb \
    test_rule_processor.rb \
    test_htmlutils.rb \
-   test_web_done_json.rb ; do
+   test_web_done_json.rb \
+   env_var_test.rb ; do
 
       echo "RUNNING TEST: ${test}"
       output=`./code/test/$test 2>&1`
