@@ -6,6 +6,10 @@ Current Dir = <que>/<state>/<short msg id>/job/
 
 Full Msg ID = host + q_name + msg_id
 
+ENV["RQ_SCRIPT"]     = The script as is defined in config file
+ENV["RQ_REALSCRIPT"] = The fully realized path (symbolic links followed, etc)
+                       Should be equivalent to ARGV[0]
+
 ENV["RQ_HOST"]       = Base URL of host (Ex. "http://localhost:3333/")
 ENV["RQ_HOSTNAMES"]  = Base URLs of host (aliases) (Ex. "http://localhost:3333/ http://butter:1234/")
                        Split by space
