@@ -283,6 +283,8 @@ module RQ
 
           load_aliases_config()
 
+          ENV["RQ_SCRIPT"] = @config.conf['script']
+          ENV["RQ_REALSCRIPT"] = script_path
           ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
           ENV["RQ_HOSTNAMES"] = @hostnames.join(" ")
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
