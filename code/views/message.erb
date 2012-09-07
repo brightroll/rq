@@ -76,7 +76,7 @@
 <% end %>
 
 <h3>Log Tail Window [ <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/log/stdio.log" %>">raw</a> ] [ <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}/tailviewlog/stdio.log" %>">Full Tail</a> ] </h3>
-<iframe src="<%= "#{url}q/#{q}/#{locals['msg_id']}/tailviewlog/stdio.log" %>" 
+<iframe src="<%= "#{url}q/#{q}/#{locals['msg_id']}/tailviewlog/stdio.log?in_iframe=1" %>" 
   width="100%" height="400" frameborder="0">
 </iframe>
 <script>

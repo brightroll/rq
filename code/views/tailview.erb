@@ -16,6 +16,9 @@
         };
       });
     </script>
+    <% if params[:in_iframe] %>
+    <base target="_top">
+    <% end %>
   </head>
   <body class="tailview">
     <div id="filedata" />
