@@ -7,11 +7,11 @@
 
 <div id="sub-header">
   <div id="message-actions">
-    <form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/clone" %>">
-      <button id="clone-message">Clone message</button>
+    <form class="inline" id="clone-form" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/clone" %>">
+      <button id="clone-button">Clone message</button>
     </form>
-    <form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/run_now" %>">
-      <button id="clone-message">Run message (risky)</button>
+    <form class="inline" id="run-form" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/run_now" %>">
+      <button id="run-button">Run message (risky)</button>
     </form>
   </div>
   <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">raw</a> ]</p>
@@ -89,4 +89,16 @@
     }
     return false;
   }
+
+  var cloneForm = document.getElementById('clone-form');
+  cloneForm.addEventListener('submit', function (e) {
+    var cloneButton = document.getElementById('clone-button');
+    cloneButton.disabled = true;
+  });
+
+  var runForm = document.getElementById('run-form');
+  runForm.addEventListener('submit', function (e) {
+    var runButton = document.getElementById('run-button');
+    runButton.disabled = true;
+  });
 </script>
