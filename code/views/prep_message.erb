@@ -8,13 +8,13 @@
 
 <div id="sub-header">
   <div id="message-actions">
-    <form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}" %>">
+    <form class="inline" id="commit-message-form" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}" %>">
       <input name="_method" type="hidden" value="commit" />
-      <button id="commit-message">Commit Message</button>
+      <button id="commit-message-button">Commit Message</button>
     </form>
-    <form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}" %>">
+    <form class="inline" id="delete-message-form" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}" %>">
       <input name="_method" type="hidden" value="delete" />
-      <button id="clone-message">Delete Message</button>
+      <button id="delete-message-button">Delete Message</button>
     </form>
   </div>
   <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{url}q/#{q}/#{locals['msg_id']}.json" %>">raw</a> ]</p>
@@ -100,9 +100,9 @@
     <%= locals['msg']['_attachments'][key]['size'] %></a>
   </td>
   <td>
-    <form class="inline" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/attach/#{key}" %>">
+    <form class="inline" id="delete-attach-form" method="post" action="<%= "#{url}q/#{q}/#{locals['msg_id']}/attach/#{key}" %>">
       <input name="_method" type="hidden" value="delete" />
-      <button>Delete</button>
+      <button id="delete-attach-button">Delete</button>
     </form>
   </td>
 </tr>
@@ -123,4 +123,19 @@
     }
     return false;
   }
+  var commitMessageForm = document.getElementById('commit-message-form');
+  commitMessageForm.addEventListener('submit', function (e) {
+    var commitMessageButton = document.getElementById('commit-message-button');
+    commitMessageButton.disabled = true;
+  });
+  var deleteMessageForm = document.getElementById('delete-message-form');
+  deleteMessageForm.addEventListener('submit', function (e) {
+    var deleteMessageButton = document.getElementById('delete-message-button');
+    deleteMessageButton.disabled = true;
+  });
+  var deleteAttachForm = document.getElementById('delete-attach-form');
+  deleteAttachForm.addEventListener('submit', function (e) {
+    var deleteAttachButton = document.getElementById('delete-attach-button');
+    deleteAttachButton.disabled = true;
+  });
 </script>

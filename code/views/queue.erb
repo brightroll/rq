@@ -94,9 +94,9 @@
       <% end %>
       : in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs</span>
       <span class="">
-        <form method="post" action="<%= "#{url}q/#{q}/#{msg_id}" %>">
+        <form id="delete-form" method="post" action="<%= "#{url}q/#{q}/#{msg_id}" %>">
           <input name="_method" type="hidden" value="delete" />
-          <button type="submit">Destroy it</button>
+          <button id="delete-button" type="submit">Destroy it</button>
         </form>
       </span>
     </li>
@@ -131,9 +131,9 @@
         STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
       <% end %>
     <% end %>
-    <form method="post" action="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>">
+    <form id="destroy-form" method="post" action="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>">
       <input name="_method" type="hidden" value="delete" />
-      <button type="submit">Destroy it</button>
+      <button id="destroy-button" type="submit">Destroy it</button>
     </form>
   <% end %>
   </ul>
@@ -224,4 +224,14 @@
     }
     return false;
   }
+  var deleteForm = document.getElementById('delete-form');
+  deleteForm.addEventListener('submit', function (e) {
+    var deleteButton = document.getElementById('delete-button');
+    deleteButton.disabled = true;
+  });
+  var destroyForm = document.getElementById('destroy-form');
+  destroyForm.addEventListener('submit', function (e) {
+    var destroyButton = document.getElementById('destroy-button');
+    destroyButton.disabled = true;
+  });
 </script>
