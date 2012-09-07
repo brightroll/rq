@@ -78,6 +78,7 @@ module RQ
       queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
+      queue['exec_prefix'] = ''
       result = RQ::QueueMgrClient.create_queue(queue)
 
       queue = {}
@@ -86,6 +87,7 @@ module RQ
       queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
+      queue['exec_prefix'] = ''
       result = RQ::QueueMgrClient.create_queue(queue)
 
       queue = {}
@@ -94,6 +96,7 @@ module RQ
       queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
+      queue['exec_prefix'] = ''
       result = RQ::QueueMgrClient.create_queue(queue)
 
       queue = {}
@@ -102,6 +105,7 @@ module RQ
       queue['ordering'] = "none"
       queue['num_workers'] = "1"
       queue['fsync'] = 'no-fsync'
+      queue['exec_prefix'] = ''
       result = RQ::QueueMgrClient.create_queue(queue)
 
       # TODO: set install state as bad if any of this fails

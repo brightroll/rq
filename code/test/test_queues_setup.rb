@@ -50,6 +50,7 @@ test_key 'test', result, 'name', 'test'
 test_key 'test', result, 'num_workers', '1'
 test_key 'test', result, 'script', './code/test/test_script.sh'
 test_key 'test', result, 'coalesce', 'no'
+test_key 'test', result, 'exec_prefix', ''
 
 
 
@@ -68,6 +69,7 @@ test_key 'test_coalesce', result, 'name', 'test_coalesce'
 test_key 'test_coalesce', result, 'num_workers', '1'
 test_key 'test_coalesce', result, 'script', './code/test/test_script.sh'
 test_key 'test_coalesce', result, 'coalesce', 'yes'
+test_key 'test_coalesce', result, 'exec_prefix', ''
 test_key 'test_coalesce', result, 'coalesce_param1', '1'
 test_key 'test_coalesce', result, 'coalesce_param2', nil
 test_key 'test_coalesce', result, 'coalesce_param3', nil

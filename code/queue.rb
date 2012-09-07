@@ -321,7 +321,14 @@ module RQ
           #RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
-          exec("bash -lc #{script_path}")
+          exec_prefix = @config.conf['exec_prefix'] || "bash -lc "
+          if exec_prefix.empty?
+            #RQ::Queue.log(job_path, "exec path: #{script_path}")
+            exec(script_path, "")
+          else
+            #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
+            exec(exec_prefix + script_path)
+          end
         rescue
           RQ::Queue.log(job_path, $!)
           RQ::Queue.log(job_path, $!.backtrace)
