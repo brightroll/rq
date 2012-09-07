@@ -25,7 +25,7 @@
 </div>
 
 <div class="field">
-  <label class="field_label" for="queue_fsync">Message coalescing</label>
+  <label class="field_label" for="queue_coalesce">Message coalescing</label>
   <label for="queue_coalesce">coalesce</label>
   <input type="radio" name="queue[coalesce]" value="yes" checked/>
   <label for="queue_coalesce">no-coalesce</label>
@@ -42,6 +42,11 @@
   <input type="checkbox" name="queue[coalesce_param3]" value="1" />
   <label for="queue_coalesce_param4">param4</label>
   <input type="checkbox" name="queue[coalesce_param4]" value="1" />
+</div>
+
+<div class="field">
+  <label class="field_label" for="queue_exec_prefix">'exec' prefix</label>
+  <input type="text" name="queue[exec_prefix]" value="bash -lc " size="40" />
 </div>
 
 <div class="field">

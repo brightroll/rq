@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#!/bin/bash
+start_time=`date +%s`
+
 # Send the test queue a test message that should end up in done
 
 if [ ! -d "./code" ] ; then
@@ -81,6 +84,10 @@ for test in \
 done
 
 #   test_web_html_log.rb \
+
+end_time=`date +%s`
+time_elapsed=$(($end_time-$start_time))
+echo "Script execution took $time_elapsed seconds."
 
 echo "-=-=-=-=-=-=-=-=-"
 echo " ALL TESTS DONE  "
