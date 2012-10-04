@@ -12,7 +12,12 @@ require 'stringio'
 # Thx - Logan Capaldo
 require 'dl/import'
 module Alarm
-  extend DL::Importable
+  case RUBY_VERSION.to_f
+    when 1.8
+      extend DL::Importable
+    when 1.9
+      extend DL::Importer
+  end
   if RUBY_PLATFORM =~ /darwin/
     so_ext = 'dylib'
   else
@@ -56,7 +61,7 @@ module UnixRack
       io.close
     end
 
-    def self.read_sock_num_bytes(sock, num, log = lambda {|x| x})
+    def self.read_sock_num_bytes(sock, num, log = lambda { |x| x })
       retval = [false, '']
       buff = ""
       num_left = num
@@ -73,12 +78,12 @@ module UnixRack
           else
             num_left = num_left - dat.length
           end
-        rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+        rescue Errno::EINTR # Ruby threading can cause an alarm/timer interrupt on a syscall
           retry
         rescue EOFError
           retval = [false, "EOF", buff]
           break
-        rescue EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+        rescue EOFError, Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
           retval = [false, "Exception occurred on socket read"]
           #log("Got an #{$!} from socket read")
           break
@@ -91,13 +96,13 @@ module UnixRack
     def do_read
       begin
         dat = @sock.sysread(16384)
-      rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+      rescue Errno::EINTR # Ruby threading can cause an alarm/timer interrupt on a syscall
         retry
       rescue EOFError
         puts "#{$$}: Got an EOF from socket read"
         $stdout.flush
         return nil
-      rescue EOFError,Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+      rescue EOFError, Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
         puts "#{$$}: Got an #{$!} from socket read"
         $stdout.flush
         exit! 0
@@ -172,8 +177,8 @@ module UnixRack
       @hdr_method_line = @hdr_lines[0]
       @hdr_method = @hdr_method_line.split(" ")
 
-      @hdr_field_lines = @hdr_lines.slice(1..-1)   # would prefer first, and rest
-      @headers = @hdr_field_lines.inject( {} ) { |h, line| k,v = line.split(": "); h[k] = v; h }
+      @hdr_field_lines = @hdr_lines.slice(1..-1) # would prefer first, and rest
+      @headers = @hdr_field_lines.inject({}) { |h, line| k, v = line.split(": "); h[k] = v; h }
       true
     end
 
@@ -211,24 +216,24 @@ module Rack
         log(num, txt, method, url)
 
         bod = [
-          "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
-          "<html><head>",
-          "<title>#{num} #{txt}</title>",
-          "</head><body>",
-          "<h1>#{num} - #{txt}</h1>",
-          "<hr>",
-          "</body></html>"
+            "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">",
+            "<html><head>",
+            "<title>#{num} #{txt}</title>",
+            "</head><body>",
+            "<h1>#{num} - #{txt}</h1>",
+            "<hr>",
+            "</body></html>"
         ]
 
         bod_txt = bod.join("\r\n")
 
         hdr = [
-          "HTTP/1.1 #{num} #{txt}",
-          "Date: #{@@start_time.httpdate}",
-          "Server: UnixRack",
-          "Content-Length: #{bod_txt.length}",
-          "Connection: close",
-          "Content-Type: text/html; charset=iso-8859-1"
+            "HTTP/1.1 #{num} #{txt}",
+            "Date: #{@@start_time.httpdate}",
+            "Server: UnixRack",
+            "Content-Length: #{bod_txt.length}",
+            "Connection: close",
+            "Content-Type: text/html; charset=iso-8859-1"
         ]
 
         hdr_txt = hdr.join("\r\n")
@@ -247,18 +252,18 @@ module Rack
 
         log(status, msg, method, url)
 
-        hdr_ary = [ "HTTP/1.1 #{status} #{msg}" ]
+        hdr_ary = ["HTTP/1.1 #{status} #{msg}"]
 
         headers['Connection'] ||= 'close'
 
         headers.each do
-          |k,vs|
-          vs.split("\n").each { |v| hdr_ary << [ "#{k}: #{v}" ] }
+        |k, vs|
+          vs.split("\n").each { |v| hdr_ary << ["#{k}: #{v}"] }
         end
 
         hdr = hdr_ary.join("\r\n")
 
-        out = [ hdr, "\r\n\r\n" ]
+        out = [hdr, "\r\n\r\n"]
 
         body.each { |part| out << part.to_s }
 
@@ -288,7 +293,7 @@ module Rack
                 break
               end
               @@start_time = Time.now
-              log(-(status.exitstatus),'child exited non-zero') if status.exitstatus != 0
+              log(-(status.exitstatus), 'child exited non-zero') if status.exitstatus != 0
               #puts "#{pid}: exited - status #{status}"
               #$stdout.flush
             end
@@ -296,8 +301,8 @@ module Rack
           end
         end
 
-        trap(:TERM)    { log(0, "Listener received TERM. Exiting."); exit! 0  }
-        trap("SIGINT") { log(0, "Listener received INT. Exiting."); exit! 0  }
+        trap(:TERM) { log(0, "Listener received TERM. Exiting."); exit! 0 }
+        trap("SIGINT") { log(0, "Listener received INT. Exiting."); exit! 0 }
 
         if not @@chdir.empty?
           Dir.chdir @@chdir
@@ -328,10 +333,10 @@ module Rack
             server.close
             @@start_time = Time.now
 
-            trap("ALRM") { log(0, "Child received ALARM during read_headers. Exiting."); exit! 2  }
-            trap(:TERM)  { log(0, "Child received TERM. Exiting."); exit! 0  }
+            trap("ALRM") { log(0, "Child received ALARM during read_headers. Exiting."); exit! 2 }
+            trap(:TERM) { log(0, "Child received TERM. Exiting."); exit! 0 }
 
-            Alarm.alarm(5)                # if no command received in 5 secs
+            Alarm.alarm(5) # if no command received in 5 secs
 
             sock = ::UnixRack::Socket.new(conn)
             @@client_ip = sock.peeraddr.last
@@ -340,8 +345,8 @@ module Rack
               send_error_response!(sock, 400, "Bad Request")
             end
 
-            trap("ALRM") { log(0, "Child received ALARM during response. Exiting."); exit! 2  }
-            Alarm.alarm(120)               # if command not handled in 120 seconds
+            trap("ALRM") { log(0, "Child received ALARM during response. Exiting."); exit! 2 }
+            Alarm.alarm(120) # if command not handled in 120 seconds
 
             if not allowed_ips.empty?
               if not (allowed_ips.any? { |e| @@client_ip.include? e })
@@ -369,7 +374,7 @@ module Rack
                 # F the 1.1
                 if sock.headers.include?('Expect')
                   if sock.headers['Expect'] == '100-continue'
-                    ::UnixRack::Socket.write_buff(sock.sock,"HTTP/1.1 100 Continue\r\n\r\n")
+                    ::UnixRack::Socket.write_buff(sock.sock, "HTTP/1.1 100 Continue\r\n\r\n")
                   else
                     send_error_response!(sock, 417, "Expectation Failed", sock.hdr_method[0], sock.hdr_method[1])
                   end
@@ -426,14 +431,14 @@ module Rack
                 env["HTTP_IF_MODIFIED_SINCE"] = sock.headers['If-Modified-Since']
               end
 
-              env.update({"rack.version" => [1,1],
-                         "rack.input" => content,
-                         "rack.errors" => $stderr,
-                         "rack.multithread" => false,
-                         "rack.multiprocess" => true,
-                         "rack.run_once" => true,
-                         "rack.url_scheme" => "http"
-              })
+              env.update({"rack.version" => [1, 1],
+                          "rack.input" => content,
+                          "rack.errors" => $stderr,
+                          "rack.multithread" => false,
+                          "rack.multiprocess" => true,
+                          "rack.run_once" => true,
+                          "rack.url_scheme" => "http"
+                         })
 
               # Reminder of how to do this for the future the '::' I always forget
               #::File.open('/tmp/dru', 'a') do
