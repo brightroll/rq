@@ -34,6 +34,7 @@ module UnixRack
     attr_accessor :sock
 
     def initialize(sock)
+      TCPSocket.do_not_reverse_lookup = true
       @sock = sock
       @buff = ""
     end
