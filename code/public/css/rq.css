@@ -108,7 +108,6 @@ ul {list-style: none;}
 
 h1 {font-size: 2.5em; margin-top: 0; margin-bottom: 2px; font-weight: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; overflow: hidden; zoom: 1}
-h2 {display: none}
 #header {overflow: hidden; margin-bottom: 20px}
 #sub-header {border: 1px dashed black; padding: 5px; margin-bottom: 20px}
 #sub-header p {margin-top: 5px}
