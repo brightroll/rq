@@ -16,7 +16,7 @@ task :build_docs do
     doc_files.each { | doc |
       next if doc == "index.txt"
       name = doc.split("/").last.split(".txt")[0]
-      f.write( "* [#{name}](#{name}.html)\n" )
+      f.write( "* ## » [#{name}](#{name}.html)\n" )
     }
   end
 
