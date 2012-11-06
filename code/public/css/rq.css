@@ -8,6 +8,7 @@ body {
   font-family: arial, sans-serif;
   font-size: 13px;
   height: 100%;
+  margin: 0;
 }
 
 body.stage {
@@ -110,6 +111,8 @@ h1 {font-size: 2.5em; margin-top: 0; margin-bottom: 2px; font-weight: bold;
     font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; color: #444; overflow: hidden; zoom: 1}
 h2 {display: none}
 #header {overflow: hidden; margin-bottom: 20px}
+#top-header { margin-bottom: 20px}
+#top-header .docs { float: right; }
 #sub-header {border: 1px dashed black; padding: 5px; margin-bottom: 20px}
 #sub-header p {margin-top: 5px}
 #json-config {overflow: hidden; zoom: 1}
@@ -123,7 +126,7 @@ h2 {display: none}
 .inline {display: inline}
 h3 {margin: 20px 0 10px}
 h4, h5 {margin-top: 5px}
-.container {padding: 20px; margin: 0 auto; max-width: 860px; position: relative}
+.container {padding: 0 20px; margin: 0 auto; max-width: 960px; position: relative}
 a {color: #060; text-decoration: none}
 a:hover {text-decoration: underline}
 a:visited {}

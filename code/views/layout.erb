@@ -13,6 +13,10 @@
   <% our_env = (our_env.index('stage') == 0) ? 'stage' : our_env %>
   <body class="<%= our_env %>">
     <div class="container">
+      <div id="top-header">
+        <span id="env"><%= our_env %></span>
+        <span class="docs"><a href="/docs/index.html">docs</a></span>
+      </div>
       <div id="flash-container">
       <% [:notice, :error].each do |type| %>
         <% if @flash[type] %>
@@ -20,7 +24,6 @@
         <% end %>
       <% end %>
       </div>
-      <span id="env"><%= our_env %></span>
       <%= yield %>
       <p><em><%= Time.now %></em></p>
     </div>

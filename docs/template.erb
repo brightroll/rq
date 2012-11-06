@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% if params[:name] && !params[:name].empty? %>
+      <title>RQ :: <%= params[:name] %></title>
+    <% else %>
+      <title>RQ</title>
+    <% end %>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
+  </head>
+  <body class="production">
+    <div class="container">
+      <div id="top-header">
+        <span class="docs"><a href="/docs/index.html">docs</a></span>
+      </div>
+      <div id="header">
+        <h1>
+        <a href="/">rq</a>
+        <% if params[:name] && params[:name] != "index" %>
+          >
+          <a href="/docs/index.html">docs</a>
+          >
+          <%= params[:name] %>
+        <% else %>
+          >
+          docs
+        <% end %>
+        </h1>
+
+      </div>
+      <%= content %>
+      <p><em>VERSION</em></p>
+    </div>
+  </body>
+</html>
