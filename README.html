@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+          <title>RQ :: README</title>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
+  </head>
+  <body class="production">
+    <div class="container documentation">
+      <div id="top-header">
+        <span class="docs"><a href="/docs/index.html">docs</a></span>
+      </div>
+      <div id="header">
+        <h1>
+        <a href="/">rq</a>
+                  >
+          README                </h1>
+
+      </div>
+      <a name="RQ"></a>
+<h1>RQ</h1>
+
+<p>RQ is a <strong>simple</strong> queueing/messaging system for <em>any</em> Unix system and can process
+messages in <strong>any language</strong>.
+It is designed to run on every machine in your distributed system.
+Think of it as another one of those small, but
+important services (like crond). It uses directories and json text files on the Unix filesystem
+as its database. It does not use a specialized database. This means it is easy to debug and
+understand its internals.
+Messages can be small, but RQ was designed for a medium to large granularity.
+For example, messages could have attachments with 100s to 1000s of megabytes.
+Messages can be processed by the local machine or relayed reliably to another
+machine on another continent. The worker system uses a unix process model (some call
+this a &lsquo;forking&rsquo; model). It bears some resemblance at a high-level to UUCP.
+It has been used in production since 2009 and processed billions of messages at brightroll.
+It has a full test suite that verifies the system.
+Provides real-time display of logs (even ANSI colors) via the browser.</p>
+
+<p>There is a more distributed option being worked on for the future .
+ (Note there is a goal of a more distributed option with MongoDB in the future).</p>
+
+<p>Here is a sample screenshot of a single queue:</p>
+
+<p><img src="docs/rq_screen_shot.png" title="Example Screen Shot" alt="Screen Shot" /></p>
+
+<a name="A.brief.overview.of.the.system."></a>
+<h2>A brief overview of the system.</h2>
+
+<p>Once RQ is installed, the user creates a queue. The queue requires only a few
+parameters, but the most important one is the &lsquo;queue script&rsquo;. This is a program
+written in <em>any</em> language that will process the messages. The API for the queue
+script is easy to
+implement and described below. Whenever a message is received on that queue,
+this program runs. The program will either succeed, fail, or ask to retry X seconds in
+the future. If the script takes a long time to run, it can send periodic updates
+to RQ to let it know its progress. The script can also provide a lot of logging
+and huge files as output.</p>
+
+<p>The RQ system provides a REST, HTML, cmd-line, or low-level sockets
+API to work with messages and queues. That is all there is to it.</p>
+
+<p>When would you use RQ?
+In a typical web application, you should always respond to the browser within a small
+time frame (say 1-3 seconds). You should also avoid using a lot of memory in this section
+of your application stack as well. If you know a particular computation will exceed
+those requirements, you should hand off the task to a queueing system.</p>
+
+<p>If you have scripts that run via cron, you should probably run that under RQ.</p>
+
+<p>Here are some examples:</p>
+
+<ul>
+<li>Transcoding a video file (high cpu)</li>
+<li>Implement a large query for a user in the background</li>
+<li>Have a queue for curl requests for URLs passed in</li>
+<li>A processing pipeline of files stored in S3 (light map/reduce)
+
+<ul>
+<li>retrieve</li>
+<li>filter</li>
+<li>reduce</li>
+<li>sftp to partner</li>
+</ul>
+</li>
+<li>Deploy an update to systems all over the world for user-facing web app (high latency)</li>
+<li>Periodically rotate send HTTP logs (via Ruby Rack) to a MongoDB box for search</li>
+<li>Verify URLs with Internet Explorer (and take screenshots) on a box controllable via a simple web api</li>
+<li>Spin up EC2 instances via AWS api</li>
+</ul>
+
+
+<a name="Small.Dose.of.Philosophy"></a>
+<h2>Small Dose of Philosophy</h2>
+
+<p>The people behind RQ have been working on Unix since the late 1980&rsquo;s. The focus
+of RQ has been on reliability and the ease of understanding. The author prefers
+systems that allow him to sleep soundly at night, and he thinks the design of
+RQ allows him to achieve this. There is a lot to talk about here and why the existing
+systems didn&rsquo;t appeal to the problem. If you are interested in that, read the full
+philosphy section below.</p>
+
+<a name="Table.Of.Contents"></a>
+<h2>Table Of Contents</h2>
+
+<ul>
+<li><a href="#section_Quick_Setup">Quick Setup</a></li>
+<li><a href="#section_Features">Features</a></li>
+<li><a href="#section_Hip_Tips">Hip Tips</a></li>
+<li><a href="#section_Queue_Config_Vars">Queue Config Vars</a></li>
+<li><a href="#section_Guarantees">Guarantees</a></li>
+<li><a href="#section_Your_First_Queue_Script">Your First Queue Script</a>
+
+<ul>
+<li><a href="#section_Ruby">Ruby</a></li>
+<li><a href="#section_Bash">Bash</a></li>
+</ul>
+</li>
+<li><a href="#section_Debugging_In_Production">Debugging In Production</a></li>
+<li><a href="#section_Queue_Script_Api">Queue Script Api</a>
+
+<ul>
+<li><a href="#section_Environment">Environment</a></li>
+<li><a href="#section_Logs_and_Attachments">Logs and Attachments</a></li>
+<li><a href="#section_Pipe_Protocol">Pipe Protocol</a></li>
+</ul>
+</li>
+<li><a href="#section_RQ_Server_API">RQ Server API</a>
+
+<ul>
+<li><a href="#section_REST">REST</a></li>
+<li><a href="#section_cli">cli</a></li>
+<li><a href="#section_Unix_Domain_Sockets">Unix Domain Sockets</a></li>
+</ul>
+</li>
+<li><a href="#section_Special_Queues">Special Queues</a></li>
+<li><a href="#section_Patterns">Patterns</a>
+
+<ul>
+<li><a href="#section_Ruby_on_Rails">Ruby on Rails</a></li>
+<li><a href="#section_Master_Script">Master Script</a></li>
+<li><a href="#section_Deploying_Code">Deploying Code</a></li>
+<li><a href="#section_Webhooks">Webhooks</a></li>
+</ul>
+</li>
+<li><a href="#section_For_The_Ops_People">For The Ops People</a>
+
+<ul>
+<li><a href="#section_Monitoring">Monitoring</a></li>
+<li><a href="#section_Queue_States">Queue States</a></li>
+<li><a href="#section_Deploying_Code">Deploying Code</a></li>
+</ul>
+</li>
+<li><a href="#section_For_The_QA_People">For The QA People</a></li>
+<li><a href="#section_Internals">Internals</a>
+
+<ul>
+<li><a href="#section_Persistence">Persistence</a></li>
+<li><a href="#section_Relay">Relay</a></li>
+</ul>
+</li>
+<li><a href="#section_FAQ">FAQ</a></li>
+<li><a href="#section_Philosophy">Philosophy</a></li>
+<li><a href="#section_History">History</a></li>
+<li><a href="#section_Future">Future</a></li>
+<li><a href="#section_Meta">Meta</a></li>
+<li><a href="#section_Contributors">Contributors</a></li>
+</ul>
+
+
+<p><a name='section_Quick_Setup'></a></p>
+
+<a name="Quick.Setup"></a>
+<h2>Quick Setup</h2>
+
+<p>You will need:</p>
+
+<ol>
+<li>Source to RQ</li>
+<li>A unique FQDN for the system if production.</li>
+</ol>
+
+
+<p>Clone the github repo.
+Untar the system in a directory of your choosing.</p>
+
+<p>Run <code>./bin/web_server.rb --install</code></p>
+
+<p>Now go to the web UI to follow the steps to complete an installation.</p>
+
+<p>This should setup the RQ directory system and a few default queues.</p>
+
+<p>Run the <code>/etc/init.d/rq stop</code> script</p>
+
+<p>There should be no processes with rq running.</p>
+
+<p>Run the <code>/etc/init.d/rq start</code> script</p>
+
+<p>This should start several processes. There should be 1 rq-mgr process and one rq process per queue.
+There should also be one <code>web_server.rb</code> process running.</p>
+
+<p>(Also, I did</p>
+
+<ol>
+<li>clone the git repository</li>
+<li>kill queue manager if it is running (pname: <code>[rq-mgr]</code>)</li>
+<li>delete the config directory if it exists</li>
+<li>bundle by typing <code>$ gem bundle</code> (bundler ~&lt; 1.x.x) or <code>bundle install</code></li>
+<li>run the installer with <code>$ bin/webserver.rb install</code></li>
+<li>use a browser to hit the running server, set the domain of the machine</li>
+<li>restart the <code>web_server.rb</code> process (after killing, just <code>bin/web_server.rb</code>)</li>
+</ol>
+
+
+<p><a name='section_Features'></a></p>
+
+<a name="Features"></a>
+<h2>Features</h2>
+
+<p><a name='section_Hip_Tips'></a></p>
+
+<a name="Hip.Tips"></a>
+<h2>Hip Tips</h2>
+
+<ul>
+<li>Scripts should be idempotent if at all possible. You should assume that</li>
+<li>Messages should not go to error frequently
+
+<ul>
+<li>RQ can retry a message if the error is transient. let you kno. If this is happening, something is wrong with your assumptions.</li>
+</ul>
+</li>
+<li>Do not fire and forget an RQ message.
+
+<ul>
+<li>It is ok to be more lax in side of the queue script that processes that message</li>
+</ul>
+</li>
+<li>Log output that might help someone other than you diagnose the issue</li>
+<li>Crypto - sign and encrypt your message before giving it to RQ. Secure channels is too hard of a problem.</li>
+<li>Use the status system for progress updates</li>
+<li>Do not run RQ in production with the name &lsquo;localhost&rsquo;</li>
+<li>Master passing.Do not access other message directories unless the message is <code>done</code></li>
+<li>Don&rsquo;t take too long via the Web UI, there is a X second timeout</li>
+</ul>
+
+
+<p><a name='section_Queue_Config_Vars'></a></p>
+
+<a name="Queue.Config.Vars"></a>
+<h2>Queue Config Vars</h2>
+
+<p>RQ Queue Config JSON</p>
+
+<p>A typical config:</p>
+
+<p><code>json
+{"fsync":"no-fsync","ordering":"none","script":".\/code\/relay_script.rb","num_workers":"1","exec_prefix":"","name":"relay"}
+</code></p>
+
+<p><strong> Mandatory Fields </strong></p>
+
+<p>name:
+Name of the queue.</p>
+
+<p>script:
+The path to the script that will process messages in that queue</p>
+
+<p>num_workers:
+The number of processes that can run to handle incoming messages. This
+is equivalent to the max number of messages that can be in the run state.
+Default: 1</p>
+
+<p>Optional Fields
+exec_prefix:
+This is what is prefixed to the script before the &lsquo;exec&rsquo; system call is made to run the &ldquo;script&rdquo;. As a default, it is set to &lsquo;bash -lc &rsquo; if not set. Note the space on the end.</p>
+
+<p>env_vars
+This is a map of key value pairs that will be established in the environment per script run.</p>
+
+<p><a name='section_Guarantees'></a></p>
+
+<a name="Guarantees"></a>
+<h2>Guarantees</h2>
+
+<ul>
+<li>Messages cannot be guaranteed to be delivered in order</li>
+<li>Messages are unique per machine and should use the unique host name</li>
+<li>Messages can be guaranteed to be delivered intact when relayed (MD5)</li>
+<li>RQ will not respond with an OK if a message cannot be commited to disk</li>
+<li>Queue Scripts that are referenced via symlinks are resolved to their full path before execution
+
+<ul>
+<li>(This is especially helpful when you have scripts running and you deploy a new version)</li>
+</ul>
+</li>
+<li>Files are consistent</li>
+</ul>
+
+
+<p>It <em>tries</em> hard to</p>
+
+<ul>
+<li><p>insure message is in identical state every run</p></li>
+<li><p>avoid duplicate messages
+aka - there is a small chance that messages might be duplicated.</p></li>
+</ul>
+
+
+<p>It <em>does not try</em> hard to guarantee ordering
+  - messages might come in out-of-order. this may happen as a result
+    of a failure in the system or operations repointing traffic
+    to another rq</p>
+
+<p>given the above, use timestamp versioning to insure an older message
+doesn&rsquo;t over-write a newer message. if you see the same timestamp again
+for a previously successful txn, it might be that ultra-ultra rare duplicate,
+so drop it.</p>
+
+<ul>
+<li>You must exit properly with the proper handshake.</li>
+</ul>
+
+
+<p><a name='section_Your_First_Queue_Script'></a></p>
+
+<a name="Your.First.Queue.Script"></a>
+<h2>Your First Queue Script</h2>
+
+<p>When developing an RQ script, you should have a problem in mind that requires just a few parameters.</p>
+
+<p>Next you develop a script. You can skip down just a bit to see some examples.</p>
+
+<p>Typically, you will setup RQ on your development enviornment. Then you will setup a <code>queue</code> for your particular
+script. Then via the web UI, you will create a new message and submit it. In another tab, you can hit refresh
+to the state of the message. If it succeeds, you are done. If not, just edit the code, hit refresh on the tab
+that created the message (to resubmit the form and create a new test message), and check on the queue to see if it worked.</p>
+
+<p>Essentially, this turns into a</p>
+
+<p><a name='section_Ruby'></a></p>
+
+<a name="Ruby"></a>
+<h3>Ruby</h3>
+
+<p>``` ruby</p>
+
+<a name="L..usr.bin.env.ruby"></a>
+<h1>!/usr/bin/env ruby</h1>
+
+<a name="NOTE:.Ruby.buffers.stdout..so.you.must.fflush.if.you.want.to.see.output"></a>
+<h1>NOTE: Ruby buffers stdout, so you must fflush if you want to see output</h1>
+
+<a name="in.the.RQ.UI"></a>
+<h1>in the RQ UI</h1>
+
+<p>end</p>
+
+<p>def write_status(state, mesg = &lsquo;&rsquo;)
+  io = IO.for_fd(ENV[&lsquo;RQ_PIPE&rsquo;].to_i)
+  msg = &ldquo;#{state} #{mesg}\n&rdquo;
+  io.syswrite(msg)
+end</p>
+
+<p>write_status(&lsquo;run&rsquo;, &ldquo;just started&rdquo;)
+sleep 2.0</p>
+
+<p>log(cwd)</p>
+
+<p>log(ENV.inspect)</p>
+
+<p>write_status(&lsquo;run&rsquo;, &ldquo;pre lsof&rdquo;)
+log(<code>lsof -p $$</code>)
+write_status(&lsquo;run&rsquo;, &ldquo;post lsof&rdquo;)</p>
+
+<p>5.times do
+  |count|
+  log(&ldquo;sleeping&rdquo;)
+  write_status(&lsquo;run&rsquo;, &ldquo;#{count} done - #{5 - count} to go&rdquo;)
+  sleep 1.0
+end
+log(&ldquo;done sleeping&rdquo;)</p>
+
+<p>log(&ldquo;done&rdquo;)
+write_status(&lsquo;done&rsquo;)
+exit(0)
+```</p>
+
+<p><a name='section_Bash'></a></p>
+
+<a name="Bash"></a>
+<h3>Bash</h3>
+
+<p>Here is a BASH script sample. Yes, even a bash script can handle RQ messages (which was surprising to me!)
+The main drawback with BASH as an RQ script is how it deals with functions. I would only use it for
+fairly simple scripts.</p>
+
+<p>``` bash</p>
+
+<a name="L..bin.bash"></a>
+<h1>!/bin/bash</h1>
+
+<a name="File.Descriptor..3.is.pipe.back.up.to.RQ.parent.watcher.process"></a>
+<h1>File Descriptor #3 is pipe back up to RQ parent watcher process</h1>
+
+<p>function write_status {
+  echo $1 $2 >&amp;3
+}</p>
+
+<p>write_status &lsquo;run&rsquo;  &ldquo;just started&rdquo;</p>
+
+<p>echo &ldquo;TEST TEST TEST&rdquo;</p>
+
+<p>pwd</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;html&rdquo; ]; then
+  echo &ldquo;html unsafe chars test&rdquo;
+  echo &ldquo;<HTML "UNSAFE" 'CHARS' TEST & OTHER FRIENDS>&rdquo;
+  echo &ldquo;&rdquo;
+fi</p>
+
+<p>env | grep RQ_</p>
+
+<p>echo &ldquo;&mdash;&mdash;&mdash;&ndash; all env &mdash;&mdash;&mdash;&rdquo;
+env
+echo &ldquo;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&ndash;&rdquo;</p>
+
+<p>lsof -p $$</p>
+
+<p>write_status &lsquo;run&rsquo; &ldquo;post lsof&rdquo;</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;slow&rdquo; ]; then
+  echo &ldquo;This script should execute slowly&rdquo;
+  write_status &lsquo;run&rsquo; &ldquo;start sleeping for 30&rdquo;
+  sleep 30
+  write_status &lsquo;run&rsquo; &ldquo;done sleeping for 30&rdquo;
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;slow1&rdquo; ]; then
+  echo &ldquo;This script should execute slowly&rdquo;
+  write_status &lsquo;run&rsquo; &ldquo;start sleeping for 1&rdquo;
+  sleep 1
+  write_status &lsquo;run&rsquo; &ldquo;done sleeping for 1&rdquo;
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;slow3&rdquo; ]; then
+  echo &ldquo;This script should execute slowly&rdquo;
+  write_status &lsquo;run&rsquo; &ldquo;start sleeping for 3&rdquo;
+  sleep 3
+  write_status &lsquo;run&rsquo; &ldquo;done sleeping for 3&rdquo;
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM2&rdquo; == &ldquo;err&rdquo; ]; then
+  echo &ldquo;This script should end up with err status&rdquo;
+  write_status &lsquo;err&rsquo; &ldquo;by design&rdquo;
+  exit 0
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;dup_direct&rdquo; ]; then
+  # Todo: need something better than a free roaming rm
+  rm -f &ldquo;$RQ_PARAM2&rdquo;
+  echo &ldquo;This script should create a duplicate to the test_nop queue&rdquo;
+  write_status &lsquo;run&rsquo; &ldquo;start dup&rdquo;
+  write_status &lsquo;dup&rsquo; &ldquo;0-X-test_nop&rdquo;
+  read_status
+  echo &ldquo;Got: [${RETURN_VAR[@]}]&rdquo;</p>
+
+<p>  if [ &ldquo;${RETURN_VAR[0]}&rdquo; != &ldquo;ok&rdquo; ]; then
+    echo &ldquo;Sorry, system didn&rsquo;t dup test message properly : ${RETURN_VAR}&rdquo;
+    echo &ldquo;But we exit with an &lsquo;ok&rsquo; the result file won&rsquo;t get generated&rdquo;
+  fi</p>
+
+<p>  if [ &ldquo;${RETURN_VAR[0]}&rdquo; == &ldquo;ok&rdquo; ]; then
+    # Old school IPC
+    echo &ldquo;${RETURN_VAR[1]}&rdquo; > &ldquo;$RQ_PARAM2&rdquo;
+  fi
+  write_status &lsquo;run&rsquo; &ldquo;done dup&rdquo;
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;dup_fail&rdquo; ]; then
+  # Todo: need something better than a free roaming rm
+  rm -f &ldquo;$RQ_PARAM2&rdquo;
+  echo &ldquo;This script should create a duplicate to a non-existent queue&rdquo;
+  write_status &lsquo;run&rsquo; &ldquo;start dup&rdquo;
+  write_status &lsquo;dup&rsquo; &ldquo;0-X-nope_this_q_does_not_exist&rdquo;
+  read_status
+  echo &ldquo;Got: [${RETURN_VAR[@]}]&rdquo;
+  # Old school IPC
+  echo &ldquo;${RETURN_VAR[@]}&rdquo; > &ldquo;$RQ_PARAM2&rdquo;
+  write_status &lsquo;run&rsquo; &ldquo;done dup&rdquo;
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;resend1&rdquo; ]; then
+    if [ &ldquo;$RQ_COUNT&rdquo; == &ldquo;0&rdquo; ]; then
+        echo &ldquo;This script should resend the current job at a new time&rdquo;
+        write_status &lsquo;resend&rsquo; &ldquo;2&rdquo;
+        exit 0
+    fi
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;resend2&rdquo; ]; then
+    if [ &ldquo;$RQ_COUNT&rdquo; -lt 6 ]; then
+        echo &ldquo;This script should resend the current job at a new time&rdquo;
+        echo &ldquo;count: ${RQ_COUNT}&rdquo;
+        write_status &lsquo;resend&rsquo; &ldquo;0&rdquo;
+        exit 0
+    fi
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM2&rdquo; == &ldquo;resend1&rdquo; ]; then
+    if [ &ldquo;$RQ_COUNT&rdquo; == &ldquo;0&rdquo; ]; then
+        echo &ldquo;This script should resend the current job at a new time&rdquo;
+        write_status &lsquo;resend&rsquo; &ldquo;8&rdquo;
+        exit 0
+    fi
+fi</p>
+
+<p>if [ &ldquo;$RQ_PARAM1&rdquo; == &ldquo;symlink&rdquo; ]; then
+  echo &ldquo;This script should end up with a done status&rdquo;
+  echo $0
+  write_status &lsquo;done&rsquo; &ldquo;${0}&rdquo;
+  exit 0
+fi</p>
+
+<p>echo &ldquo;done&rdquo;
+write_status &lsquo;done&rsquo; &ldquo;done sleeping&rdquo;
+```</p>
+
+<p><a name='section_Debugging_In_Production'></a></p>
+
+<a name="Debugging.In.Production"></a>
+<h3>Debugging In Production</h3>
+
+<p>Errors do happen in production in ways we cannot anticipate.</p>
+
+<p>For example, you may
+Here is a BASH script sample. Yes, even a bash script can handle RQ messages (which was surprising to me!)
+The main drawback with BASH as an RQ script is how it deals with functions. I would only use it for
+fairly simple scripts.</p>
+
+<p><a name='section_Queue_Script_Api'></a></p>
+
+<a name="Queue.Script.Api"></a>
+<h2>Queue Script Api</h2>
+
+<p><a name='section_Environment'></a></p>
+
+<a name="Environment"></a>
+<h3>Environment</h3>
+
+<p>When a queue has a message to process, and a slot is available to run, the queue script
+will be executed in a particular environment. This environment passes information about the message
+to the script via two ancient forms of Interprocess Communication: Environment variables and the filesystem.</p>
+
+<p>Current Dir = <que>/<state>/<short msg id>/job/</p>
+
+<p>Full Msg ID = host + q_name + msg_id</p>
+
+<p>ENV[&ldquo;RQ_SCRIPT&rdquo;]     = The script as is defined in config file
+ENV[&ldquo;RQ_REALSCRIPT&rdquo;] = The fully realized path (symbolic links followed, etc)
+                       Should be equivalent to ARGV[0]</p>
+
+<p>ENV[&ldquo;RQ_HOST&rdquo;]       = Base URL of host (Ex. &ldquo;http://localhost:3333/&rdquo;)
+ENV[&ldquo;RQ_HOSTNAMES&rdquo;]  = Base URLs of host (aliases) (Ex. &ldquo;http://localhost:3333/ http://butter:1234/&rdquo;)
+                       Split by space</p>
+
+<p>ENV[&ldquo;RQ_DEST&rdquo;]       = Msg Dest Queue (Ex. http://localhost:3333/q/test/)</p>
+
+<p>ENV[&ldquo;RQ_DEST_QUEUE&rdquo;] = Just Queue Name (Ex. &lsquo;test&rsquo;)</p>
+
+<p>ENV[&ldquo;RQ_MSG_ID&rdquo;]     = Short msg id (Ex. &ldquo;20091109.0558.57.780&rdquo;)</p>
+
+<p>ENV[&ldquo;RQ_FULL_MSG_ID&rdquo;] = Full msg id of message being processed
+                       (Ex. http://vidxcode27.vbtrll.com:3333/q/test/20091109.0558.57.780)</p>
+
+<p>ENV[&ldquo;RQ_MSG_DIR&rdquo;]    = Dir for msg (Should be Current Dir unless dir is changed
+                       by script)</p>
+
+<p>ENV[&ldquo;RQ_PIPE&rdquo;]       = Pipe FD to Queue management process</p>
+
+<p>ENV[&ldquo;RQ_COUNT&rdquo;]      = Number of times message has been relayed or processed</p>
+
+<p>ENV[&ldquo;RQ_PARAM1&rdquo;]     = param1 for message
+ENV[&ldquo;RQ_PARAM2&rdquo;]     = param2 for message
+ENV[&ldquo;RQ_PARAM3&rdquo;]     = param3 for message
+ENV[&ldquo;RQ_PARAM4&rdquo;]     = param4 for message</p>
+
+<p>ENV[&ldquo;RQ_FORCE_REMOTE&rdquo;] = Force remote flag</p>
+
+<p>ENV[&ldquo;RQ_PORT&rdquo;]       = port number for RQ web server, default = 3333</p>
+
+<p>ENV[&ldquo;RQ_ENV&rdquo;]        = &lsquo;production&rsquo;, &lsquo;development&rsquo;, &lsquo;test&rsquo;, &lsquo;stage&rsquo;
+ENV[&ldquo;RQ_VER&rdquo;]        = version of rq</p>
+
+<p><a name='section_Logs_and_Attachments'></a></p>
+
+<a name="Logs.and.Attachments"></a>
+<h3>Logs and Attachments</h3>
+
+<p><a name='section_Pipe_Protocol'></a></p>
+
+<a name="Pipe.Protocol"></a>
+<h3>Pipe Protocol</h3>
+
+<p><a name='section_RQ_Server_API'></a></p>
+
+<a name="RQ.Server.API"></a>
+<h2>RQ Server API</h2>
+
+<p><a name='section_REST'></a></p>
+
+<a name="REST"></a>
+<h3>REST</h3>
+
+<p>RQ traditionally runs on port 3333.</p>
+
+<p><a name='section_cli'></a></p>
+
+<a name="cli"></a>
+<h3>cli</h3>
+
+<p><a name='section_Unix_Domain_Sockets'></a></p>
+
+<a name="Unix.Domain.Sockets"></a>
+<h3>Unix Domain Sockets</h3>
+
+<p><a name='section_Special_Queues'></a></p>
+
+<a name="SpecialQueues"></a>
+<h2>SpecialQueues</h2>
+
+<p><code>cleaner</code> - this queue removes old messages
+<code>relay</code> - this queue sends messages to a separate system
+Whenever RQ is given a message that is destined for a separate host, the message actually
+goes into this queue.</p>
+
+<p><code>rq_router</code> - this queue handles the &lsquo;RQ Router&rsquo; mode described in the
+<a href="#section_For_The_Ops_People">For The Ops People</a> below.</p>
+
+<p><code>webhook</code> - this queue does webhook notifications for any message that requests it</p>
+
+<p><a name='section_Patterns'></a></p>
+
+<a name="Patterns"></a>
+<h2>Patterns</h2>
+
+<p><a name='section_Ruby_on_Rails'></a></p>
+
+<a name="Ruby.on.Rails"></a>
+<h3>Ruby on Rails</h3>
+
+<p>Typically, what we have done to run Rails code is to just have the <code>queue script</code>
+setup the environment and run the <code>./script/runner</code> facility that rails provides..</p>
+
+<p><a name='section_Master_Script'></a></p>
+
+<a name="Master.Script"></a>
+<h3>Master Script</h3>
+
+<p><a name='section_Webhooks'></a></p>
+
+<a name="Webhooks"></a>
+<h3>Webhooks</h3>
+
+<p><a name='section_Deploying_Code'></a></p>
+
+<a name="Deploying.Code"></a>
+<h3>Deploying Code</h3>
+
+<p><a name='section_For_The_Ops_People'></a></p>
+
+<a name="For.The.Ops.People"></a>
+<h2>For The Ops People</h2>
+
+<p>RQ can do a few things that aren&rsquo;t obvious above.</p>
+
+<p>One important topic to cover is the &lsquo;RQ Router&rsquo; mode. In this mode, you basically have
+a system or pair of systems set up to process.</p>
+
+<p><a name='section_Monitoring'></a></p>
+
+<a name="Monitoring"></a>
+<h3>Monitoring</h3>
+
+<p><a name='section_Queue_States'></a></p>
+
+<a name="Queue.States"></a>
+<h3>Queue States</h3>
+
+<p><a name='section_Deploying_Code'></a></p>
+
+<a name="Deploying.Code"></a>
+<h3>Deploying Code</h3>
+
+<p><a name='section_For_The_QA_People'></a></p>
+
+<a name="For.The.QA.People"></a>
+<h2>For The QA People</h2>
+
+<p>A question that comes up occassionaly is, how do I test an RQ script?</p>
+
+<p>Right now, the best answer is to create a test environment with the RQ server and queue set up.</p>
+
+<p>Then inject messages into the queue and verify that the messages are consumed and processed correctly.</p>
+
+<p><a name='section_Internals'></a></p>
+
+<a name="Internals"></a>
+<h2>Internals</h2>
+
+<p>Currently RQ is written in Ruby.
+Ruby definitely has its problems, but overall was an excellent choice.
+For more on that decision, see the <a href="#secion_History">History</a> below.</p>
+
+<p>RQ depends heavily on the Unix API.</p>
+
+<p>We use Unix Domain Sockets for the primary RPC mechanism. They work just like TCP sockets, except
+we don&rsquo;t have to worry about network security. You rendezvous with the listening process via a
+special file on the filessystem. They are better than pipes since they provide 2 way communication.</p>
+
+<p>There are 3 primary systems that make up RQ. The rq-mgr process, the individual rq queue processes, and the
+web server process.</p>
+
+<p>The primary process is the rq-mgr process. It sets up a Unix Domain socket and communicates via that for
+its primary API. Its
+primary function is to watch over and restart the individual rq <em>queue</em> processes. It maintains a standard
+Unix pipe to the child rq process to detect child death.</p>
+
+<p>Each queue gets its own process. They also communicate . These monitor their queue directories and worker processes. They have
+the state of the &lsquo;que&rsquo; queue in memory. It also uses a standard unix pipe to communicate with the rq-mgr.
+For queue scripts it maintains.</p>
+
+<p>The web server exists to give RQ a human (HTML) and non-human (REST) interface using the HTTP standard. This makes
+it easy to use via a browser, cURL, or with just about any HTTP lib that comes with any language.</p>
+
+<p><a name='section_Persistence'></a></p>
+
+<a name="Persistence"></a>
+<h3>Persistence</h3>
+
+<p>The system</p>
+
+<p><a name='section_Relay'></a></p>
+
+<a name="Relay"></a>
+<h3>Relay</h3>
+
+<p><a name='section_FAQ'></a></p>
+
+<a name="FAQ"></a>
+<h2>FAQ</h2>
+
+<p><a name='section_Philosophy'></a></p>
+
+<a name="Philosophy"></a>
+<h2>Philosophy</h2>
+
+<p>When working in distributed systems, you will eventually learn that some part of the system will be down or unavailable
+for many unknown reasons. For example,</p>
+
+<ul>
+<li>DNS update breaks dns in infrastructure</li>
+<li>Change or failure in network switch makes</li>
+</ul>
+
+
+<p>Also, when working in a large system, you end up having many parts that are important, but not the critical path.
+There are also many layers, and developers cannot anticipate all of the different errors that can occur.
+Given the lack of priority, sometimes you just need a system that is easy to diagnose and fix.</p>
+
+<p>Unfortunately, most systems are designed so that the framework to deal with the above is left to the engineers.
+For example, everybody agrees that errors are bad and will occur. Yet there are many systems that will silently
+ ignore errors.</p>
+
+<p>There is also a general lack of understanding of Unix best practices. For example, when DHH proclaimed to
+&lsquo;cheat&rsquo; by running ImageMagick in a separate process, this was a huge revelation to the community.
+Overall, people</p>
+
+<p>RQ is designed to mitigate a large portion of this.</p>
+
+<p>It is process based. This eliminates the single message taking down the whole system problem</p>
+
+<p><a name='section_History'></a></p>
+
+<a name="History"></a>
+<h2>History</h2>
+
+<p>During my career, it was common to see people rediscover the need for queueing systems over and over again.
+Typically, there is a spectrum for queueing systems. On one end there is the high-speed, message bus
+type system that runs a stock exchange. On the other end of the spectrum, you could consider email.</p>
+
+<p>Typically, properly implemented queueing systems required serious infrastructure.
+In fact, because of performance issues, most of these do not persist to disk.
+The high-end ones have complex APIs and usually are designed for small message sizes.</p>
+
+<p>Then there are the home grown systems which are usually implemented on Redis or memcache</p>
+
+<p>Then there are the basic ones that run off of a SQL database.</p>
+
+<p>All of these require external systems to handle the state.</p>
+
+<p>I decided to make several bets:</p>
+
+<ol>
+<li>There might be a quadrant for a general purpose, lightweight queue manager that existed per machine</li>
+<li>The system should be able to move huge files</li>
+<li>Ruby was a <em>good enough</em> systems language</li>
+<li>The Ruby VM would be much better within a few years</li>
+<li>The Unix filesystem would be fast enough</li>
+</ol>
+
+
+<p>However, only a few of these panned out.</p>
+
+<p>At the time, it was the goto language of choice at BrightRoll.
+Other languages were considered that were significantly different than Ruby, but didn&rsquo;t seem
+appropriate.</p>
+
+<ul>
+<li>Java - memory footprint is way too high. POSIX support is poor (process control, signals, etc.).</li>
+<li>Python - practically equivalent to Ruby, and most were rubyists</li>
+<li>NodeJS - was not nearly baked, very promissing. They are the only system to get Unix since C.</li>
+<li>Go / Golang - may not have existed. If it did, it surely was not baked.</li>
+<li>Erlang - interesting language under consideration. I really liked the concurrency model, but the
+         environment was way too out of our experience zone.</li>
+<li>Lisp, ML, Haskell,  etc. - A lot like Erlang, except without a good concurrency model.</li>
+<li>C - would take way too much time</li>
+<li>C++ - even more time than C</li>
+</ul>
+
+
+<p>My goals were:</p>
+
+<ul>
+<li>Get something running</li>
+<li>Should be easy to install (think PHP apps&hellip; through the browser)</li>
+<li>Should be easy to update (think Wordpress)</li>
+<li>No dependencies with Ruby (it should just work)</li>
+</ul>
+
+
+<p>Of all of those, only the first occurred.</p>
+
+<p>Again, Ruby was a good choice.
+It was pretty easy to get certain features implemented and into production. The three biggest
+drawbacks to ruby were</p>
+
+<ol>
+<li>Poor IO support for async IO</li>
+<li>GEMS. GEM conflicts are a huge problem.</li>
+<li><p>Overall speed of the language</p></li>
+<li><p>When it was initially developed on Mac OS X, it was immediately discovered that the directories would have
+to be named (.noindex) as the activity of RQ caused a tremendous load on Spotlight.
+Now I do my development of RQ via ssh to a VirtualBOX Ubuntu instance.</p></li>
+<li>We ran into the GLIBC issue where DNS would no longer round-robin.</li>
+</ol>
+
+
+<p>Yet, even with these drawbacks, the overall architecture proved to work pretty well. The forking model hides
+most of the issues that someone would run into with.</p>
+
+<p><a name='section_Future'></a></p>
+
+<a name="Future"></a>
+<h2>Future</h2>
+
+<ul>
+<li><p>Address weaknesses</p>
+
+<ul>
+<li>Performance - Light message throughput is poor due to Unix filesystem performance</li>
+<li>Distributed Worker Model - balanced systems</li>
+<li>Stronger API for Queue Scripts based on JSON</li>
+<li>Better integration with graphite</li>
+</ul>
+</li>
+<li><p>Rewrite the components of the system in C</p>
+
+<ul>
+<li>This will keep the memory requirements lower than any other system</li>
+<li>This avoids all of the negatives that Ruby brings when doing systems work</li>
+<li>Much better system level control and accounting is possible</li>
+</ul>
+</li>
+<li>Distributed Worker Model with MongoDB
+
+<ul>
+<li>Without changing the Queue Script API, have workers check in
+with a cluster of RQ managers</li>
+<li>These managers use MongoDB for persistent queue state</li>
+<li>MongoDB provides a highly reliable, single-data center store</li>
+</ul>
+</li>
+<li>Have another persistent store</li>
+</ul>
+
+
+<p><a name='section_Meta'></a></p>
+
+<a name="Meta"></a>
+<h2>Meta</h2>
+
+<p>This document was produced via Emacs in Viper Mode.</p>
+
+<p>This project uses <a href="http://semver.org/">Semantic Versioning</a>.</p>
+
+<p><a name='section_Contributors'></a></p>
+
+<a name="Contributors"></a>
+<h2>Contributors</h2>
+
+<p>Dru Nelson
+http://github.com/drudru
+@drudru</p>
+
+<p>The overall concepts are very similar to the original UUCP systems that use to span the internet.</p>
+
+<p>The idea for the directory storage was copied from the Qmail architecture by Dan J. Bernstein.</p>
+
+<p>The code for RQ was largely written in-house.</p>
+
+<p>Thanks to the BrightRoll engineers who used the system to help work the bugs out.</p>
+
+<p>http://github.com/TJeezy is largely responsible for making RQ look a lot better.</p>
+
+<p>I looked to resque for inspiration for this documentation. I treat it as a goal that I still
+want to achieve.</p>
+
+<a name="Ye.Old.Stuff"></a>
+<h2>Ye Old Stuff</h2>
+
+<a name="SETUP"></a>
+<h2>SETUP</h2>
+
+<a name="TODO"></a>
+<h2>TODO</h2>
+
+<ul>
+<li>In UI, on creation -> specify n params in form</li>
+<li>In backend, turn n params into param1 json hash
+
+<ul>
+<li>param1 should just become the only param (no need to have 4 enumerated)</li>
+</ul>
+</li>
+</ul>
+
+
+<p>Queue Script Processing</p>
+
+<p>Each queue script runs as a child of an rq process for that queue.
+The queue script process communicates with that process via a simple pipe.
+The stdio fds (stdout and stderr) are redirected to a file.</p>
+
+<p>By sending the following:</p>
+
+<p>CMD SPACE TEXT NL</p>
+
+<p>Where:</p>
+
+<p>CMD = run | done | err | relayed | resend | dup</p>
+
+<p>For obvious reasons, the TEXT cannot have any newline characters.
+The &lsquo;TEXT&rsquo; should be small in size.  There is no limit, but realistically, anything over 200 characters is probably unneccessary.</p>
+
+<p>CMD Codes</p>
+
+<p>run - When the script is running, it is in &lsquo;run&rsquo;. To send an updated status to the operator about the operation of the script, just send a &lsquo;run&rsquo; with TEXT as the status.
+example: run Processed 5 of 15 log files.<nl></p>
+
+<p>done - When the script is finished, and has successfully performed its processing. It sends this response. It <em>must</em> also exit with a 0 status or it will go to &lsquo;err&rsquo;.
+example: done done<nl></p>
+
+<p>err - When the script has failed, and we want to message to go to &lsquo;err&rsquo; (probably to notify someone that something has gone wrong and needs operator attention). Any exit status at this point will take the message to &lsquo;err&rsquo;.
+example: err Mysql dump script failed.<nl></p>
+
+<p>resend - When the script has failed, but we want to just retry running it again, we respond with a &lsquo;resend&rsquo;. This will cause a message to go back into &lsquo;que&rsquo; with a due time of X seconds into the future.
+resend TEXT = DUE DASH REASON
+DUE = num seconds to wait from now
+REASON = free text
+example: resend 300-Memcached reflow-west.btrlll.com not responding.<nl></p>
+
+<p>relayed - This is used by the relay queue and should not be used by a user queue script.</p>
+
+<p>dup - Create a clone of the existing message (including attachments) to the new destination.
+NOTE: This is the first status response that is a 2 way conversation with the queue process.
+If the queue does match /^https?:/, then it goes to &lsquo;relay&rsquo; to be sent on. Otherwise it is considered
+a local. If relay or the local queue doesn&rsquo;t exist or is admin DOWN/PAUSE, then the the response
+will indicate failure. This resets the current count for the newly generated message.</p>
+
+<p>dup TEXT = DUE DASH FUTUREFLAG DASH NEWDEST
+DUE = num seconds to wait from now (USE 0 for NOW) to run
+FUTUREFLAG = &lsquo;X&rsquo; for now now
+NEWDEST = proper RQ destination queue
+example: dup 0-X-http://blocking08.vbtrll.com/q/barrier_wait<nl></p>
+
+<p>response:
+STATUS SPACE CONTENT
+STATUS = ok | fail
+CONTENT = for ok: <new message id> | for fail: <some failure message></p>
+
+<p>RQ</p>
+
+<p>RQ is a simple queuing system based on message passing.</p>
+
+<p>Every</p>
+
+<p>Architecture</p>
+
+<p>The system exists in one directory. The commands to operate on a queue are bound to the queues in the directory the commands exist in.</p>
+
+<p>The system is composed of a web server and a supervisor process. The webserver is Sinatra running on Rack running on Webrick. This may change.
+All processes are single threaded.
+The web server communicates with the supervisor process on a unix domain socket.</p>
+
+<p>There will only be one supervisor process.
+The supervisor process starts up queue supervisor (quesup) processes for all the queues.
+Any children of any process will have a pipe to their parent. If that pipe goes away, a child should shut down immediately.</p>
+
+<p>There should only be one quesup for a given queue. A file-lock will be used for safety.
+Since there is only one, no locks are required in the filesystem to manage the queue for injection.</p>
+
+<p>It handles all communication and</p>
+
+<p>REST API Influences
+http://wiki.developer.myspace.com/index.php?title=RESTful_API
+Couch DB
+http://wiki.apache.org/couchdb/HTTP_Document_API</p>
+
+<p>BIN Dir</p>
+
+<p>We have a binary directory for future CLI compatability.</p>
+
+<p>Special queue: relay</p>
+
+<p>The queue states</p>
+
+<p>prep
+que
+run
+  - starting
+  - running
+  - finishing
+done
+  - relay
+err</p>
+
+<p>Two-Phase Commit for Protocol</p>
+
+<p>&hellip; avoids duplicate sends or</p>
+
+<p>Sender         Receiver</p>
+
+<hr />
+
+<p>if no id,
+         &mdash;&ndash;> alloc_id
+   id    &lt;&mdash;&ndash;</p>
+
+<p>else
+ use stored
+ id
+         &mdash;&ndash;> prep, id
+ ok |        &lt;&mdash;&ndash;
+  -> continue
+ fail/unknown |    &lt;&mdash;&ndash;
+  -> fail job
+ ok/already commited |    &lt;&mdash;&ndash;
+  -> mark job done</p>
+
+<p>continue:
+  modify or make
+  attachments
+         &lt;&mdash;&ndash;>  attach/etc</p>
+
+<p>ok, commit
+          &mdash;&ndash;>  commit
+ ok |        &lt;&mdash;&ndash;
+  -> mark job done</p>
+
+<ul>
+<li>Note - it is possible to have duplicate sends.
+If a message gets commited, but we feel it is a fail,
+we may eventually try to resend. If we hit a new machine,
+then we will restart the process and resend. If the old
+machine comes back up, it will retart its message handling.</li>
+</ul>
+
+
+<a name="goals.get.a.web.server.install.up"></a>
+<h1>goals get a web server install up</h1>
+
+<a name="install.queu.dir"></a>
+<h1>install queu dir</h1>
+
+<a name="Create.IPC.system"></a>
+<h1>Create IPC system</h1>
+
+<a name="Restart.Server.Command"></a>
+<h1>Restart Server Command</h1>
+
+<a name="Test.non.block"></a>
+<h1>Test non block</h1>
+
+<a name="See.server.Uptime..JSON.result."></a>
+<h1>See server Uptime (JSON result)</h1>
+
+<a name="Create.queues..local.and.other."></a>
+<h1>Create queues (local and other)</h1>
+
+<a name="See.Queue.List..JSON.result."></a>
+<h1>See Queue List (JSON result)</h1>
+
+<a name="Change.queue.process.name"></a>
+<h1>Change queue process name</h1>
+
+<a name="Fix.bug.with.spaces.in.queue.names.and.script.names"></a>
+<h1>Fix bug with spaces in queue names and script names</h1>
+
+<a name="Detect.queue.death.and.restart"></a>
+<h1>Detect queue death and restart</h1>
+
+<a name="Have.QueueSupervisor.shut.down.children.upon.shutdown"></a>
+<h1>Have QueueSupervisor shut down children upon shutdown</h1>
+
+<a name="Git.checkin"></a>
+<h1>Git checkin</h1>
+
+<a name="Lite.Click.on.queues.to.dig.deeper"></a>
+<h1>Lite Click on queues to dig deeper</h1>
+
+<ul>
+<li>main page has links</li>
+<li>queue page has info</li>
+</ul>
+
+
+<hr />
+
+<ul>
+<li>Design doc -> simple supervisor model, simple understanding of locking</li>
+<li>Children detect parent death and die</li>
+<li>Multiple queue dirs
+  [&lsquo;<em>lock&rsquo;, &lsquo;w&rsquo;], -> lockfile for queue
+  [&lsquo;</em>log&rsquo;,  &lsquo;w&rsquo;],
+  [&lsquo;<em>tmp&rsquo;,  &rsquo;d'],
+  [&lsquo;prep&rsquo;,  &rsquo;d'], -> prep
+  [&lsquo;que&rsquo;,   &rsquo;d'], -> queued
+  [&lsquo;run&rsquo;,   &rsquo;d'], -> running (for a 1 worker queue, 1 at a time)
+  [&lsquo;pause&rsquo;, &rsquo;d'], -> running (for a 1 worker queue, 1 at a time)
+  [&lsquo;done&rsquo;,  &rsquo;d'], -> done (removed, errored and removed, etc)
+  [&lsquo;</em>err&rsquo;,  &rsquo;d'], -> error (malformed, unfinished?)
+?A New FileQue class</li>
+</ul>
+
+
+<p>+Sleep random for inject
++Change &lsquo;queue&rsquo; to &lsquo;q&rsquo; in message id and url
++Change &lsquo;messages&rsquo; status to show all q&rsquo;s
++Have q inject go to actual q
+ + change form
+ + change controller
++ Reverse presentation of messages in a queue</p>
+
+<ul>
+<li>Queue a job via cmd line (using ruby lib)
+
+<ul>
+<li>simple message</li>
+<li>file attachment via same filesystem (check stat.dev for equality)</li>
+<li>file attachment via diff filesystem (make a temp file, copy file)</li>
+<li>return full msg_id with q_name back</li>
+</ul>
+</li>
+<li>Lite show/delete routing</li>
+<li>Lite delete message</li>
+<li>Lite show message</li>
+</ul>
+
+
+<p><em>milestone 1</em></p>
+
+<p>Have a local queue script deliver message to a local queue
+ + scheduler wakes up on injection
+ + Create a simple script that writes its ENV to a log (verify file descriptors,etc)
+ + run a script in an environment for message
+  + Have a script to run. if script fails. queue is stopped.
+  + Child script is monitored by this process
+    + notice pipe, exit
+   + queue states
+     +run - started / process message
+     +run - running / (time remaining x secs -or- Ykb of Zkb remaining
+                       -or- X bytes of Z bytes processed)
+     -done  - Proper status exit with 0 process return (diff fileque)
+     -fail  - Any process exit without commit (diff fileque)
+     -relay - Another proper status exit - new ID
+     -reschedule - Another proper status exit - same ID, new due date
+    - properly move job to done when done
+   x queue reads run states from disk on restart
+  x lite restart queue, re-run scheduler
+   + script runs and has an environment
+   + script runs and has an environment and a log
+     - should that be via IPC? (cheap)
+     x or via a program? (expensive)
+    x both
+ + a format that is bash friendly
+ + KINDA - a buffer for pipe reads? (must do properly)
+ + test with Bash
+ + handle proper completion done/fail/relay/resend
+  + done - just move into that dir
+  + fail - move into that dir
+  + relay - indicate that the job was relayed to a url
+  + resend - delay time - requeue, and log some messages</p>
+
+<p> Tuesday
+ + a simple test curl script to create a queue and messages to it
+  + runs tests, detects if tests pass
+    + sets up two queues (relay and test)
+    + See why messages are going into relay
+    + test script responds to param1
+    + script checks job status
+ + sends messages
+    + 1 for done
+    + 1 for fail/err
+    + 1 for done with non-zero exit (err)
+    + 1 for resend, detect that it was resent
+    + Increment RQ_COUNT for every resend
+ + a real relay script in ruby that looks at dest of message, notices that
+   routing
+   + if it is this host
+   + if it isn&rsquo;t this host, fail at this time
+   + script to test relay
+   + 1 for relay, get relay redirect location and done on final queue
+   + Store ID
+   + Use ID
+ + test router script
+ + local queue on same host
+ + Queue status message should be updated for fail, pause, done, err</p>
+
+<ul>
+<li><p>Test file upload</p>
+
+<ul>
+<li>Hand run curl script</li>
+<li>Code to put file as attachment into system</li>
+<li>Attach returns md5 of attachment</li>
+<li>Test script to upload a file (aka curl) and verify md5</li>
+</ul>
+</li>
+<li><p>milestone 2 *</p></li>
+<li>Have a test script test this end to end
+
+<ul>
+<li>test script uses rq cmd so we need a way to get the list of attachments</li>
+<li>the list should have the md5</li>
+</ul>
+</li>
+<li>Have relay queue script deliver message to a remote queue</li>
+<li>Require relay script to do multi-part form upload? (nope, curl)</li>
+</ul>
+
+
+<p><em>milestone 3</em>
+ - Have a master test script to run the series of test scripts
+ - Have a versioning system
+ - DONE</p>
+
+<p>Implement CDB push system
+ - Delivers to local
+   - Relayed to cdb_push script
+   - cdb_push creates new cdb file
+   - cdb_push preps new messages to other machines
+   - cdb_push waits for all messages to complete or errors out
+   - remote machines script moves file into proper location as proper user</p>
+
+<p><em>milestone 3</em>
+ - parallel job running
+ - test delete message</p>
+
+<p>Later&hellip;
+ - Test two phase properly
+ - Code to return md5s of attachments
+ - Code to return md5s and mime/types of attachments
+ - Store due dates for jobs in que
+ - web queue status for done is propper
+ - Lower priority of all children
+ - Put children in process groups
+ - Properly detect signals that suspend processes
+ - Insure that all children get killed (hmm a vote for C)
+   Do Linker tricks later
+ - Make a partial for queue status
+ - Master qmgr cleans up all processes if queue doesn&rsquo;t do so properly
+- Bloom filter for Done
+  - might be in X, if not - then definitely not
+  - might be just lru / array of Y most recent
+- System for handling a down machine
+  - Tiny window where client doesn&rsquo;t get updated location
+  - Admins push jobs somewhere else, generally one machine
+  - Admins have host that responds to that queue and sends redir
+    response to client
+- Proper way to migrate people from a machine
+  - Take machine out of pool of machines
+  - Watch traffic die down, all jobs flush (once jobs completed,
+  generally safe to take down)
+  - Take machine offline</p>
+
+<ul>
+<li>System for respawn flooding (aka wait * 2)</li>
+<li>catch child death via sigchild</li>
+<li>Lite View queue log</li>
+<li>Lite View mesg log</li>
+<li>Attach returns md5</li>
+<li>Alternative to webrick</li>
+<li>Resource managment (memory needs - disk, cpu, etc.)
+CLI show message
+CLI show queue
+Implement lock files for all queues.
+Have TMS keep track of last 3 completed jobs per user (in session)
+Have TMS keep track of active jobs
+-Message list has length param for packet length on both sides
+Lite queue mod administrative and operational state</li>
+<li>Set to up or down</li>
+</ul>
+
+
+<p>Control queue states (clean shutdown, hold, go)
+Refactor Quemgr to be like queue</p>
+
+<p>Have a script for another queue (cdb push)</p>
+
+<p>Have a local queue script move job to a remote queue</p>
+
+<p>DONE</p>
+
+<p>Restart Server Command via web
+View log via web (last 10 entries)</p>
+
+<a name="Simple.IPC.via.cmd.line.or.web.to.running.process"></a>
+<h1>Simple IPC via cmd line or web to running process</h1>
+
+<a name="Core.is.Unix.Domain..Web.Proxies"></a>
+<h1>Core is Unix Domain, Web Proxies</h1>
+
+<p>Have the queue send job to destination queue (local machine, local filesystem)
+Have remote queue deliver
+Have remote queue run</p>
+
+<p>Good links on Unix Process stuff:</p>
+
+<p>Daemons in unix
+http://www.enderunix.org/docs/eng/daemon.php</p>
+
+<p>Good Link on Straight Up, Old Skool Pipes
+http://www.cim.mcgill.ca/~franco/OpSys-304-427/lecture-notes/node28.html</p>
+
+<p>Process control
+http://www.steve.org.uk/Reference/Unix/faq_2.html</p>
+
+<p>http://en.wikipedia.org/wiki/Process_group</p>
+      <p><em>VERSION</em></p>
+    </div>
+  </body>
+</html>

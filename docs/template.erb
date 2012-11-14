@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
   </head>
   <body class="production">
-    <div class="container">
+    <div class="container documentation">
       <div id="top-header">
         <span class="docs"><a href="/docs/index.html">docs</a></span>
       </div>
@@ -19,12 +19,7 @@
         <a href="/">rq</a>
         <% if params[:name] && params[:name] != "index" %>
           >
-          <a href="/docs/index.html">docs</a>
-          >
           <%= params[:name] %>
-        <% else %>
-          >
-          docs
         <% end %>
         </h1>
 
