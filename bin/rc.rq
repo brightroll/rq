@@ -1,48 +1,54 @@
-#!/bin/sh
+#!/bin/bash
+
+COMMAND=$1
+
+set -u
+set -e
 
 PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 export PATH
 
-if [ ! -d /rq ] ; then
-	# RQ not installed
-	exit 0 
+if [ ! -d /rq/current ] ; then
+	echo "RQ is not installed at /rq/current"
+	exit 1
 fi
 
-me=`id -u`
+case $COMMAND in
+start)
+	RQPID=$(ps -eaf | awk '/rq-mgr/ && !/grep/ { print $2 }')
+	if [ "$RQPID" ]; then
+		echo "RQ is already running at pid $RQPID"
+		exit 2
+	fi
 
-if [ $me -eq 0 ] ; then
-	#TODO this needs to get changed on some hosts as they run as user pr
-	#will remove pr dependencies in the future
-	exec sudo -u br -i /etc/init.d/rq $*
-fi
+	sudo -u br sh -c "cd /rq/current; /rq/current/bin/web_server.sh"
+	sudo -u br sh -c "cd /rq/current; /rq/current/bin/queuemgr_ctl start"
+;;
+stop)
+	# Stop the web interface
+  for pid in $(ps ax | awk '/web_server/ && !/grep/ { print $1 }')
+	do
+		echo "Stopping RQ web_server"
+		kill $pid
+	done
 
-case $1 in
-	start)
-		# don't start unless not running already
-		if [ `ps ax | grep '\[rq' | grep -v grep | wc -l` -eq 0 ]
-		then
-			ulimit -c unlimited
-			cd /rq/current
-			/rq/current/bin/web_server.sh
-			/rq/current/bin/queuemgr_ctl start
-		fi
-	;;
-	stop)
-		cd /rq/current
-		/rq/current/bin/queuemgr_ctl stop
-		# kill any procs still running
-		for pid in `ps ax | grep '\[rq' | grep -v grep | awk '{print $1}'`
-		do
-			kill $pid
-		done
-		for pid in `ps ax | grep 'web_server' | grep -v grep | awk '{print $1}'`
-		do
-			kill $pid
-		done
-	;;
-	restart)
-		stop
-		start
-	;;
+	# Stop the queues
+	cd /rq/current; /rq/current/bin/queuemgr_ctl stop
+
+	# Make sure the queues are stopped
+  for pid in $(ps ax | awk '/\[rq/ && !/grep/ { print $1 }')
+	do
+		echo "Killing undead rq $pid"
+		kill $pid
+	done
+;;
+restart)
+	$0 stop
+	$0 start
+;;
+*)
+	echo "Usage: $0 start | stop | restart"
+	exit 1
+;;
 esac
 
