@@ -1,6 +1,7 @@
 #!/bin/bash
 
 COMMAND=$1
+RQDIR=/rq/current
 
 set -u
 set -e
@@ -15,14 +16,14 @@ fi
 
 case $COMMAND in
 start)
-	RQPID=$(ps -eaf | awk '/rq-mgr/ && !/grep/ { print $2 }')
+	RQPID=$(ps ax | awk '/rq-mgr/ && !/grep/ { print $1 }')
 	if [ "$RQPID" ]; then
 		echo "RQ is already running at pid $RQPID"
 		exit 2
 	fi
 
-	sudo -u br sh -c "cd /rq/current; /rq/current/bin/web_server.sh"
-	sudo -u br sh -c "cd /rq/current; /rq/current/bin/queuemgr_ctl start"
+	sudo -u br $RQDIR/bin/web_server.sh
+	sudo -u br $RQDIR/bin/queuemgr_ctl start
 ;;
 stop)
 	# Stop the web interface
@@ -33,7 +34,7 @@ stop)
 	done
 
 	# Stop the queues
-	cd /rq/current; /rq/current/bin/queuemgr_ctl stop
+	sudo -u br $RQDIR/bin/queuemgr_ctl stop
 
 	# Make sure the queues are stopped
   for pid in $(ps ax | awk '/\[rq/ && !/grep/ { print $1 }')
@@ -43,8 +44,7 @@ stop)
 	done
 ;;
 restart)
-	$0 stop
-	$0 start
+	$0 stop && $0 start
 ;;
 *)
 	echo "Usage: $0 start | stop | restart"
