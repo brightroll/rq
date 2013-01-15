@@ -60,8 +60,7 @@ module RQ
     def init
       # Show pid
       File.unlink('config/queuemgr.pid') rescue nil
-      File.open('config/queuemgr.pid', "w") do
-        |f|
+      File.open('config/queuemgr.pid', "w") do |f|
         f.write("#{Process.pid}\n")
       end
 
@@ -307,7 +306,6 @@ module RQ
         return
       end
 
-
       sock.send("ERROR", 0)
       sock.close
       log("RESP [ ERROR ] - Unhandled message")
@@ -319,13 +317,11 @@ module RQ
       # Remove non-running entries
       @queues = @queues.select { |q| q.pid }
 
-      @queues.each do
-        |q|
+      @queues.each do |q|
         q.status = "SHUTDOWN"
       end
 
-      @queues.each do
-        |q|
+      @queues.each do |q|
         Process.kill("TERM", q.pid) if q.pid
       end
     end
@@ -382,8 +378,7 @@ module RQ
     def load_queues
       queues = Dir.entries('queue').reject {|i| i.include? '.'}
       
-      queues.each do
-        |q|
+      queues.each do |q|
         start_queue q
       end
     end
