@@ -46,6 +46,14 @@ stop)
 		echo "Killing undead rq $pid"
 		kill $pid
 	done
+
+	# Old style names. This code can be removed after Feb 2013
+	for pid in $(pgrep -u $RQUSER -f web_server.rb\|\\[rq || exit 0)
+	do
+		echo "Killing old-style rq $pid"
+		kill $pid
+	done
+	# End of old style names.
 ;;
 restart)
 	$0 stop && $0 start
