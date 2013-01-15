@@ -197,7 +197,7 @@ module RQ
 
       child_pid = fork do
         # Setup env
-        $0 = "[rq-que] [#{@name}] [#{msg_id}]"
+        $0 = "[rq-msg] [#{@name}] [#{msg_id}]"
         begin
 
           #child only code block
