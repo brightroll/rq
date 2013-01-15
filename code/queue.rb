@@ -113,7 +113,7 @@ module RQ
 
       child_pid = fork do
         queue_path = "queue/#{options['name']}"
-        $0 = "[rq] [#{options['name']}]"
+        $0 = "[rq-que] [#{options['name']}]"
         begin
           parent_wr.close
           #child only code block
@@ -197,7 +197,7 @@ module RQ
 
       child_pid = fork do
         # Setup env
-        $0 = "[rq] [#{@name}] [#{msg_id}]"
+        $0 = "[rq-que] [#{@name}] [#{msg_id}]"
         begin
 
           #child only code block
