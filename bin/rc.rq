@@ -26,7 +26,7 @@ start)
 		exit 2
 	fi
 
-	sudo -u $RQUSER $RQDIR/bin/web_server.sh
+	sudo -u $RQUSER $RQDIR/bin/web_server.rb server
 	sudo -u $RQUSER $RQDIR/bin/queuemgr_ctl start
 ;;
 stop)
