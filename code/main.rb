@@ -1,10 +1,11 @@
 require 'sinatra/base'
 require 'erb'
-load 'code/queuemgrclient.rb'
-load 'code/queueclient.rb'
-load 'code/hashdir.rb'
-load 'code/portaproc.rb'
-load 'code/overrides.rb'
+
+require 'code/queuemgrclient'
+require 'code/queueclient'
+require 'code/hashdir'
+require 'code/portaproc'
+require 'code/overrides'
 
 module RQ
   class Main < Sinatra::Base
