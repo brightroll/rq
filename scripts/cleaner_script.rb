@@ -1,35 +1,12 @@
 #!/usr/bin/env ruby
+Dir.chdir(File.expand_path('..', __FILE__))
+$: << '.'
 
 require 'fileutils'
 require 'date'
 require 'time'
 
-$rq_msg_dir = Dir.pwd
-Dir.chdir("#{File.dirname(__FILE__)}")
-require 'hashdir'
-Dir.chdir($rq_msg_dir)
-
-################################################################################
-# Stuff that goes everywhere in RQ
-################################################################################
-
-Dir.glob(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-if Gem::Version.new(Gem::VERSION) < Gem::Version.new('1.8.0')
-  Gem.send :set_paths, gem_paths.join(":")
-else
-  Gem.paths = gem_paths.join(":")
-end
-
-
+require 'code/hashdir'
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
@@ -101,11 +78,11 @@ def remove_old(qname, days)
   clean_queues = ["/done", "/relayed", "/prep", "/queue"]
   clean_queues.each do |cq|
     if File.exists?(qname + cq)
-  
+
       # go by directories and remove any day dir > days + 1
       # then go into the hour dirs and remove by time
       # easier to whack a whole higher level dir then stat everything below it
-      
+
       Dir.glob(qname + cq + "/????????").each do |x|
         if Date.today - Date.strptime(File.basename(x), "%Y%m%d") >= days + 1
           puts "status: removing " + x
@@ -127,9 +104,8 @@ def remove_old(qname, days)
       end
     end
   end
-  
 end
-  
+
 def trim_relay(qpath, num)
   puts "Trimming Relay to #{num} entries"
   STDOUT.flush
