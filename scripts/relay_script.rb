@@ -6,6 +6,7 @@ require 'fileutils'
 require 'fcntl'
 require 'digest'
 require 'resolv-replace'
+require 'json'
 
 def log(mesg)
   puts "\033[0;36m#{$$} - #{Time.now}\033[0m - #{mesg}"
@@ -13,11 +14,6 @@ def log(mesg)
 end
 
 log(Dir.pwd.inspect)
-
-$LOAD_PATH.unshift(File.expand_path("../../../../.."))
-$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/json_pure-1.1.6/lib"))
-$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/rack-1.4.1/lib"))
-require 'json'
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
