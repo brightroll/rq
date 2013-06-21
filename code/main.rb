@@ -17,7 +17,7 @@ module RQ
     set :erb, :trim => '-'
 
     def self.views
-      './code/views'
+      'views'
     end
 
     helpers do
