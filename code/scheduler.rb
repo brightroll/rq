@@ -1,4 +1,3 @@
-
 require 'socket'
 require 'json'
 require 'fcntl'
@@ -17,8 +16,6 @@ module RQ
       @rq_config_path = "./config/"
       @parent_pipe = parent_pipe
       init_socket
-
-      @wait_time = 1
 
       @config = {}
 
@@ -62,11 +59,8 @@ module RQ
           #child only code block
           RQ::Scheduler.log(sched_path, 'post fork')
 
-          # Unix house keeping
-          self.close_all_fds([child_rd.fileno])
-          # TODO: probly some other signal, session, proc grp, etc. crap
+          Daemons.close_io
 
-          RQ::Scheduler.log(sched_path, 'post close_all')
           q = RQ::Scheduler.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
@@ -89,18 +83,6 @@ module RQ
       end
 
       [child_pid, parent_wr]
-    end
-
-    def self.close_all_fds(exclude_fds)
-      0.upto(1023) do |fd|
-        begin
-          next if exclude_fds.include? fd
-          if io = IO::new(fd)
-            io.close
-          end
-        rescue
-        end
-      end
     end
 
     def init_socket
@@ -139,34 +121,19 @@ module RQ
     end
 
     def log(mesg)
-      File.open(@sched_path + '/sched.log', "a") do
-        |f|
+      File.open(@sched_path + '/sched.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
 
-    def shutdown!
-      log("Received shutdown")
-      # TODO: proper oper status
-      # write_status
-      Process.exit! 0
-    end
-
-    def run_scheduler!
-      @wait_time = 60
-
-      # Look at priority queue for things to schedule
-    end
-
     def run_loop
-
       Signal.trap("TERM") do
         log("received TERM signal")
-        shutdown!
+        # TODO: write_status
+        exit 0
       end
 
       while true
-        #run_scheduler!
         sleep 60
       end
     end
