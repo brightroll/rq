@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-Dir.chdir(File.expand_path('..', __FILE__))
+Dir.chdir(File.expand_path('..', File.dirname(__FILE__)))
 $: << '.'
 
 require 'fileutils'
