@@ -1,4 +1,4 @@
-require 'vendor/environment'
+require 'vendor/bundle/bundler/setup'
 require 'code/queuemgrclient'
 
 Dir.chdir(File.join(File.dirname(__FILE__), ".."))

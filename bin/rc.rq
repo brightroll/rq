@@ -28,7 +28,6 @@ start)
 	fi
 
 	if [ "$NLIMIT" ]; then ulimit -n $NLIMIT; fi
-	sudo -H -u $RQUSER $RQDIR/bin/web_server.rb server
 	sudo -H -u $RQUSER $RQDIR/bin/queuemgr_ctl start
 ;;
 stop)

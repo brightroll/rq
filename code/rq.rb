@@ -1,4 +1,4 @@
-require 'vendor/environment'
+require 'vendor/bundle/bundler/setup'
 require 'code/queueclient'
 
 # needs some sort of error handling -- move out of this file
