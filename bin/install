@@ -1,0 +1,106 @@
+#!/usr/bin/env ruby
+$: << File.expand_path('..', File.dirname(__FILE__))
+
+require 'vendor/environment'
+require 'optparse'
+require 'fileutils'
+require 'json'
+require 'code/queue'
+
+# {"env":"stage","port":"3333","host":"mhe-v02-03b.stage.btrll.com","addr":"0.0.0.0","tmpdir":"/rq/tmp"}
+def write_config(data, conffile='config/config.json')
+  FileUtils.mkdir_p('config')
+  File.open(conffile, 'w') do |f|
+    f.write(data.to_json)
+  end
+end
+
+def create_queues
+  # After watching my mds process go nuts
+  # http://support.apple.com/kb/TA24975?viewlocale=en_US
+  FileUtils.mkdir_p('queue.noindex')
+  FileUtils.ln_sf('queue.noindex', 'queue') unless File.symlink?('queue')
+  FileUtils.mkdir_p('scheduler')
+
+  queue = {
+    'name'        => 'relay',
+    'script'      => './code/relay_script.rb',
+    'ordering'    => 'none',
+    'num_workers' => '1',
+    'fsync'       => 'no-fsync',
+    'exec_prefix' => '',
+  }
+  puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+
+  queue = {
+    'name'        => 'webhook',
+    'script'      => './code/webhook_script.rb',
+    'ordering'    => 'none',
+    'num_workers' => '1',
+    'fsync'       => 'no-fsync',
+    'exec_prefix' => '',
+  }
+  puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+
+  queue = {
+    'name'        => 'cleaner',
+    'script'      => './code/cleaner_script.rb',
+    'ordering'    => 'none',
+    'num_workers' => '1',
+    'fsync'       => 'no-fsync',
+    'exec_prefix' => '',
+  }
+  puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+
+  queue = {
+    'name'        => 'rq_router',
+    'script'      => './code/rq_router_script.rb',
+    'ordering'    => 'none',
+    'num_workers' => '1',
+    'fsync'       => 'no-fsync',
+    'exec_prefix' => '',
+  }
+  puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+
+  true
+end
+
+options = {
+  :env    => 'development',
+  :host   => Socket.gethostbyname(Socket.gethostname).first,
+  :port   => 3333,
+  :addr   => '0.0.0.0',
+  :tmpdir => '/rq/tmp',
+}
+
+OptionParser.new do |opts|
+  opts.banner = 'Usage: install [options]'
+
+  opts.on('--env ENV', 'Environment (default: development)') do |v|
+    options[:env] = v
+  end
+  opts.on('--host HOST', 'Hostname (default: fqdn)') do |v|
+    options[:host] = v
+  end
+  opts.on('--port PORT', 'Port (default: 3333)') do |v|
+    options[:port] = v
+  end
+  opts.on('--addr ADDR', 'Listen (default: 0.0.0.0)') do |v|
+    options[:addr] = v
+  end
+  opts.on('--tmpdir DIR', 'Temporary directory (default: /rq/tmp)') do |v|
+    options[:tmpdir] = v
+  end
+  opts.on('--force', 'Force install') do |v|
+    options[:force] = v
+  end
+end.parse!
+
+if !options.delete(:force) && File.exists?('config/config.json')
+  puts 'Already installed'
+  exit 1
+end
+
+write_config(options)
+
+create_queues
