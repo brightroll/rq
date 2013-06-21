@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 $: << File.expand_path('..', File.dirname(__FILE__))
 
-require 'vendor/environment'
 require 'optparse'
 require 'fileutils'
 require 'json'
@@ -24,7 +23,7 @@ def create_queues
 
   queue = {
     'name'        => 'relay',
-    'script'      => './code/relay_script.rb',
+    'script'      => './scripts/relay_script.rb',
     'num_workers' => '1',
     'exec_prefix' => '',
   }
@@ -32,7 +31,7 @@ def create_queues
 
   queue = {
     'name'        => 'webhook',
-    'script'      => './code/webhook_script.rb',
+    'script'      => './scripts/webhook_script.rb',
     'num_workers' => '1',
     'exec_prefix' => '',
   }
@@ -40,7 +39,7 @@ def create_queues
 
   queue = {
     'name'        => 'cleaner',
-    'script'      => './code/cleaner_script.rb',
+    'script'      => './scripts/cleaner_script.rb',
     'num_workers' => '1',
     'exec_prefix' => '',
   }
@@ -48,7 +47,7 @@ def create_queues
 
   queue = {
     'name'        => 'rq_router',
-    'script'      => './code/rq_router_script.rb',
+    'script'      => './scripts/rq_router_script.rb',
     'num_workers' => '1',
     'exec_prefix' => '',
   }
