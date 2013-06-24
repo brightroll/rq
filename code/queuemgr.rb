@@ -1,10 +1,11 @@
-
 require 'socket'
 require 'json'
+require 'fcntl'
 
 require 'code/queue'
 require 'code/queueclient'
 require 'code/scheduler'
+require 'code/web_server'
 require 'version'
 
 def log(mesg)
@@ -66,8 +67,6 @@ module RQ
       # Setup IPC
       File.unlink('config/queuemgr.sock') rescue nil
       $sock = UNIXServer.open('config/queuemgr.sock')
-
-      load_config
     end
 
     def handle_request(sock)
@@ -373,6 +372,13 @@ module RQ
       end
     end
 
+    def start_webserver
+      fork do
+        $0 = '[rq-web]'
+        config = RQ::WebServer.conf_rq_web
+        RQ::WebServer.start_rq_web(config)
+      end
+    end
 
     def load_queues
       queues = Dir.entries('queue').reject {|i| i.include? '.'}
@@ -382,133 +388,120 @@ module RQ
       end
     end
 
-  end
-end
+    def run!
+      $0 = '[rq-mgr]'
 
-# TODO: Move these codez
+      init
+      load_config
 
-def run_loop
+      Signal.trap("TERM") do
+        log("received TERM signal")
+        shutdown
+      end
 
-  qmgr = RQ::QueueMgr.new
+      Signal.trap("CHLD") do
+        log("received CHLD signal")
+      end
 
-  qmgr.init
+      load_queues
 
-  Signal.trap("TERM") do
-    log("received TERM signal")
-    qmgr.shutdown
-  end
+      start_scheduler
 
-  Signal.trap("CHLD") do
-    log("received CHLD signal")
-  end
+      start_webserver
 
-  qmgr.load_queues
-
-  qmgr.start_scheduler
-
-  require 'fcntl'
-  flag = File::NONBLOCK
-  if defined?(Fcntl::F_GETFL)
-    flag |= $sock.fcntl(Fcntl::F_GETFL)
-  end
-  $sock.fcntl(Fcntl::F_SETFL, flag)
+      flag = File::NONBLOCK
+      if defined?(Fcntl::F_GETFL)
+        flag |= $sock.fcntl(Fcntl::F_GETFL)
+      end
+      $sock.fcntl(Fcntl::F_SETFL, flag)
 
 
-  # Ye old event loop
-  while true
-    #log(qmgr.queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
-    io_list = qmgr.queues.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
-    io_list << $sock
-    #log(io_list.inspect)
-    log('sleeping')
-    begin
-      ready = IO.select(io_list, nil, nil, 60)
-    rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-      log("error on SELECT #{$!}")
-      retry
-    end
-
-    next unless ready
-
-    ready[0].each do |io|
-      if io.fileno == $sock.fileno
+      # Ye old event loop
+      while true
+        #log(queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
+        io_list = queues.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
+        io_list << $sock
+        #log(io_list.inspect)
+        log('sleeping')
         begin
-          client_socket, client_sockaddr = $sock.accept
+          ready = IO.select(io_list, nil, nil, 60)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-          log('error acception on main sock, supposed to be readysleeping')
+          log("error on SELECT #{$!}")
+          retry
         end
-        # Linux Doesn't inherit and BSD does... recomended behavior is to set again
-        flag = 0xffffffff ^ File::NONBLOCK
-        if defined?(Fcntl::F_GETFL)
-          flag &= client_socket.fcntl(Fcntl::F_GETFL)
-        end
-        #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
-        client_socket.fcntl(Fcntl::F_SETFL, flag)
-        qmgr.handle_request(client_socket)
-      else
-        # probably a child pipe that closed
-        worker = qmgr.queues.find do |i|
-          if i.child_write_pipe
-            i.child_write_pipe.fileno == io.fileno
+
+        next unless ready
+
+        ready[0].each do |io|
+          if io.fileno == $sock.fileno
+            begin
+              client_socket, client_sockaddr = $sock.accept
+            rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+              log('error acception on main sock, supposed to be readysleeping')
+            end
+            # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
+            flag = 0xffffffff ^ File::NONBLOCK
+            if defined?(Fcntl::F_GETFL)
+              flag &= client_socket.fcntl(Fcntl::F_GETFL)
+            end
+            #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
+            client_socket.fcntl(Fcntl::F_SETFL, flag)
+            handle_request(client_socket)
           else
-            false
-          end
-        end
-        if worker
-          res = Process.wait2(worker.pid, Process::WNOHANG)
-          if res
-            log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]} - #{worker.status}")
-            worker.child_write_pipe.close
-            if worker.status == "RUNNING"
-              worker.num_restarts += 1
-              # TODO
-              # would really like a timer on the event loop so I can sleep a sec, but
-              # whatever
-              #
-              # If queue.rb code fails/exits
-              if worker.num_restarts >= 11
-                worker.status = "ERROR"
-                worker.pid = nil
-                worker.child_write_pipe = nil
-                log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
+            # probably a child pipe that closed
+            worker = queues.find do |i|
+              if i.child_write_pipe
+                i.child_write_pipe.fileno == io.fileno
               else
-                results = RQ::Queue.start_process(worker.options)
-                log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
-                worker.pid = results[0]
-                worker.child_write_pipe = results[1]
+                false
               end
-            elsif worker.status == "DELETE"
-              RQ::Queue.delete(worker.name)
-              qmgr.queues.delete(worker)
-              log("DELETED [ #{worker.name} ]")
-            elsif worker.status == "SHUTDOWN"
-              qmgr.queues.delete(worker)
-              if qmgr.queues.empty?
-                qmgr.final_shutdown!
+            end
+            if worker
+              res = Process.wait2(worker.pid, Process::WNOHANG)
+              if res
+                log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]} - #{worker.status}")
+                worker.child_write_pipe.close
+                if worker.status == "RUNNING"
+                  worker.num_restarts += 1
+                  # TODO
+                  # would really like a timer on the event loop so I can sleep a sec, but
+                  # whatever
+                  #
+                  # If queue.rb code fails/exits 
+                  if worker.num_restarts >= 11
+                    worker.status = "ERROR"
+                    worker.pid = nil
+                    worker.child_write_pipe = nil
+                    log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
+                  else
+                    results = RQ::Queue.start_process(worker.options)
+                    log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
+                    worker.pid = results[0]
+                    worker.child_write_pipe = results[1]
+                  end
+                elsif worker.status == "DELETE"
+                  RQ::Queue.delete(worker.name)
+                  queues.delete(worker)
+                  log("DELETED [ #{worker.name} ]")
+                elsif worker.status == "SHUTDOWN"
+                  queues.delete(worker)
+                  if queues.empty?
+                    final_shutdown!
+                  end
+                else
+                  log("STRANGE: queue #{worker.pid } status = #{worker.status}")
+                end
+              else
+                log("EXITING: queue #{worker.pid} was not ready to be reaped #{res}")
               end
             else
-              log("STRANGE: queue #{worker.pid } status = #{worker.status}")
+              log("VERY STRANGE: got a read ready on an io that we don't track!")
             end
-          else
-            log("EXITING: queue #{worker.pid} was not ready to be reaped #{res}")
+
           end
-        else
-          log("VERY STRANGE: got a read ready on an io that we don't track!")
         end
 
       end
     end
-
-#     begin
-#       #client_socket, client_sockaddr = $sock.accept_nonblock
-#       client_socket, client_sockaddr = $sock.accept
-#     rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-#       log('sleeping')
-#       IO.select([$sock], nil, nil, 60)
-#       retry
-#     end
-
   end
 end
-
-run_loop
