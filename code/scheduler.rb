@@ -44,16 +44,13 @@ module RQ
           #child only code block
           RQ::Scheduler.log(sched_path, 'post fork')
 
-          # Unix house keeping
-          self.close_all_fds([child_rd.fileno])
-          # TODO: probly some other signal, session, proc grp, etc. crap
-
-          RQ::Scheduler.log(sched_path, 'post close_all')
           q = RQ::Scheduler.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
           RQ::Scheduler.log(sched_path, 'post new')
-          q.run_loop
+          while true
+            sleep 60
+          end
         rescue Exception
           self.log(sched_path, "Exception!")
           self.log(sched_path, $!)
