@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
-$: << File.expand_path('..', File.dirname(__FILE__))
+Dir.chdir(File.expand_path('..', File.dirname(__FILE__)))
+$: << '.'
 require 'vendor/bundle/bundler/setup'
-require 'code/queuemgr_ctl'
+require 'code/queuemgr'
+
+qmgr = RQ::QueueMgr.new
+qmgr.run!

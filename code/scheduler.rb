@@ -1,9 +1,6 @@
 require 'socket'
 require 'json'
-require 'fcntl'
-require 'fileutils'
 require 'code/unixrack'
-require 'code/hashdir'
 
 module RQ
   class Scheduler
@@ -44,13 +41,13 @@ module RQ
           #child only code block
           RQ::Scheduler.log(sched_path, 'post fork')
 
-          Daemons.close_io
-
           q = RQ::Scheduler.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
           RQ::Scheduler.log(sched_path, 'post new')
-          q.run_loop
+          while true
+            sleep 60
+          end
         rescue Exception
           self.log(sched_path, "Exception!")
           self.log(sched_path, $!)
