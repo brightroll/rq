@@ -12,7 +12,7 @@ class RqMissingArgument < RqError; def message; 'Missing argument'; end; end
 def check_usage(arg_list)
   if not arg_list.length > 0 or arg_list.include?('-h') or arg_list.include?('--help')
     puts "Valid commands are:"
-    puts "  " + Commands.new.public_methods.grep(/^cmd_/).each{|c| c.gsub!(/^cmd_/, '') }.sort.join("\n  ")
+    puts "  " + Commands.new.public_methods.grep(/^cmd_/).each{|c| c.to_s.gsub!(/^cmd_/, '') }.sort.join("\n  ")
     exit 1
   end
 end
@@ -312,10 +312,6 @@ end
 # BEGIN THINGS THAT RUN
 
 args = check_usage(ARGV) || process_args(ARGV)
-#p args
-
-# Which queue am I bound to?
-# TODO: later
 
 retval = 0
 cmd = "cmd_#{args[:cmd]}"
