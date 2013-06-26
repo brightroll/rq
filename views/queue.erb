@@ -1,6 +1,6 @@
 <div id="header">
   <p id="new-message"><a href="<%= "#{url}q/#{qc.name}/new_message" %>">New Message</a></p>
-  <h1><a href="<%= url %>">RQ</a> : <%= q %></h1>
+  <h1><a href="<%= url %>">RQ</a> : <%= qc.name %></h1>
 </div>
 
 <div id="sub-header">
@@ -39,7 +39,7 @@
       <th class="prep"><h4>PREP</h4><%= num_msgs['prep'] %></th>
       <th class="que"><h4>QUE</h4><%= num_msgs['que'] %></th>
       <th class="run"><h4>RUN</h4><%= num_msgs['run'] %></th>
-      <% if q != 'relay' %>
+      <% if qc.name != 'relay' %>
         <th class="done"><h4>DONE</h4><%= num_msgs['done'] %></th>
       <% end %>
       <th class="err"><h4>ERR</h4><%= num_msgs['err'] %></th>
@@ -84,7 +84,7 @@
       <span class="">
         <a href="<%= "#{url}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
       </span>
-      <% if q == 'relay' %>
+      <% if qc.name == 'relay' %>
         <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
         <% if ok == 'ok' %>
           dest: <span class="yellow"> <%= msg_full['dest'] %></span>
@@ -120,7 +120,7 @@
   <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
     <% msg_id = msg %>
     <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
-    <% if q == 'relay' %>
+    <% if qc.name == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
       <% if ok == 'ok' %>
         dest: <span class="yellow"> <%= msg_full['dest'] %></span>
@@ -137,7 +137,7 @@
   </ul>
 <% end %>
       </td>
-      <% if q != 'relay' %>
+      <% if qc.name != 'relay' %>
       <!-- DONE -->
       <td class="done">
 <% msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
@@ -179,7 +179,7 @@
 </table>
 
 <!-- RELAYED -->
-<% if q == 'relay' %>
+<% if qc.name == 'relay' %>
 <div class="relayed">
   <h4><b><%= num_msgs['relayed'] %></b> in RELAYED</h4>
   <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
