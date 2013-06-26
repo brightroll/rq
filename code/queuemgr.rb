@@ -18,6 +18,7 @@ module RQ
 
     attr_accessor :queues
     attr_accessor :scheduler
+    attr_accessor :web_server
     attr_accessor :status
     attr_accessor :host
     attr_accessor :port
@@ -26,6 +27,7 @@ module RQ
     def initialize
       @queues = []
       @scheduler = nil
+      @web_server = nil
       @start_time = Time.now
       @status = "RUNNING"
       # Read config
@@ -249,20 +251,27 @@ module RQ
       final_shutdown! if @queues.empty?
 
       # Remove non-running entries
-      @queues = @queues.select { |q| q.pid }
+      @queues.delete_if { |q| !q.pid }
 
       @queues.each do |q|
         q.status = "SHUTDOWN"
       end
 
       @queues.each do |q|
-        Process.kill("TERM", q.pid) if q.pid
+        begin
+          Process.kill("TERM", q.pid) if q.pid
+        rescue StandardError => e
+          puts "#{q.pid} #{e.inspect}"
+        end
       end
     end
 
     def final_shutdown!
       # Once all the queues are down, take the scheduler down
       # Process.kill("TERM", @scheduler.pid) if @scheduler.pid
+
+      # Once all the queues are down, take the web server down
+      Process.kill("TERM", @web_server) if @web_server
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
@@ -289,7 +298,7 @@ module RQ
     end
 
     def start_webserver
-      fork do
+      @web_server = fork do
         $0 = '[rq-web]'
         config = RQ::WebServer.conf_rq_web
         RQ::WebServer.start_rq_web(config)
