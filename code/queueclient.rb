@@ -2,6 +2,7 @@ require 'vendor/environment'
 require 'socket'
 require 'json'
 require 'unixrack'
+require 'code/errors'
 
 module RQ
   class QueueClient
@@ -17,7 +18,7 @@ module RQ
       @queue_path = File.join(path, 'queue', @name)
       @queue_sock_path = File.join(@queue_path, 'queue.sock')
 
-      raise RqQueueNotFound unless File.directory?(@queue_path)
+      raise RQ::RqQueueNotFound unless File.directory?(@queue_path)
     end
 
     def running?(pid=read_pid)

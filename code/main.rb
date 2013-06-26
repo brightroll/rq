@@ -4,6 +4,7 @@ require 'erb'
 require 'version'
 require 'code/queuemgrclient'
 require 'code/queueclient'
+require 'code/errors'
 require 'code/hashdir'
 require 'code/portaproc'
 require 'code/overrides'
@@ -175,7 +176,7 @@ module RQ
 
       begin
         qc = RQ::QueueClient.new(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -190,7 +191,7 @@ module RQ
 
       begin
         qc = RQ::QueueClient.new(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -205,7 +206,7 @@ module RQ
     get '/q/:name/new_message' do
       begin
         qc = RQ::QueueClient.new(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -261,7 +262,7 @@ module RQ
 
       begin
         qc = get_queueclient(q_name)
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -313,7 +314,7 @@ module RQ
     get '/q/:name/config' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -333,7 +334,7 @@ module RQ
 
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -361,7 +362,7 @@ module RQ
 
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -378,7 +379,7 @@ module RQ
     post '/q/:name/:msg_id/clone' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -398,7 +399,7 @@ module RQ
     post '/q/:name/:msg_id/run_now' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -419,7 +420,7 @@ module RQ
     post '/q/:name/:msg_id/attach/new' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -478,7 +479,7 @@ module RQ
     post '/q/:name/:msg_id/attach/:attachment_name' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -506,7 +507,7 @@ module RQ
     get '/q/:name/:msg_id/log/:log_name' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -536,7 +537,7 @@ module RQ
     get '/q/:name/:msg_id/attach/:attach_name' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -567,7 +568,7 @@ module RQ
     get '/q/:name/:msg_id/tailview/:attach_name' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -600,7 +601,7 @@ module RQ
     get '/q/:name/:msg_id/tailviewlog/:log_name' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -624,7 +625,7 @@ module RQ
     post '/q/:name/:msg_id' do
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
