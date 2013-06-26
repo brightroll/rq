@@ -4,6 +4,7 @@ require 'erb'
 require 'version'
 require 'code/queuemgrclient'
 require 'code/queueclient'
+require 'code/errors'
 require 'code/hashdir'
 require 'code/portaproc'
 require 'code/overrides'
@@ -39,7 +40,7 @@ module RQ
       end
 
       def queue_row(name, options={})
-        qc = get_queueclient(name)
+        qc = get_queueclient(name) rescue (return '')
         html = options[:odd] ?
              "<tr class=\"odd-row\">" :
              "<tr>"
@@ -169,7 +170,7 @@ module RQ
       # TODO: sanitize names (no dots or slashes)
       begin
         qc = RQ::QueueClient.new(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -183,7 +184,7 @@ module RQ
 
       begin
         qc = RQ::QueueClient.new(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -198,7 +199,7 @@ module RQ
     get '/q/:name/new_message' do
       begin
         qc = RQ::QueueClient.new(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -254,7 +255,7 @@ module RQ
 
       begin
         qc = get_queueclient(q_name)
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -324,7 +325,7 @@ module RQ
 
       begin
         qc = get_queueclient(params[:name])
-      rescue RqQueueNotFound
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -350,9 +351,11 @@ module RQ
       fmt = :json
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       ok, state = qc.get_message_state({ 'msg_id' => msg_id })
 
@@ -365,8 +368,12 @@ module RQ
 
 
     post '/q/:name/:msg_id/clone' do
-      qc = get_queueclient(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
 
       if not res
@@ -381,8 +388,11 @@ module RQ
     end
 
     post '/q/:name/:msg_id/run_now' do
-      qc = get_queueclient(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       res = qc.run_message({ 'msg_id' => params[:msg_id] })
 
@@ -401,9 +411,9 @@ module RQ
       # TODO: change URL for this call
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -460,9 +470,9 @@ module RQ
     end
 
     post '/q/:name/:msg_id/attach/:attachment_name' do
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -491,9 +501,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -523,9 +533,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -556,9 +566,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -591,9 +601,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -616,9 +626,9 @@ module RQ
     post '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
