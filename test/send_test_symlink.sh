@@ -29,7 +29,7 @@ echo "Queued message: ${result[1]}"
 
 ## Verify that script goes to done state
 
-out4=`readlink ./code/test/test_symlink/test_script_symlink.sh`
+out4=`readlink ./test/test_symlink/test_script_symlink.sh`
 COUNTER=0
 while [  $COUNTER -lt 4 ]; do
 

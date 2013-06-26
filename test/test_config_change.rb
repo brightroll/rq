@@ -55,7 +55,7 @@ class TC_ConfigChangeTest < Test::Unit::TestCase
     ## Create the queue
     uri_str = "http://127.0.0.1:#{@rq_port}/new_queue_link"
     res = Net::HTTP.post_form(URI.parse(uri_str),
-                              { 'queue[json_path]' => './code/test/fixtures/jsonconfigfile/good.json'})
+                              { 'queue[json_path]' => './test/fixtures/jsonconfigfile/good.json'})
     assert_equal("303", res.code)
 
 
@@ -67,7 +67,7 @@ class TC_ConfigChangeTest < Test::Unit::TestCase
     result = JSON.parse(res.body)
     assert_equal(1, result['num_workers'])
 
-    new_config_path = './code/test/fixtures/jsonconfigfile/good_new.json'
+    new_config_path = './test/fixtures/jsonconfigfile/good_new.json'
     config_path = 'queue/test_change/config.json'
 
     # Change the config

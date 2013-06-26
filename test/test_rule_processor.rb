@@ -14,7 +14,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
 
 
   def test_good_list
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     assert(rp, "Error: rules should have been a valid return for good_rules.rb file")
 
@@ -22,7 +22,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_no_default_list
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_no_default_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_no_default_rules.rb')
 
     assert(rp, "Error: rules should have been a valid return for good_rules.rb file")
 
@@ -41,7 +41,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_match_rule1
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 0
     res = rp.rules[num].match({'dest' => 'http://xyz.abc.com/barrier_process_err'})
@@ -55,7 +55,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_attribs_rule1
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 0
     rule_attrib_test(rp.rules[num], :desc, "[mirror_processing_of_errors_with_delay]")
@@ -68,7 +68,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_match_rule2
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 1
     res = rp.rules[num].match({'src' => 'http://barrier00.btrll.com:3333/abc'})
@@ -88,7 +88,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_attribs_rule2
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 1
     rule_attrib_test(rp.rules[num], :desc, "[even_numbers_relay_host0]")
@@ -101,7 +101,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_match_rule3
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 2
     res = rp.rules[num].match({'src' => 'http://barrier03.btrll.com:3333/a'})
@@ -118,7 +118,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_attribs_rule3
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 2
     rule_attrib_test(rp.rules[num], :desc, "[odd_numbers_relay_host1]")
@@ -133,7 +133,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_match_rule4
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 3
     res = rp.rules[num].match({'dest' => 'http://barrier03.btrll.com:3333/a',
@@ -169,7 +169,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_attribs_rule4
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 3
     rule_attrib_test(rp.rules[num], :desc, "[traffic_relay_host1]")
@@ -182,7 +182,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_match_rule5
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 4
     res = rp.rules[num].match({'dest' => 'http://host.btrll.com:3333/old_rq_route'})
@@ -202,7 +202,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_attribs_rule5
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 4
     rule_attrib_test(rp.rules[num], :desc, "[old_data_center_route]")
@@ -215,7 +215,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_match_rule6
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 5
     res = rp.rules[num].match({'dest' => 'http://barrier0.btrll.com:3333/a'})
@@ -232,7 +232,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_attribs_rule6
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     num = 5
     rule_attrib_test(rp.rules[num], :desc, "default")
@@ -245,7 +245,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_first_match
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     rule = rp.first_match({'dest' => 'http://m0.btrll.com/barrier_process_err'})
     assert_equal(rp.rules[0], rule, "should have matched proper rule")
@@ -270,7 +270,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_good_host_selection
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     RQ::Rule::rand_func = lambda {|x| 0 }
 
@@ -304,7 +304,7 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_host_transform
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/good_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/good_rules.rb')
 
     new_host = rp.txform_host("http://oldhost.btrll.com:3333/q/box_que", "brxlog-be-halb02.btrll.com")
     assert_equal("http://brxlog-be-halb02.btrll.com:3333/q/box_que", new_host, "should have proper transform")
@@ -332,11 +332,11 @@ class TC_RuleProcessorTest < Test::Unit::TestCase
   end
 
   def test_bad_list
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/bad_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/bad_rules.rb')
 
     assert_nil(rp, "Should have been nil for bad rules file")
 
-    rp = RQ::RuleProcessor.process_pathname('code/test/fixtures/non_existant_rules.rb')
+    rp = RQ::RuleProcessor.process_pathname('test/fixtures/non_existant_rules.rb')
 
     assert_nil(rp, "Should have been nil for bad rules file")
   end
