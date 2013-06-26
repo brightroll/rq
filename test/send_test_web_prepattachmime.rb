@@ -57,7 +57,7 @@ print "Msg ID: #{msg_id}\n"
 # attach message
 
 
-pipe_res = `./code/test/mime_test.rb #{msg_id}`
+pipe_res = `./test/mime_test.rb #{msg_id}`
 
 #p $?
 #p pipe_res
