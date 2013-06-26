@@ -14,14 +14,19 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-sleep 1
-
 egrep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is not running the queue mgr"
   exit 1
 fi
 
+# Remove the test queues before trying to create them
+rm -fr queue/test
+rm -fr queue/test_symlink
+rm -fr queue/test_coalesce
+rm -fr queue/test_run
+rm -fr queue/test_nop
+rm -fr queue/test_ansi
 
 echo "Creating the test queue..."
 curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./code/test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="" -o _install_test.txt
@@ -30,7 +35,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_test.txt > /dev/null
+egrep "queue created" _install_test.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test queue"
   exit 1
@@ -43,7 +48,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_test_symlink.txt > /dev/null
+egrep "queue created" _install_test_symlink.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_symlink queue"
   exit 1
@@ -56,7 +61,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_test_coalesce.txt > /dev/null
+egrep "queue created" _install_test_coalesce.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_coalesce queue"
   exit 1
@@ -69,7 +74,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_test_run.txt > /dev/null
+egrep "queue created" _install_test_run.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_run queue"
   exit 1
@@ -89,7 +94,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_test_nop.txt > /dev/null
+egrep "queue created" _install_test_nop.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_nop queue"
   exit 1
@@ -102,7 +107,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_env_var_script.txt > /dev/null
+egrep "queue created" _install_env_var_script.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_env_var queue"
   exit 1

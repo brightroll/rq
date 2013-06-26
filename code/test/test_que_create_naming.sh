@@ -35,7 +35,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_bad1.txt > /dev/null
+egrep "queue created" _install_bad1.txt > /dev/null
 if [ "$?" -eq "0" ]; then
   echo "Sorry, system created bad queue 'bad que test' queue"
   exit 1
@@ -53,7 +53,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_bad2.txt > /dev/null
+egrep "queue created" _install_bad2.txt > /dev/null
 if [ "$?" -eq "0" ]; then
   echo "Sorry, system created bad queue 'bad.que.test' queue"
   exit 1
@@ -71,7 +71,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_bad3.txt > /dev/null
+egrep "queue created" _install_bad3.txt > /dev/null
 if [ "$?" -eq "0" ]; then
   echo "Sorry, system created bad queue 'bad/que/test' queue"
   exit 1
