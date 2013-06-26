@@ -11,8 +11,7 @@ fi
 export RQ_PORT=33$(ruby -e 'puts RUBY_VERSION.delete(".")')
 
 ./bin/install --force --host 127.0.0.1 --port $RQ_PORT --tmpdir '/tmp'
-./bin/web_server.rb server
-./bin/queuemgr_ctl start
+./bin/queuemgr_ctl &
 
 sleep 1
 
@@ -22,15 +21,15 @@ trap 'kill $(cat config/queuemgr.pid)' TERM
 trap 'kill $(cat config/queuemgr.pid)' QUIT
 
 # TODO: Consolidate these two scripts
-echo "Running ./code/test/setup_test_queues.sh"
-./code/test/setup_test_queues.sh
+echo "Running ./test/setup_test_queues.sh"
+./test/setup_test_queues.sh
 if [ $? -ne 0 ] ; then
   echo " *** FAILED TO RUN SETUP"
   exit 1
 fi
 
-echo "Running ./code/test/test_queues_setup.rb"
-./code/test/test_queues_setup.rb
+echo "Running ./test/test_queues_setup.rb"
+./test/test_queues_setup.rb
 if [ $? -ne 0 ] ; then
   echo " *** FAILED TO SETUP QUEUES"
   exit 1
@@ -89,7 +88,7 @@ for test in \
    env_var_test.rb ; do
 
       echo "RUNNING TEST: ${test}"
-      output=`./code/test/$test 2>&1`
+      output=`./test/$test 2>&1`
       status=$?
       echo "$output" | sed "s/^/${test}: /g"
       echo -n "        TEST: "
@@ -106,7 +105,7 @@ end_time=$(date +%s)
 time_elapsed=$(($end_time-$start_time))
 echo "Script execution took $time_elapsed seconds."
 
-./bin/queuemgr_ctl stop
+kill %1
 
 echo "-=-=-=-=-=-=-=-=-"
 echo " ALL TESTS DONE  "
