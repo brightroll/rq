@@ -1,13 +1,6 @@
 require 'vendor/bundle/bundler/setup'
 require 'code/queueclient'
-
-# needs some sort of error handling -- move out of this file
-# so that higher level up services can handle them (for us -- RqUtils2)
-class RqError < ::StandardError; end
-
-class RqCannotRelay < RqError; def message; 'Cannot relay message'; end; end
-class RqQueueNotFound < RqError; def message; 'Queue not found'; end; end
-class RqMissingArgument < RqError; def message; 'Missing argument'; end; end
+require 'code/errors'
 
 def check_usage(arg_list)
   if not arg_list.length > 0 or arg_list.include?('-h') or arg_list.include?('--help')
@@ -64,10 +57,10 @@ class Commands
   #   - param[1234]
   def cmd_sendmesg(args)
     q_name = args['dest']
-    raise RqMissingArgument if not q_name
+    raise RQ::RqMissingArgument if not q_name
 
     if q_name.index('http:') == 0
-      raise RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
+      raise RQ::RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
       q_name = 'relay'
     end
 
@@ -87,10 +80,10 @@ class Commands
 
   def cmd_prepmesg(args)
     q_name = args['dest']
-    raise RqMissingArgument if not q_name
+    raise RQ::RqMissingArgument if not q_name
 
     if q_name.index('http:') == 0
-      raise RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
+      raise RQ::RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
       q_name = 'relay'
     end
 
@@ -119,7 +112,7 @@ class Commands
 
   def cmd_attachmesg(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -136,7 +129,7 @@ class Commands
 
     msg['pathname'] = File.expand_path(msg['pathname'])
     results = check_attachment(msg)
-    raise RqError(results[0]) if not results[0] # throw :halt, [404, "404 - #{results[0]}"]
+    raise RQ::RqError(results[0]) if not results[0] # throw :halt, [404, "404 - #{results[0]}"]
     result = qc.attach_message(msg)
     print "#{result[0]} #{result[1]} for Message: #{full_mesg_id} attachment\n"
     result[0] == "ok" ? 0 : 1
@@ -144,7 +137,7 @@ class Commands
 
   def cmd_commitmesg(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -161,7 +154,7 @@ class Commands
 
   def cmd_statusmesg(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -181,7 +174,7 @@ class Commands
 
   def cmd_state(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -201,7 +194,7 @@ class Commands
 
   def cmd_statuscountmesg(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -221,7 +214,7 @@ class Commands
 
   def cmd_single_que(args)
     q_name = args['dest']
-    raise RqMissingArgument if not q_name
+    raise RQ::RqMissingArgument if not q_name
 
     #if (q_name.index('http:') == 0) && args.has_key?('relay-ok')
     #  q_name = 'relay'
@@ -245,7 +238,7 @@ class Commands
 
   def cmd_attachstatusmesg(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -274,7 +267,7 @@ class Commands
 
   def cmd_clone(args)
     full_mesg_id = args['msg_id']
-    raise RqMissingArgument if not full_mesg_id
+    raise RQ::RqMissingArgument if not full_mesg_id
 
     q_name = full_mesg_id[/\/q\/([^\/]+)/, 1]
     msg_id = full_mesg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
@@ -290,7 +283,7 @@ class Commands
   def cmd_verify_rules(args)
     require 'code/rule_processor'
 
-    raise RqMissingArgument if not args['path']
+    raise RQ::RqMissingArgument if not args['path']
 
     rp = RQ::RuleProcessor.process_pathname(args['path'], args['verbose'])
 
