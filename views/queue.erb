@@ -1,5 +1,5 @@
 <div id="header">
-  <p id="new-message"><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></p>
+  <p id="new-message"><a href="<%= "#{url}q/#{qc.name}/new_message" %>">New Message</a></p>
   <h1><a href="<%= url %>">RQ</a> : <%= q %></h1>
 </div>
 
@@ -15,7 +15,7 @@
    <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
   <% end %>
   </div>
-  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a> ]</p>
+  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{qc.name}/config.json" %>">raw</a> ]</p>
   <pre id="config" class="json hidden"><%= config.to_json %></pre>
 </div>
 
@@ -52,7 +52,7 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
 <% end %>
@@ -73,7 +73,7 @@
     <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
     <li>
       <span class="">
-        <a href="<%= "#{url}q/#{q}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
+        <a href="<%= "#{url}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
       </span>
       <% if q == 'relay' %>
         <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
@@ -83,7 +83,7 @@
       <% end %>
       : in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs</span>
       <span class="">
-        <form id="delete-form" method="post" action="<%= "#{url}q/#{q}/#{msg_id}" %>">
+        <form id="delete-form" method="post" action="<%= "#{url}q/#{qc.name}/#{msg_id}" %>">
           <input name="_method" type="hidden" value="delete" />
           <button id="delete-button" type="submit">Destroy it</button>
         </form>
@@ -110,7 +110,7 @@
   <%# hotfix for indika's problem. this needs to be revisited. %>
   <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
     <% msg_id = msg %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if q == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
       <% if ok == 'ok' %>
@@ -120,7 +120,7 @@
         STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
       <% end %>
     <% end %>
-    <form id="destroy-form" method="post" action="<%= "#{url}q/#{q}/#{date}.#{msg_id}" %>">
+    <form id="destroy-form" method="post" action="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>">
       <input name="_method" type="hidden" value="delete" />
       <button id="destroy-button" type="submit">Destroy it</button>
     </form>
@@ -142,7 +142,7 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
 <% end %>
@@ -161,7 +161,7 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
 <% end %>
@@ -185,7 +185,7 @@
     <ul>
     <% msgs.sort.reverse.each do |msg| %>
       <li class="relayed-li">
-        <a href="<%= "#{url}q/#{q}/#{date}.#{msg}" %>"><%= msg %></a>
+        <a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a>
         <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
         <% if ok == 'ok' %>
           <%  status, new_location = msg_full['status'].split(' - ', 2) %>
