@@ -173,11 +173,14 @@ module RQ
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
-      qc = RQ::QueueClient.new(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       ok, config = qc.get_config
-      erb :queue, :locals => { :q => params[:name], :qc => qc, :config => config }
+      erb :queue, :locals => { :qc => qc, :config => config }
     end
 
     get '/q/:name/done.json' do
@@ -185,8 +188,11 @@ module RQ
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
-      qc = RQ::QueueClient.new(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       limit = 10
       if params['limit']
@@ -197,11 +203,14 @@ module RQ
     end
 
     get '/q/:name/new_message' do
-      qc = get_queueclient(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       overrides = RQ::Overrides.new(params['name'])
-      erb :new_message, :layout => true, :locals => {:o => overrides }
+      erb :new_message, :layout => true, :locals => { :q_name => qc.name, :overrides => overrides }
     end
 
     post '/q/:name/new_message' do
@@ -250,8 +259,11 @@ module RQ
         end
       end
 
-      qc = get_queueclient(q_name)
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(q_name)
+      rescue RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       if the_method == 'prep'
         result = qc.prep_message(prms)
@@ -270,7 +282,7 @@ module RQ
       if api_call == 'json'
         "#{result.to_json}"
       else
-        erb :new_message_post, :layout => true, :locals => {:result => result, :q_name => q_name }
+        erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => q_name }
       end
     end
 
@@ -316,8 +328,11 @@ module RQ
         msg_id = msg_id[0..-6]
       end
 
-      qc = get_queueclient(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -327,9 +342,9 @@ module RQ
 
       if fmt == :html
         if msg['state'] == 'prep'
-          erb :prep_message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+          erb :prep_message, :locals => { :q_name => qc.name, :msg_id => msg_id, :msg => msg }
         else
-          erb :message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+          erb :message, :locals => { :q_name => qc.name,  :msg_id => msg_id, :msg => msg }
         end
       else
         #content_type 'application/json'
@@ -558,7 +573,7 @@ module RQ
 
       in_iframe = params['in_iframe'] == '1'
 
-      erb :tailview, { :layout => false, :locals => { 'msg_id' => msg_id, 'msg' => msg, 'attach_name' => params['attach_name'], 'in_iframe' => in_iframe } }
+      erb :tailview, { :layout => false, :locals => { :msg_id => msg_id, :msg => msg, :attach_name => params['attach_name'], :in_iframe => in_iframe } }
     end
 
     get '/q/:name/:msg_id/tailviewlog/:log_name' do
@@ -577,8 +592,8 @@ module RQ
       erb :tailview, {
                        :layout => false,
                        :locals => {
-                         'path' => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                         'msg_path' => "/q/#{params[:name]}/#{msg_id}"
+                         :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                         :msg_path => "/q/#{params[:name]}/#{msg_id}"
                        },
                      }
     end

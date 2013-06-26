@@ -54,9 +54,7 @@ end
 
 class Commands
   def get_queue_client(q_name)
-    qc = RQ::QueueClient.new(q_name)
-    raise RqQueueNotFound if not qc.exists? # throw :halt, [404, "404 - Queue not found"]
-    qc
+    RQ::QueueClient.new(q_name)
   end
 
   # Create a message
