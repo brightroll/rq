@@ -210,7 +210,7 @@ module RQ
       end
 
       overrides = RQ::Overrides.new(params['name'])
-      erb :new_message, :layout => true, :locals => { :o => overrides }
+      erb :new_message, :layout => true, :locals => { :q_name => qc.name, :overrides => overrides }
     end
 
     post '/q/:name/new_message' do
@@ -282,7 +282,7 @@ module RQ
       if api_call == 'json'
         "#{result.to_json}"
       else
-        erb :new_message_post, :layout => true, :locals => {:result => result, :q_name => q_name }
+        erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => q_name }
       end
     end
 
@@ -342,9 +342,9 @@ module RQ
 
       if fmt == :html
         if msg['state'] == 'prep'
-          erb :prep_message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+          erb :prep_message, :locals => { :q_name => qc.name, :msg_id => msg_id, :msg => msg }
         else
-          erb :message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+          erb :message, :locals => { :q_name => qc.name,  :msg_id => msg_id, :msg => msg }
         end
       else
         #content_type 'application/json'
@@ -573,7 +573,7 @@ module RQ
 
       in_iframe = params['in_iframe'] == '1'
 
-      erb :tailview, { :layout => false, :locals => { 'msg_id' => msg_id, 'msg' => msg, 'attach_name' => params['attach_name'], 'in_iframe' => in_iframe } }
+      erb :tailview, { :layout => false, :locals => { :msg_id => msg_id, :msg => msg, :attach_name => params['attach_name'], :in_iframe => in_iframe } }
     end
 
     get '/q/:name/:msg_id/tailviewlog/:log_name' do
@@ -592,8 +592,8 @@ module RQ
       erb :tailview, {
                        :layout => false,
                        :locals => {
-                         'path' => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                         'msg_path' => "/q/#{params[:name]}/#{msg_id}"
+                         :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                         :msg_path => "/q/#{params[:name]}/#{msg_id}"
                        },
                      }
     end
