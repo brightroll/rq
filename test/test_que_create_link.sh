@@ -16,12 +16,12 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running"
   exit 1
 fi
-egrep -v "Please fill out this form in order to setup this RQ\." _home.txt > /dev/null
+grep -v "Please fill out this form in order to setup this RQ\." _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is still in install state"
   exit 1
 fi
-egrep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
+grep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is not running the queue mgr"
   exit 1
@@ -36,7 +36,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "successqueue created" _install_bad1.txt > /dev/null
+grep "queue created" _install_bad1.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system did not create queue via link"
   exit 1
