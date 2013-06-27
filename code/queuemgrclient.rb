@@ -1,4 +1,3 @@
-
 require 'socket'
 require 'json'
 
@@ -41,7 +40,7 @@ module RQ
       client.send("ping", 0)
       result = client.recvfrom(1024)
       client.close
-      return result ? result[0] : nil
+      result ? result[0] : nil
     end
 
     def self.environment
@@ -49,7 +48,7 @@ module RQ
       client.send("environment", 0)
       result = client.recvfrom(1024)
       client.close
-      return result ? result[0] : nil
+      result ? result[0] : nil
     end
 
     def self.version
@@ -111,4 +110,3 @@ module RQ
 
   end
 end
-
