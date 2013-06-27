@@ -141,9 +141,9 @@ a:visited {}
 #new-queue,
 #new-message {float: right; width: 200px; text-align: right}
 #flash-container {position: absolute; z-index: 10; right: 20px; top: 10px}
-.flash {font-size: 1.4em; font-weight: bold; color: white; text-align: center; padding: 5px; margin-bottom: 10px}
-#flash-error {background: red}
-#flash-notice {background: green}
+#flash {font-size: 1.4em; font-weight: bold; color: white; text-align: center; padding: 5px; margin-bottom: 10px}
+.flash.error {background: red}
+.flash.notice {background: green}
 
 #filedata {
   padding: 0; margin: 0 auto;

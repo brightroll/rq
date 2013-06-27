@@ -1,4 +1,5 @@
 require 'sinatra/base'
+require 'sinatra/flash'
 require 'erb'
 
 require 'version'
@@ -16,6 +17,7 @@ module RQ
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
     set :erb, :trim => '-'
+    register Sinatra::Flash
 
     def self.views
       'views'
@@ -67,29 +69,11 @@ module RQ
         html += "</form></td>"
         html += "</tr>"
       end
-
-      def flash(type, msg)
-        h = session[:flash] || {}
-        h[type] = msg
-        session[:flash] = h
-      end
-
-      def flash_now(type, msg)
-        h = @flash || {}
-        h[type] = msg
-        @flash = h
-      end
-    end
-
-    before do
-      val = session[:flash]
-      @flash = val || {}
-      session[:flash] = {}
     end
 
     # handle 404s
     not_found do
-      flash_now :error, "404 -- No route matches #{request.path_info}"
+      flash.now[:error] = "404 -- No route matches #{request.path_info}"
       erb :main
     end
 
@@ -106,7 +90,7 @@ module RQ
 
       # This creates and starts a queue
       result = RQ::QueueMgrClient.create_queue(params['queue'])
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{params['queue']['name']}"
     end
 
@@ -122,14 +106,14 @@ module RQ
         end
       result = RQ::QueueMgrClient.create_queue_link(params['queue']['json_path'])
       #TODO - do the right thing with the result code
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{js_data['name']}"
     end
 
     post '/delete_queue' do
       # This creates and starts a queue
       result = RQ::QueueMgrClient.delete_queue(params['queue_name'])
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/"
     end
 
@@ -290,7 +274,7 @@ module RQ
         throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
       end
 
-      flash :notice, "Successfully restarted queue #{params[:name]}"
+      flash[:notice] = "Successfully restarted queue #{params[:name]}"
       redirect back
     end
 
@@ -383,7 +367,7 @@ module RQ
         throw :halt, [500, "500 - Couldn't clone message. #{res.inspect}."]
       end
 
-      flash :notice, "Message cloned successfully"
+      flash[:notice] = "Message cloned successfully"
       redirect "/q/#{params[:name]}"
     end
 
@@ -403,7 +387,7 @@ module RQ
         throw :halt, [500, "500 - Couldn't run message. #{res.inspect}."]
       end
 
-      flash :notice, "Message in run successfully"
+      flash[:notice] = "Message in run successfully"
       redirect "/q/#{params[:name]}/#{params[:msg_id]}"
     end
 
@@ -461,7 +445,7 @@ module RQ
         result.to_json
       else
         if result[0] == "ok"
-          flash :notice, "Attached message successfully"
+          flash[:notice] = "Attached message successfully"
           redirect "/q/#{params[:name]}/#{params[:msg_id]}"
         else
           "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
@@ -486,7 +470,7 @@ module RQ
           result.to_json
         else
           if result[0] == "ok"
-            flash :notice, "Attachment deleted successfully"
+            flash[:notice] = "Attachment deleted successfully"
             redirect "/q/#{params[:name]}/#{params[:msg_id]}"
           else
             "Delete of attach #{params[:attachment_name]} on #{params[:name]}/#{params[:msg_id]} got #{result}"
@@ -640,10 +624,10 @@ module RQ
           result.to_json
         else
           if result[0] == "ok"
-            flash :notice, "Message deleted successfully"
+            flash[:notice] = "Message deleted successfully"
             redirect "/q/#{params[:name]}"
           else
-            flash :error, "Delete got #{result.inspect}"
+            flash[:error] = "Delete got #{result.inspect}"
             redirect "/q/#{params[:name]}/#{params[:msg_id]}"
           end
         end
@@ -653,9 +637,9 @@ module RQ
           result.to_json
         else
           if result[0] == "ok"
-            flash :notice, "Message committed successfully"
+            flash[:notice] = "Message committed successfully"
           else
-            flash :error, "Commit got #{result.inspect}"
+            flash[:error] = "Commit got #{result.inspect}"
           end
           redirect "/q/#{params[:name]}/#{params[:msg_id]}"
         end

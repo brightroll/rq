@@ -13,11 +13,7 @@
   <body class="<%= our_env %>">
     <div class="container">
       <div id="flash-container">
-      <% [:notice, :error].each do |type| %>
-        <% if @flash[type] %>
-          <div id="flash-<%= type.to_s %>" class="flash"><%= @flash[type] %></div>
-        <% end %>
-      <% end %>
+        <%= styled_flash %>
       </div>
       <span id="env"><%= our_env %></span>
       <%= yield %>
