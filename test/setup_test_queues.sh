@@ -29,99 +29,54 @@ rm -fr queue/test_nop
 rm -fr queue/test_ansi
 
 echo "Creating the test queue..."
-curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="" -o _install_test.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "queue created" _install_test.txt > /dev/null
-if [ "$?" -ne "0" ]; then
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue -F queue[name]=test -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="")
+if [ "$res" -ne "303" ]; then
   echo "Sorry, system didn't create test queue"
   exit 1
 fi
 
 echo "Creating the test symlink queue..."
-curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_symlink -F queue[script]=./test/test_symlink/test_script_symlink.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="" -o _install_test_symlink.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "queue created" _install_test_symlink.txt > /dev/null
-if [ "$?" -ne "0" ]; then
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue -F queue[name]=test_symlink -F queue[script]=./test/test_symlink/test_script_symlink.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="")
+if [ "$res" -ne "303" ]; then
   echo "Sorry, system didn't create test_symlink queue"
   exit 1
 fi
 
 echo "Creating the test coalesce queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -F queue[exec_prefix]="" -o _install_test_coalesce.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "queue created" _install_test_coalesce.txt > /dev/null
-if [ "$?" -ne "0" ]; then
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue -F queue[name]=test_coalesce -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -F queue[exec_prefix]="")
+if [ "$res" -ne "303" ]; then
   echo "Sorry, system didn't create test_coalesce queue"
   exit 1
 fi
 
 echo "Creating the test run queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_run -F queue[script]=./test/test_script.sh -F queue[num_workers]=3 -F queue[exec_prefix]="" -o _install_test_run.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "queue created" _install_test_run.txt > /dev/null
-if [ "$?" -ne "0" ]; then
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue -F queue[name]=test_run -F queue[script]=./test/test_script.sh -F queue[num_workers]=3 -F queue[exec_prefix]="")
+if [ "$res" -ne "303" ]; then
   echo "Sorry, system didn't create test_run queue"
   exit 1
 fi
 
 echo "Creating the test nop queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_nop -F queue[script]=./test/test_nop.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_test_nop.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-echo "Creating the ansi test queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_ansi -F queue[script]=./test/ansi_script.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_ansi_script.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "queue created" _install_test_nop.txt > /dev/null
-if [ "$?" -ne "0" ]; then
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue -F queue[name]=test_nop -F queue[script]=./test/test_nop.sh -F queue[num_workers]=1 -F queue[exec_prefix]="")
+if [ "$res" -ne "303" ]; then
   echo "Sorry, system didn't create test_nop queue"
   exit 1
 fi
 
-echo "Creating the test_env_var test queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue_link -sL -F queue[json_path]=./test/fixtures/jsonconfigfile/good_env_var.json -o _install_env_var_script.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
+echo "Creating the ansi test queue..."
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue -F queue[name]=test_ansi -F queue[script]=./test/ansi_script.sh -F queue[num_workers]=1 -F queue[exec_prefix]="")
+if [ "$res" -ne "303" ]; then
+  echo "Sorry, system didn't create test_ansi queue"
   exit 1
 fi
 
-egrep "queue created" _install_env_var_script.txt > /dev/null
-if [ "$?" -ne "0" ]; then
+echo "Creating the test_env_var test queue..."
+res=$(curl -0 -s -w %{http_code} http://127.0.0.1:${rq_port}/new_queue_link -F queue[json_path]=./test/fixtures/jsonconfigfile/good_env_var.json)
+if [ "$res" -ne "303" ]; then
   echo "Sorry, system didn't create test_env_var queue"
   exit 1
 fi
 
 rm _home.txt
-rm _install.txt
-rm _install_test.txt
-rm _install_test_symlink.txt
-rm _install_test_coalesce.txt
-rm _install_test_run.txt
-rm _install_test_nop.txt
-rm _install_ansi_script.txt
-rm _install_env_var_script.txt
-rm cookie_jar
 
 echo "ALL DONE SUCCESSFULLY"
