@@ -6,6 +6,9 @@ require 'fileutils'
 require 'fcntl'
 require 'digest'
 require 'resolv-replace'
+
+$: << File.expand_path('..', File.dirname(__FILE__))
+require 'vendor/bundle/bundler/setup'
 require 'json'
 
 def log(mesg)
