@@ -1165,10 +1165,11 @@ module RQ
               que_name = new_dest
             end
 
-            qc = RQ::QueueClient.new(que_name)
-            if not qc.exists?
+            begin
+              qc = RQ::QueueClient.new(que_name)
+            rescue RqQueueNotFound
               log("#{@name}:#{Process.pid} couldn't DUP message - #{que_name} not available.")
-              msg['child_write_pipe'].syswrite("fail couldn\'t connect to queue - #{que_name}\n")
+              msg['child_write_pipe'].syswrite("fail couldn't connect to queue - #{que_name}\n")
               return
             end
 
@@ -1548,15 +1549,14 @@ module RQ
 
     # Inject a message into 'que' state
     def webhook_message(url, msg, new_state)
-      require 'code/queueclient'
-      qc = RQ::QueueClient.new('webhook')
-
-      msg_id = gen_full_msg_id(msg)
-
-      if not qc.exists?
+      begin
+        qc = RQ::QueueClient.new('webhook')
+      rescue RqQueueNotFound
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
         return
       end
+
+      msg_id = gen_full_msg_id(msg)
 
       # Copy orig message
       msg_copy = msg.clone
