@@ -310,13 +310,10 @@ end
 
 # If valid queue, attempt to relay message
 require 'code/queueclient'
-qc = RQ::QueueClient.new(destq, "../../../../..")
 
 log("Attempting connect with local queue #{destq}")
 
-if not qc.exists?
-  soft_fail("#{destq} does not exist")
-end
+qc = RQ::QueueClient.new(destq, "../../../../..") rescue soft_fail("#{destq} does not exist")
 
 # 2 phase commit section
 
