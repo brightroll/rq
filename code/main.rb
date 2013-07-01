@@ -82,16 +82,33 @@ module RQ
     end
 
     get '/new_queue' do
-      erb :new_queue
+      queue_defaults = {
+        'queue' => {
+          'num_workers' => 1,
+          'coalesce'    => 'no',
+          'exec_prefix' => 'bash -lc ',
+        }
+      }
+      erb :new_queue, :locals => { :params => queue_defaults }
     end
 
     post '/new_queue' do
-      # TODO: validation
-
-      # This creates and starts a queue
+      # This creates and starts a queue, or returns a failure and reason
       result = RQ::QueueMgrClient.create_queue(params['queue'])
-      flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
-      redirect "/q/#{params['queue']['name']}"
+
+      # If the queue was not created, remain on the form page
+      case result[0]
+      when 'fail'
+        status 400
+        flash.now[:error] = "Failed: #{result[1]}"
+        erb :new_queue
+      when 'success'
+        flash[:notice] = "Success: #{result[1]}"
+        redirect "/q/#{params['queue']['name']}"
+      else
+        flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+        redirect "/q/#{params['queue']['name']}"
+      end
     end
 
     post '/new_queue_link' do
