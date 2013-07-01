@@ -12,12 +12,13 @@ module Alarm
   extern "unsigned int alarm(unsigned int)"
 end
 
+$: << File.expand_path('..', File.dirname(__FILE__))
+require 'vendor/bundle/bundler/setup'
+require 'json'
+require 'rule_processor'
 
 $rq_msg_dir = Dir.pwd
 Dir.chdir("#{File.dirname(__FILE__)}")
-
-require 'json'
-require 'rule_processor'
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(3)
