@@ -5,7 +5,7 @@ require 'getoptlong'
 require 'pp'
 
 @server = "localhost"
-@port = ENV.has_key?("RQ_PORT") ? ENV['RQ_PORT'] : 3333
+@port = (ENV['RQ_PORT'] || 3333).to_i
 
 # thresh [WARNING, CRITICAL, WARNING MAX, CRITICAL MAX, RELAYED WARN, RELAYED MAX]
 thresh = [10, 20, 2000, 2500, 3000, 3500]

@@ -15,9 +15,6 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
     @rq_port = (ENV['RQ_PORT'] || 3333).to_i
   end
 
-  # def teardown
-  # end
-  
   def run_command(cmd)
     out = `#{cmd}`
 
