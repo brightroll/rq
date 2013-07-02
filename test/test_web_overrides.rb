@@ -16,7 +16,7 @@ class TC_WebOverridesTest < Test::Unit::TestCase
   def teardown
     FileUtils.rm_f('queue/test/form.json')
   end
-  
+
   def test_web_form_not_hidden
     uri_str = "http://127.0.0.1:#{@rq_port}/q/test/new_message"
     res = Net::HTTP.get_response(URI.parse(uri_str))

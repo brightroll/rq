@@ -12,7 +12,6 @@ puts Dir.pwd.inspect
 
 rq_port = (ENV['RQ_PORT'] || 3333).to_i
 
-
 uri_str = "http://127.0.0.1:#{rq_port}/q/test/config.json"
 res = Net::HTTP.get_response(URI.parse(uri_str))
 

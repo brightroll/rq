@@ -10,7 +10,6 @@ require 'json'
 
 rq_port = (ENV['RQ_PORT'] || 3333).to_i
 
-
 # no relay_ok, this should go direct to the queue
 mesg = { 'dest' => "http://127.0.0.1:#{rq_port}/q/test",
          'src'  => 'test',
