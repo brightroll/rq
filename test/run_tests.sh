@@ -10,7 +10,7 @@ fi
 # Vary the port by Ruby version so that we can run multiple tests at once
 export RQ_PORT=33$(ruby -e 'puts RUBY_VERSION.delete(".")')
 
-./bin/install --force --host 127.0.0.1 --port $RQ_PORT --tmpdir '/tmp'
+./bin/install --force --host 127.0.0.1 --port $RQ_PORT --tmpdir './test/tmp'
 ./bin/queuemgr_ctl &
 
 sleep 1
