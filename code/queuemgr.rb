@@ -383,6 +383,10 @@ module RQ
 
     def start_webserver
       @web_server = fork do
+        # Restore default signal handlers from those inherited from queuemgr
+        Signal.trap('TERM', 'DEFAULT')
+        Signal.trap('CHLD', 'DEFAULT')
+
         $0 = '[rq-web]'
         config = RQ::WebServer.conf_rq_web
         RQ::WebServer.start_rq_web(config)
