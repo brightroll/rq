@@ -104,7 +104,7 @@ end
 File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
 
 # Stop the queue
-`ruby ./code/queuemgr_ctl.rb stop`
+`kill $(cat config/queuemgr.pid)`
 
 # Kill the workers
 begin
@@ -148,11 +148,9 @@ if !pid2_dead
 end
 
 # Restart the queue administratively pause
-`ruby ./code/queuemgr_ctl.rb start`
+`bin/queuemgr_ctl &`
 
-# TODO: properly check for proper start
-
-#sleep(1)
+sleep(1)
 started = false
 5.times do
   # Verify nothing in run dirs
@@ -182,4 +180,3 @@ end
 
 File.unlink('config/test_run.pause')
 puts "ALL DONE SUCCESSFULLY"
-
