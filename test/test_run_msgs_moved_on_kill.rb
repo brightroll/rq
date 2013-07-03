@@ -102,6 +102,7 @@ end
 
 # Set que admin pause
 File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
+at_exit { File.unlink('config/test_run.pause') }
 
 # Stop the queue
 `kill $(cat config/queuemgr.pid)`
@@ -178,5 +179,4 @@ if result['que_size'] != 2
   exit 1
 end
 
-File.unlink('config/test_run.pause')
 puts "ALL DONE SUCCESSFULLY"
