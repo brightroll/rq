@@ -18,6 +18,22 @@ class MiniRouter
       return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/scripts"], :root => 'code')).call(env)
     end
 
+    if path.index('/README.html')
+      return Rack::ConditionalGet.new(
+        Rack::Static.new(nil,
+                         :urls => ["/"],
+                         :root => '.')
+      ).call(env)
+    end
+
+    if path.index('/docs')
+      return Rack::ConditionalGet.new(
+        Rack::Static.new(nil,
+                         :urls => ["/docs"],
+                         :root => '.')
+      ).call(env)
+    end
+
     # Is this an install?
     if path == '/install'
       load 'code/install.rb'
