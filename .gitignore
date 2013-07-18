@@ -5,3 +5,5 @@ scheduler
 .#*
 log/*.log
 *.swp
+docs/*.htmlcontent
+docs/index.txt
