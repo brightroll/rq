@@ -6,19 +6,20 @@ messages in **any language**.
 It is designed to run on every machine in your distributed system.
 Think of it as another one of those small, but
 important services (like crond). It uses directories and json text files on the Unix filesystem
-as its database. It does not use a specialized database. This means it is easy to debug and 
-understand its internals.
-Messages can be small, but RQ was designed for a medium to large granularity.
+as its database. It does not use a specialized database. As a result, it is easy to 
+understand and debug.
+
+Each item in the queue is a **Message**. Messages can be small, but RQ was designed for a medium to large granularity.
 For example, messages could have attachments with 100s to 1000s of megabytes.
-Messages can be processed by the local machine or relayed reliably to another
-machine on another continent. The worker system uses a unix process model (some call
-this a 'forking' model). It bears some resemblance at a high-level to UUCP.
+Each message can be processed by the local machine or relayed reliably to another
+machine for processing. These machines don't have to be in the same data center and in fact can be on another continent. When a message is received in a queue, a worker process is started to process the message. The worker process is one-to-one with a unix process. (some call
+this a 'forking' model). The code required to implement a worker is very small. Also, API is compatible with any language that runs on Unix. While a worker is processing a message, you can 
+view a real-time display of logs (with ANSI colors) via the browser.
+
 It has been used in production since 2009 and processed billions of messages at brightroll.
 It has a full test suite that verifies the system.
-Provides real-time display of logs (even ANSI colors) via the browser.
 
-There is a more distributed option being worked on for the future .
- (Note there is a goal of a more distributed option with MongoDB in the future).
+In the future, there is a goal of building a version that uses a single consistent store (something like MongoDB).
 
 Here is a sample screenshot of a single queue: 
 
@@ -27,24 +28,24 @@ Here is a sample screenshot of a single queue:
 ## A brief overview of the system.
 Once RQ is installed, the user creates a queue. The queue requires only a few
 parameters, but the most important one is the 'queue script'. This is a program
-written in *any* language that will process the messages. The API for the queue
+written in *any* language that will process each message. The API for the queue
 script is easy to 
 implement and described below. Whenever a message is received on that queue,
-this program runs. The program will either succeed, fail, or ask to retry X seconds in
+this program runs. The program will either succeed, fail, or ask to retry *x* seconds in
 the future. If the script takes a long time to run, it can send periodic updates
-to RQ to let it know its progress. The script can also provide a lot of logging
-and huge files as output.
+to RQ to indicate progress. The script can also provide a lot of logging
+and produces large files as output.
 
-The RQ system provides a REST, HTML, cmd-line, or low-level sockets
+The RQ system provides a REST, HTML, cmd-line, or low-level socket
 API to work with messages and queues. That is all there is to it.
 
 When would you use RQ?
 In a typical web application, you should always respond to the browser within a small
-time frame (say 1-3 seconds). You should also avoid using a lot of memory in this section
+time frame (say under 1 seconds). You should also avoid using a lot of memory in this section
 of your application stack as well. If you know a particular computation will exceed
 those requirements, you should hand off the task to a queueing system.
 
-If you have scripts that run via cron, you should probably run that under RQ.  
+If you have scripts that run via cron, you should probably run that under RQ. In this scenario, RQ will monitor that the script properly executed.  
 
 Here are some examples:
 
@@ -57,7 +58,7 @@ Here are some examples:
   * reduce
   * sftp to partner
 * Deploy an update to systems all over the world for user-facing web app (high latency)
-* Periodically rotate send HTTP logs (via Ruby Rack) to a MongoDB box for search
+* Periodically rotate and send HTTP logs to a NOSQL database for search and analysis
 * Verify URLs with Internet Explorer (and take screenshots) on a box controllable via a simple web api
 * Spin up EC2 instances via AWS api
 
@@ -67,8 +68,11 @@ The people behind RQ have been working on Unix since the late 1980's. The focus
 of RQ has been on reliability and the ease of understanding. The author prefers
 systems that allow him to sleep soundly at night, and he thinks the design of 
 RQ allows him to achieve this. There is a lot to talk about here and why the existing
-systems didn't appeal to the problem. If you are interested in that, read the full
+systems didn't solve the problem. If you are interested in that, read the full
 philosphy section below.
+
+Also, if you were on the internet in the 80s or 90s, you will see that this system bears some resemblance to the UUCP system deployed back then. It was definitely an inspiration for the design of this system.
+
 
 
 Table Of Contents
