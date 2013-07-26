@@ -53,6 +53,10 @@ module RQ
       child_rd, parent_wr = IO.pipe
 
       child_pid = fork do
+        # Restore default signal handlers from those inherited from queuemgr
+        Signal.trap('TERM', 'DEFAULT')
+        Signal.trap('CHLD', 'DEFAULT')
+
         sched_path = "scheduler/"
         $0 = "[rq-scheduler]"
         begin
