@@ -21,6 +21,7 @@ def run(daemon = false)
     STDOUT.sync = true
     $stderr = STDOUT
   end
+  $0 = '[rq-web]'
 
   Signal.trap("TERM") do 
     puts "Got term... doing kill"

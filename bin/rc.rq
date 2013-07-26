@@ -1,48 +1,66 @@
-#!/bin/sh
+#!/bin/bash
+
+COMMAND=$1
+# If you want to run RQ as yourself:
+#RQUSER=$USER
+RQUSER=br
+RQDIR=/rq/current
+
+# Set strictness after importing $1 because it may not be set.
+set -u
+set -e
 
 PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 export PATH
 
-if [ ! -d /rq ] ; then
-	# RQ not installed
-	exit 0 
+if [ ! -d /rq/current ] ; then
+	echo "RQ is not installed at /rq/current"
+	exit 1
 fi
 
-me=`id -u`
+case $COMMAND in
+start)
+	RQPID=$(pgrep -u $RQUSER -f rq-mgr || exit 0)
+	if [ "$RQPID" ]; then
+		echo "RQ is already running at pid $RQPID"
+		exit 2
+	fi
 
-if [ $me -eq 0 ] ; then
-	#TODO this needs to get changed on some hosts as they run as user pr
-	#will remove pr dependencies in the future
-	exec sudo -u br -i /etc/init.d/rq $*
-fi
+	sudo -u $RQUSER $RQDIR/bin/web_server.rb server
+	sudo -u $RQUSER $RQDIR/bin/queuemgr_ctl start
+;;
+stop)
+	# Stop the web interface
+	for pid in $(pgrep -u $RQUSER -f rq-web || exit 0)
+	do
+		echo "Stopping RQ web_server"
+		kill $pid
+	done
 
-case $1 in
-	start)
-		# don't start unless not running already
-		if [ `ps ax | grep '\[rq' | grep -v grep | wc -l` -eq 0 ]
-		then
-			ulimit -c unlimited
-			cd /rq/current
-			/rq/current/bin/web_server.sh
-			/rq/current/bin/queuemgr_ctl start
-		fi
-	;;
-	stop)
-		cd /rq/current
-		/rq/current/bin/queuemgr_ctl stop
-		# kill any procs still running
-		for pid in `ps ax | grep '\[rq' | grep -v grep | awk '{print $1}'`
-		do
-			kill $pid
-		done
-		for pid in `ps ax | grep 'web_server' | grep -v grep | awk '{print $1}'`
-		do
-			kill $pid
-		done
-	;;
-	restart)
-		stop
-		start
-	;;
+	# Stop the queues
+	sudo -u $RQUSER $RQDIR/bin/queuemgr_ctl stop
+
+	# Make sure the queues are stopped
+	for pid in $(pgrep -u $RQUSER -f rq-que || exit 0)
+	do
+		echo "Killing undead rq $pid"
+		kill $pid
+	done
+
+	# Old style names. This code can be removed after Feb 2013
+	for pid in $(pgrep -u $RQUSER -f web_server.rb\|\\[rq || exit 0)
+	do
+		echo "Killing old-style rq $pid"
+		kill $pid
+	done
+	# End of old style names.
+;;
+restart)
+	$0 stop && $0 start
+;;
+*)
+	echo "Usage: $0 start | stop | restart"
+	exit 1
+;;
 esac
 
