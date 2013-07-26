@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./bin/web_server.rb server
-
+# This file is deprecated
+/rq/current/bin/web_server.rb server
