@@ -1,8 +1,17 @@
 #!/usr/bin/env ruby
 
-require 'dl/import'
 module Alarm
-  extend DL::Importable
+  case RUBY_VERSION.to_f
+    when 1.8
+      require 'dl/import'
+      extend DL::Importable
+    when 1.9
+      require 'dl/import'
+      extend DL::Importer
+    else # 2.0+
+      require 'fiddle/import'
+      extend Fiddle::Importer
+  end
   if RUBY_PLATFORM =~ /darwin/
     so_ext = 'dylib'
   else
