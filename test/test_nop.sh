@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function write_status {
-  echo $1 $2 >&3
+  echo $1 $2 >&$RQ_WRITE
   echo $1 $2
 }
 
