@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function write_status {
-  echo $1 $2 >&3
+  echo $1 $2 >&$RQ_WRITE
 }
 
 
@@ -9,7 +9,7 @@ RETURN_VAR=      # BASH IS SOOOOOOO AWESOMEST
 
 function read_status() {
   # read line from fd4 into result
-  read -u 4 readresult
+  read -u $RQ_READ readresult
 
   if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't read response correctly"

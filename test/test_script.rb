@@ -9,7 +9,7 @@ end
 # Had to use \n
 # I tried to use \000 but bash barfed on me
 def write_status(state, mesg = '')
-  io = IO.for_fd(ENV['RQ_PIPE'].to_i)
+  io = IO.for_fd(ENV['RQ_WRITE'].to_i)
   msg = "#{state} #{mesg}\n"
   io.syswrite(msg)
 end

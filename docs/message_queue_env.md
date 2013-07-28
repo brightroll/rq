@@ -26,7 +26,8 @@ ENV["RQ_FULL_MSG_ID"] = Full msg id of message being processed
 ENV["RQ_MSG_DIR"]    = Dir for msg (Should be Current Dir unless dir is changed
                        by script)
 
-ENV["RQ_PIPE"]       = Pipe FD to Queue management process
+ENV["RQ_READ"]       = Read pipe FD to Queue management process
+ENV["RQ_WRITE"]      = Write pipe FD to Queue management process
 
 ENV["RQ_COUNT"]      = Number of times message has been relayed or processed
 

@@ -19,7 +19,7 @@ end
 log(Dir.pwd.inspect)
 
 # Setup a global binding so the GC doesn't close the file
-$RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
+$RQ_IO = IO.for_fd(ENV['RQ_WRITE'].to_i)
 
 # Had to use \n
 # I tried to use \000 but bash barfed on me

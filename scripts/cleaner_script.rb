@@ -9,7 +9,7 @@ require 'time'
 require 'code/hashdir'
 
 # Setup a global binding so the GC doesn't close the file
-$RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
+$RQ_IO = IO.for_fd(ENV['RQ_WRITE'].to_i)
 
 # IO tower to RQ mgr process
 def write_status(state, mesg = '')
