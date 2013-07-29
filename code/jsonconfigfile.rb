@@ -45,4 +45,3 @@ module RQ
     end
   end
 end
-

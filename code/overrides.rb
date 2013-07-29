@@ -1,5 +1,3 @@
-
-
 module RQ
   class Overrides
 
@@ -37,4 +35,3 @@ module RQ
     end
   end
 end
-

@@ -26,14 +26,13 @@ module RQ
       @status["admin_status"] = "UP"
       @status["oper_status"]  = "UP"
 
-
-      if load_rq_config() == nil
+      if load_rq_config == nil
         sleep 5
         log("Invalid main rq config. Exiting." )
         exit! 1
       end
 
-      if load_config() == false
+      if load_config == false
         sleep 5
         log("Invalid config for #{@name}. Skipping." )
         #exit! 1
@@ -41,8 +40,7 @@ module RQ
     end
 
     def self.log(path, mesg)
-      File.open(path + '/sched.log', "a") do
-        |f|
+      File.open(path + '/sched.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end

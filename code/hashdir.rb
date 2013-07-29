@@ -1,5 +1,3 @@
-
-
 module RQ
   class HashDir
 
@@ -9,7 +7,7 @@ module RQ
       FileUtils.mkdir_p(path)
       return true
     end
-    
+
     def self.exist(path, msg_id)
       parts = self.msg_id_parts(msg_id)
       # parts = [ "YYYYmmDD", "HH", "MM" ]
@@ -19,7 +17,7 @@ module RQ
 
       File.exists?("#{path}/#{parts[0]}/#{parts[1]}/#{parts[2]}/#{msg_id}")
     end
-    
+
     # Do a DFT traverse in reverse order so most
     # recent is first
     def self.entries(path, limit = nil)
@@ -132,7 +130,6 @@ module RQ
         nil
       end
     end
-    
+
   end
 end
-

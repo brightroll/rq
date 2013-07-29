@@ -1,5 +1,3 @@
-
-
 module RQ
   class PortaProc
 
@@ -29,4 +27,3 @@ module RQ
 
   end
 end
-
