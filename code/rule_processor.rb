@@ -1,4 +1,3 @@
-
 module RQ
 
   class DSLArgumentError < StandardError; end
@@ -102,7 +101,7 @@ module RQ
     end
 
     def select_hosts
-      return [] if @data[:route].empty? 
+      return [] if @data[:route].empty?
 
       rts = @data[:route]
 
@@ -208,9 +207,9 @@ module RQ
             rule.process(line, i, verbose)
           end
         }
-      rescue Errno::ENOENT => ex 
+      rescue Errno::ENOENT => ex
         return nil
-      rescue StandardError => ex 
+      rescue StandardError => ex
         if verbose
           p ex
           p ex.class

@@ -1,5 +1,3 @@
-
-
 module RQ
   class AdminOper
 
@@ -49,4 +47,3 @@ module RQ
 
   end
 end
-

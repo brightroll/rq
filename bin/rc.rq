@@ -63,4 +63,3 @@ restart)
 	exit 1
 ;;
 esac
-
