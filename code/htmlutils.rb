@@ -66,9 +66,7 @@ module RQ
 
       nums = codes.split(';')
 
-      nums.each do
-        |num_str|
-
+      nums.each do |num_str|
         num = num_str.to_i
 
         if num == 0

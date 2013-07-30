@@ -96,79 +96,79 @@ module RQ
     end
 
     def ping
-      return send_recv('ping')
+      send_recv('ping')
     end
 
     def uptime
-      return send_recv('uptime')
+      send_recv('uptime')
     end
 
     def status
-      return send_recv('status')
+      send_recv('status')
     end
 
     def shutdown
-      return send_recv('shutdown')
+      send_recv('shutdown')
     end
 
     def create_message(params)
-      return send_recv('create_message', params.to_json)
+      send_recv('create_message', params.to_json)
     end
 
     def single_que(params)
-      return send_recv('single_que', params.to_json)
+      send_recv('single_que', params.to_json)
     end
 
     def messages(params)
-      return send_recv('messages', params.to_json)
+      send_recv('messages', params.to_json)
     end
 
     def num_messages
-      return send_recv('num_messages')
+      send_recv('num_messages')
     end
 
     def prep_message(params)
-      return send_recv('prep_message', params.to_json)
+      send_recv('prep_message', params.to_json)
     end
 
     def attach_message(params)
-      return send_recv('attach_message', params.to_json)
+      send_recv('attach_message', params.to_json)
     end
 
     def delete_attach_message(params)
-      return send_recv('delete_attach_message', params.to_json)
+      send_recv('delete_attach_message', params.to_json)
     end
 
     def commit_message(params)
-      return send_recv('commit_message', params.to_json)
+      send_recv('commit_message', params.to_json)
     end
 
     def delete_message(params)
-      return send_recv('delete_message', params.to_json)
+      send_recv('delete_message', params.to_json)
     end
 
     def get_message(params)
-      return send_recv('get_message', params.to_json)
+      send_recv('get_message', params.to_json)
     end
 
     def run_message(params)
-      return send_recv('run_message', params.to_json)
+      send_recv('run_message', params.to_json)
     end
 
     def clone_message(params)
-      return send_recv('clone_message', params.to_json)
+      send_recv('clone_message', params.to_json)
     end
 
     def get_config
-      return send_recv('config')
+      send_recv('config')
     end
 
     def get_message_state(params)
-      return send_recv('get_message_state', params.to_json)
+      send_recv('get_message_state', params.to_json)
     end
 
     def get_message_status(params)
-      return send_recv('get_message_status', params.to_json)
+      send_recv('get_message_status', params.to_json)
     end
 
   end

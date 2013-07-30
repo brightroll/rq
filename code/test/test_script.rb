@@ -1,10 +1,7 @@
 #!/usr/bin/env ruby
 
-
-# 
 def log(mesg)
-  File.open('relay.log', "a") do
-    |f|
+  File.open('relay.log', "a") do |f|
     f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
   end
 end

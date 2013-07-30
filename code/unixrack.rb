@@ -7,6 +7,7 @@ if not Rack.const_defined?("Handler")
   require 'rack/handler'
 end
 require 'time'
+require 'socket'
 require 'stringio'
 
 # Thx - Logan Capaldo
@@ -257,8 +258,7 @@ module Rack
 
         headers['Connection'] ||= 'close'
 
-        headers.each do
-        |k, vs|
+        headers.each do |k, vs|
           vs.split("\n").each { |v| hdr_ary << ["#{k}: #{v}"] }
         end
 
@@ -277,8 +277,6 @@ module Rack
 
 
       def self.run(app, options={})
-
-        require 'socket'
         port = options[:Port] || 8080
         host = options[:Hostname] || 'localhost'
         listen = options[:Host] || '127.0.0.1'

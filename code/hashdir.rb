@@ -28,35 +28,31 @@ module RQ
       if level == 0
         # YYYYMMDD
         ents1 = Dir.glob("#{path}/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           self.entries_int(e, 1, accum, limit)
           break if limit && accum.length == limit
-        }
+        end
       elsif level == 1
         # HH
         ents1 = Dir.glob("#{path}/[0-9][0-9]")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           self.entries_int(e, 2, accum, limit)
           break if limit && accum.length == limit
-        }
+        end
       elsif level == 2
         # MM
         ents1 = Dir.glob("#{path}/[0-9][0-9]")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           self.entries_int(e, 3, accum, limit)
           break if limit && accum.length == limit
-        }
+        end
       elsif level == 3
         # MESG-ID
         ents1 = Dir.glob("#{path}/[0-9][0-9]*")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           accum << e.split('/').last
           break if limit && accum.length == limit
-        }
+        end
       end
       accum
     end
@@ -77,24 +73,21 @@ module RQ
       if level == 0
         # YYYYMMDD
         ents1 = Dir.glob("#{path}/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           sum += self.num_entries_int(e, 1)
-        }
+        end
       elsif level == 1
         # HH
         ents1 = Dir.glob("#{path}/[0-9][0-9]")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           sum += self.num_entries_int(e, 2)
-        }
+        end
       elsif level == 2
         # MM
         ents1 = Dir.glob("#{path}/[0-9][0-9]")
-        ents1.sort.reverse.each {
-          |e|
+        ents1.sort.reverse.each do |e|
           sum += self.num_entries_int(e, 3)
-        }
+        end
       elsif level == 3
         # MESG-ID
         ents1 = Dir.glob("#{path}/[0-9][0-9]*")
