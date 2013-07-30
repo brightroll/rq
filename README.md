@@ -633,13 +633,13 @@ in a distributed system.
 
 Here are some of the tenets of its operation:
 
-It provides a system where reliable handoff is provided.
-RQ doesn't allow a system to fail silently.
-The system doesn't require 100% availability for messaging to work.
-No single message can take the system down.
-It is language agnostic. Let the right tool for the job be used vs. a specific language or framework.
-It encourages idempotent queue behaviour.
-It uses Unix properly, and allows those who know Unix transparent access to the RQ system.
+* It provides a system where reliable handoff is provided.
+* RQ doesn't allow a system to fail silently.
+* The system doesn't require 100% availability for messaging to work.
+* No single message can take the system down.
+* It is language agnostic. Let the right tool for the job be used vs. a specific language or framework.
+* It encourages idempotent queue behaviour.
+* It uses Unix properly, and allows those who know Unix transparent access to the RQ system.
 
 <a name='section_History'></a>
 ## History
