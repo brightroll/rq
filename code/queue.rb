@@ -321,6 +321,10 @@ module RQ
           $stdout.reopen f
           $stderr.reopen f
 
+          # Ruby 2.0 sets CLOEXEC by default, turn it off explicitly
+          child_wr.fcntl(Fcntl::F_SETFD, child_wr.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
+          child_rd.fcntl(Fcntl::F_SETFD, child_rd.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
+
           # Set close-on-exec for all fds except 0, 1, 2 and the pipes
           (3..32).each do |io|
             next if [child_wr.fileno, child_rd.fileno].include? io
@@ -375,10 +379,12 @@ module RQ
           exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
             #RQ::Queue.log(job_path, "exec path: #{script_path}")
-            exec(script_path, "")
+            exec(script_path, "") if RUBY_VERSION < '2.0'
+            exec(script_path, "", :close_others => false)
           else
             #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
-            exec(exec_prefix + script_path)
+            exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
+            exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
           RQ::Queue.log(job_path, $!)
