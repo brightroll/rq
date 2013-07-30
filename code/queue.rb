@@ -400,18 +400,6 @@ module RQ
       @config.load_config
     end
 
-#    def write_status
-#      begin
-#        data = @config.to_json
-#        File.open(@queue_path + '/config.json.tmp', 'w') { |f| f.write(data) }
-#        File.rename(@queue_path + '/config.json.tmp', @queue_path + '/config.json')
-#      rescue
-#        log("FATAL - couldn't write config")
-#        return false
-#      end
-#      return true
-#    end
-
     # It is called right before check_msg
     def alloc_id(msg)
       # Simple time insertion system - should work since single threaded
@@ -1208,8 +1196,6 @@ module RQ
 
     def shutdown!
       log("Received shutdown")
-      # TODO: proper oper status
-      # write_status
       Process.exit! 0
     end
 
