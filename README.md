@@ -1,4 +1,3 @@
-
 # RQ
 
 RQ is a **simple** queueing/messaging system for *any* Unix system and can process
@@ -609,27 +608,38 @@ The system
 <a name='section_Philosophy'></a>
 ## Philosophy
 
-When working in distributed systems, you will eventually learn that some part of the system will be down or unavailable
-for many unknown reasons. For example, 
+When working in distributed systems, you will eventually learn that the system is never 100% available. Yet,
+most developers tend to program as if the system is always available.
 
-* DNS update breaks dns in infrastructure
-* Change or failure in network switch makes 
+Here is a great list of many of the types of failures that can occur:
 
-Also, when working in a large system, you end up having many parts that are important, but not the critical path.
-There are also many layers, and developers cannot anticipate all of the different errors that can occur.
-Given the lack of priority, sometimes you just need a system that is easy to diagnose and fix. 
+http://aphyr.com/posts/288-the-network-is-reliable
 
-Unfortunately, most systems are designed so that the framework to deal with the above is left to the engineers.
-For example, everybody agrees that errors are bad and will occur. Yet there are many systems that will silently
- ignore errors.
+Why do developers work this way? Most of the time, it is just time pressure to get something out the door. Other 
+times it is just a lack of understanding. Modern systems tend to have many layers and components. It would
+be difficult to know them all. 
 
-There is also a general lack of understanding of Unix best practices. For example, when DHH proclaimed to 
-'cheat' by running ImageMagick in a separate process, this was a huge revelation to the community.
-Overall, people 
+Currently, it takes effort to mitigate these issues. There is some progress, but there isn't a single framework
+that handles all of the issues defined above. All to often the solution is to silently ignore the errors.
 
-RQ is designed to mitigate a large portion of this.
+Another important point to make is that knowledge transfer has not been good here. For example, many people
+use Unix now without really knowing the fundamental concepts of the system. There are common idioms and
+best practices. For example, when DHH proclaimed to 
+'cheat' by running ImageMagick in a separate process, this was a huge revelation to the Rails community. Yet,
+this was one of the core tenets of Unix from its earliest days.
 
-It is process based. This eliminates the single message taking down the whole system problem
+RQ is  designed to mitigate a large portion of the above. It is a framework for communication and processing
+in a distributed system.
+
+Here are some of the tenets of its operation:
+
+It provides a system where reliable handoff is provided.
+RQ doesn't allow a system to fail silently.
+The system doesn't require 100% availability for messaging to work.
+No single message can take the system down.
+It is language agnostic. Let the right tool for the job be used vs. a specific language or framework.
+It encourages idempotent queue behaviour.
+It uses Unix properly, and allows those who know Unix transparent access to the RQ system.
 
 <a name='section_History'></a>
 ## History
