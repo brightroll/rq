@@ -91,8 +91,7 @@ module RQ
         File.symlink(old_path, queue_path + '/config.json')
       else
         # Write config to dir
-        File.open(queue_path + '/config.json', "w") do
-          |f|
+        File.open(queue_path + '/config.json', "w") do |f|
           f.write(options.to_json)
         end
       end
@@ -100,8 +99,7 @@ module RQ
     end
 
     def self.log(path, mesg)
-      File.open(path + '/queue.log', "a") do
-        |f|
+      File.open(path + '/queue.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
@@ -356,8 +354,7 @@ module RQ
     def init_socket
       # Show pid
       File.unlink(@queue_path + '/queue.pid') rescue nil
-      File.open(@queue_path + '/queue.pid', "w") do
-        |f|
+      File.open(@queue_path + '/queue.pid', "w") do |f|
         f.write("#{Process.pid}\n")
       end
 
@@ -447,8 +444,7 @@ module RQ
 
       # Copy only these keys from input message
       keys = %w(src param1 param2 param3 param4 post_run_webhook due force_remote)
-      keys.each do
-        |key|
+      keys.each do |key|
         next unless input.has_key?(key)
         msg[key] = input[key]
       end
@@ -521,8 +517,7 @@ module RQ
     # Put all of its dups into the done state
     def handle_dups_done(msg, new_state)
       if msg['dups']
-        msg['dups'].each {
-          |i|
+        msg['dups'].each do |i|
           h = @temp_que_dups.delete(i)
           new_status = "duplicate #{gen_full_msg_id(msg)}"
           write_msg_status(i, new_status, 'que')
@@ -532,7 +527,7 @@ module RQ
           # TODO: refactor this
           basename = "#{@queue_path}/que/#{i}"
           RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", i)
-        }
+        end
         msg['dups'] = msg['dups'].map { |i| gen_full_msg_id({'msg_id' => i}) }
       end
     end
@@ -540,12 +535,11 @@ module RQ
     # Handle a message that doesn't succeed
     def handle_dups_fail(msg)
       if msg['dups']
-        msg['dups'].each {
-          |i|
+        msg['dups'].each do |i|
           h = @temp_que_dups.delete(i)
           h.delete('dup')
           @que.unshift(h)
-        }
+        end
         msg.delete('dups')
       end
     end
@@ -584,8 +578,7 @@ module RQ
 
       # Copy only these keys from input message
       keys = %w(src param1 param2 param3 param4 post_run_webhook due)
-      keys.each do
-        |key|
+      keys.each do |key|
         next unless input.has_key?(key)
         msg[key] = input[key]
       end
@@ -726,8 +719,7 @@ module RQ
             new_attach_path = new_basename + '/attach/'
             Dir.mkdir(new_attach_path)
 
-            ents.each do
-              |ent|
+            ents.each do |ent|
               # Now clone attachments by hard_linking to them in new message
               new_path = new_attach_path + ent
               old_path = old_attach_path + ent
@@ -775,8 +767,7 @@ module RQ
           ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
           if not ents.empty?
             msg['_attachments'] = { }
-            ents.each do
-              |ent|
+            ents.each do |ent|
               msg['_attachments'][ent] = { }
               path = "#{basename}/attach/#{ent}"
               md5, size = file_md5(path)
@@ -951,8 +942,7 @@ module RQ
       # run msgs just put back into que
       basename = @queue_path + '/run/'
       messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
-      messages.each do
-        |mname|
+      messages.each do |mname|
         begin
           File.rename(basename + mname, @queue_path + '/que/' + mname)
         rescue
@@ -967,8 +957,7 @@ module RQ
 
       messages.sort!.reverse!
 
-      messages.each do
-        |mname|
+      messages.each do |mname|
         begin
           data = File.read(basename + mname + "/msg")
           msg = JSON.parse(data)
@@ -1018,8 +1007,7 @@ module RQ
 
       child_msgs = data.split("\n")
 
-      child_msgs.each do
-        |child_msg|
+      child_msgs.each do |child_msg|
         parts = child_msg.split(" ", 2)
 
         # Always write message status
@@ -1123,15 +1111,14 @@ module RQ
               # The short msg_id
               que_msg_id = result[1][/\/q\/[^\/]+\/([^\/]+)/, 1]
 
-              attachments.each {
-                |path|
+              attachments.each do |path|
                 r2 = qc.attach_message({'msg_id' => que_msg_id, 'pathname' => path})
                 if r2[0] != 'ok'
                   log("#{@name}:#{Process.pid} couldn't DUP message - #{r2[1]}")
                   msg['child_write_pipe'].syswrite("fail dup failed - attach fail #{r2[1]}\n")
                   return
                 end
-              }
+              end
 
               r3 = qc.commit_message({'msg_id' => que_msg_id})
               if r3[0] != 'ok'
@@ -1188,8 +1175,7 @@ module RQ
     end
 
     def log(mesg)
-      File.open(@queue_path + '/queue.log', "a") do
-        |f|
+      File.open(@queue_path + '/queue.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
@@ -1210,8 +1196,7 @@ module RQ
       end
 
       # Are we arleady running max workers
-      active_count = @run.inject(0) do
-        |acc,o|
+      active_count = @run.inject(0) do |acc, o|
         if o.has_key?('child_pid')
           acc = acc + 1
         end
@@ -1258,9 +1243,6 @@ module RQ
     end
 
     def run_loop
-
-      # Keep this here, cruft loves crufty company
-      require 'fcntl'
       flag = File::NONBLOCK
       if defined?(Fcntl::F_GETFL)
         flag |= @sock.fcntl(Fcntl::F_GETFL)
@@ -1419,8 +1401,7 @@ module RQ
                 if ['err', 'done', 'relayed'].include? new_state
                   # Send a webhook if there is a web hook
                   if msg.include? 'post_run_webhook'
-                    msg['post_run_webhook'].each do
-                      |wh|
+                    msg['post_run_webhook'].each do |wh|
                       webhook_message(wh, msg, new_state)
                     end
                   end

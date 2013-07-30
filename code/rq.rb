@@ -78,8 +78,7 @@ class Commands
     # Construct message
     mesg = {}
     keys = %w(dest src count max_count param1 param2 param3 param4 due force_remote)
-    keys.each do
-      |key|
+    keys.each do |key|
       next unless args.has_key?(key)
       mesg[key] = args[key]
     end
@@ -102,8 +101,7 @@ class Commands
     # Construct message
     mesg = {}
     keys = %w(dest src count max_count param1 param2 param3 param4 due force_remote)
-    keys.each do
-      |key|
+    keys.each do |key|
       next unless args.has_key?(key)
       mesg[key] = args[key]
     end
@@ -133,8 +131,7 @@ class Commands
     # Construct message for queue mgr
     msg = {'msg_id' => msg_id}
     keys = %w(pathname name local_fs_only)
-    keys.each do
-      |key|
+    keys.each do |key|
       next unless args.has_key?(key)
       msg[key] = args[key]
     end
@@ -239,8 +236,7 @@ class Commands
     # Construct message
     mesg = {}
     keys = %w(dest src count max_count param1 param2 param3 param4 due force_remote)
-    keys.each do
-      |key|
+    keys.each do |key|
       next unless args.has_key?(key)
       mesg[key] = args[key]
     end
@@ -264,14 +260,12 @@ class Commands
     if result[0] == 'ok'
       ents = []
       if result[1].has_key?('_attachments')
-        result[1]['_attachments'].each do
-          |k,v|
+        result[1]['_attachments'].each do |k,v|
           ents << [k, v['md5'], v['size'], v['path']]
         end
       end
       print "#{result[0]} #{ents.length}\n"
-      ents.each do
-        |ent|
+      ents.each do |ent|
         print "#{ent[0]} #{ent[1]} #{ent[2]} #{ent[3]}\n"
       end
     else

@@ -27,8 +27,7 @@ class TC_EnvVarTest < Test::Unit::TestCase
 
     # Wait for it to change state
     result = {}
-    20.times do
-      |i|
+    20.times do |i|
       sleep 0.2
       uri_str = "#{msg_id}.json"
       res = Net::HTTP.get_response(URI.parse(uri_str))
