@@ -1,4 +1,5 @@
 require 'vendor/bundle/bundler/setup'
+require 'code/rule_processor'
 require 'code/queueclient'
 require 'code/errors'
 
@@ -281,8 +282,6 @@ class Commands
   end
 
   def cmd_verify_rules(args)
-    require 'code/rule_processor'
-
     raise RQ::RqMissingArgument if not args['path']
 
     rp = RQ::RuleProcessor.process_pathname(args['path'], args['verbose'])
