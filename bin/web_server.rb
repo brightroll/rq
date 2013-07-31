@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 Dir.chdir(File.join(File.dirname(__FILE__), ".."))
 
