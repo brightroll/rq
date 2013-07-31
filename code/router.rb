@@ -1,10 +1,8 @@
 require 'rack'
-require 'version'
 
 class MiniRouter
   def call(env)
     path = env["PATH_INFO"].to_s.squeeze("/")
-    #p "PATH: #{path}"
 
     ## Notice the chaining here, if a path below has a dependency,
     ## that dependency must be handled prior, otherwhise an infinite

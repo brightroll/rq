@@ -1,11 +1,10 @@
-
 require 'socket'
 require 'json'
 
 module RQ
   class Message < Struct.new(:msg_id, :status, :dest, :src, :param1, :param2, :param3, :param4)
 
-    def initialize(options = { }})
+    def initialize(options={})
     end
 
     def init_with_opts(options)
@@ -21,5 +20,3 @@ module RQ
 
   end
 end
-
-

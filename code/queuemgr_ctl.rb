@@ -1,12 +1,10 @@
-
-require 'vendor/environment.rb'
+require 'vendor/environment'
 require 'code/queuemgrclient'
 
 Dir.chdir(File.join(File.dirname(__FILE__), ".."))
 
 def log(mesg)
-  File.open("log/queuemgr.log", "a") do
-    |f|
+  File.open("log/queuemgr.log", "a") do |f|
     f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
   end
 end
@@ -31,7 +29,6 @@ def stop
 end
 
 
-  
 # This method causes the current running process to become a daemon
 def daemonize()
   srand # Split rand streams between spawning and daemonized process
@@ -115,10 +112,8 @@ $0 = '[rq-mgr]'
 begin
   load 'code/queuemgr.rb'
 rescue Exception
-  File.open("log/queuemgr.log", "a") do
-    |f|
+  File.open("log/queuemgr.log", "a") do |f|
     f.write("#{Process.pid} - #{Time.now} - EXCEPTION [ #{$!} ]\n")
     f.write("#{Process.pid} - #{Time.now} - EXCEPTION [ #{$!.backtrace} ]\n")
   end
 end
-

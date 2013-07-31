@@ -8,8 +8,7 @@ require 'code/scheduler'
 require 'version'
 
 def log(mesg)
-  File.open('log/queuemgr.log', "a") do
-    |f|
+  File.open('log/queuemgr.log', "a") do |f|
     f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
   end
 end
@@ -140,7 +139,7 @@ module RQ
       if data[0].index('create_queue ') == 0
         json = data[0].split(' ', 2)[1]
         options = JSON.parse(json)
-        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }} 
+        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }}
 
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
@@ -313,7 +312,7 @@ module RQ
 
     def shutdown
       final_shutdown! if @queues.empty?
-      
+
       # Remove non-running entries
       @queues = @queues.select { |q| q.pid }
 
@@ -377,7 +376,7 @@ module RQ
 
     def load_queues
       queues = Dir.entries('queue').reject {|i| i.include? '.'}
-      
+
       queues.each do |q|
         start_queue q
       end
@@ -438,7 +437,7 @@ def run_loop
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
           log('error acception on main sock, supposed to be readysleeping')
         end
-        # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
+        # Linux Doesn't inherit and BSD does... recomended behavior is to set again
         flag = 0xffffffff ^ File::NONBLOCK
         if defined?(Fcntl::F_GETFL)
           flag &= client_socket.fcntl(Fcntl::F_GETFL)
@@ -448,14 +447,13 @@ def run_loop
         qmgr.handle_request(client_socket)
       else
         # probably a child pipe that closed
-        worker = qmgr.queues.find {
-          |i|
+        worker = qmgr.queues.find do |i|
           if i.child_write_pipe
             i.child_write_pipe.fileno == io.fileno
           else
             false
           end
-        }
+        end
         if worker
           res = Process.wait2(worker.pid, Process::WNOHANG)
           if res
@@ -467,7 +465,7 @@ def run_loop
               # would really like a timer on the event loop so I can sleep a sec, but
               # whatever
               #
-              # If queue.rb code fails/exits 
+              # If queue.rb code fails/exits
               if worker.num_restarts >= 11
                 worker.status = "ERROR"
                 worker.pid = nil
@@ -497,7 +495,7 @@ def run_loop
         else
           log("VERY STRANGE: got a read ready on an io that we don't track!")
         end
-        
+
       end
     end
 

@@ -2,7 +2,7 @@
 
 Dir.chdir(File.join(File.dirname(__FILE__), ".."))
 
-require 'vendor/environment.rb'
+require 'vendor/environment'
 require 'code/unixrack.rb'
 require 'code/router.rb'
 require 'json'

@@ -176,16 +176,13 @@ module RQ
       rules = []
       begin
         lines = []
-        File.open(path) do
-          |f|
+        File.open(path) do |f|
           lines = f.readlines
         end
 
         in_rule = false
         rule = nil
-        lines.each_with_index {
-          |line, i|
-
+        lines.each_with_index do |line, i|
           i = i + 1   # i is offset by 0, so we bump it up for human readable line #s
 
           next if line[0..1] == "#"
@@ -206,7 +203,7 @@ module RQ
             rules << rule
             rule.process(line, i, verbose)
           end
-        }
+        end
       rescue Errno::ENOENT => ex
         return nil
       rescue StandardError => ex
