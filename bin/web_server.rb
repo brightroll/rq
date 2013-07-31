@@ -23,7 +23,7 @@ def run(daemon = false)
   end
   $0 = '[rq-web]'
 
-  Signal.trap("TERM") do 
+  Signal.trap("TERM") do
     puts "Got term... doing kill"
     Process.kill("KILL", Process.pid)
   end
@@ -46,38 +46,27 @@ def run(daemon = false)
 end
 
 
-#
-# HANDLE CONFIG
-
-if ARGV[0] == "install"
-  $host = "127.0.0.1"
-  $port = "3333"
-  $addr = "0.0.0.0"
-  $allowed_ips = []
-  $basic_auth = nil
-else
-  begin
-    data = File.read('config/config.json')
-    config = JSON.parse(data)
-    $host = config['host']
-    $port = config['port']
-    $addr = config['addr']
-    $allowed_ips = config['allowed_ips'] || []
-    $basic_auth = config['basic_auth']
-    if config['tmpdir']
-      dir = File.expand_path(config['tmpdir'])
-      if File.directory?(dir) and File.writable?(dir)
-        # This will affect the class Tempfile, which is used by Rack
-        ENV['TMPDIR'] = dir
-      else
-        puts "Bad 'tmpdir' in config json [#{dir}]. Exiting"
-        exit! 1
-      end
+begin
+  data = File.read('config/config.json')
+  config = JSON.parse(data)
+  $host = config['host']
+  $port = config['port']
+  $addr = config['addr']
+  $allowed_ips = config['allowed_ips'] || []
+  $basic_auth = config['basic_auth']
+  if config['tmpdir']
+    dir = File.expand_path(config['tmpdir'])
+    if File.directory?(dir) and File.writable?(dir)
+      # This will affect the class Tempfile, which is used by Rack
+      ENV['TMPDIR'] = dir
+    else
+      puts "Bad 'tmpdir' in config json [#{dir}]. Exiting"
+      exit! 1
     end
-  rescue
-    puts "Couldn't read config/config.json file properly. Exiting"
-    exit! 1
   end
+rescue
+  puts "Couldn't read config/config.json file properly. Exiting"
+  exit! 1
 end
 
 
@@ -96,4 +85,3 @@ else
   puts "Staying in foreground..."
   run()
 end
-
