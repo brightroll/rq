@@ -170,3 +170,6 @@ rm cookie_jar
 
 echo "ALL DONE SUCCESSFULLY"
 
+echo "Starting..."
+ruby ./code/queuemgr_ctl.rb start
+echo "Started..."
