@@ -1,6 +1,7 @@
 require 'sinatra/base'
 require 'erb'
 
+require 'version'
 require 'code/queuemgrclient'
 require 'code/queueclient'
 require 'code/hashdir'
