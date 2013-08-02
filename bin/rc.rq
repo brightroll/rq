@@ -5,6 +5,7 @@ COMMAND=$1
 #RQUSER=$USER
 RQUSER=br
 RQDIR=/rq/current
+NLIMIT=10240
 
 # Set strictness after importing $1 because it may not be set.
 set -u
@@ -26,6 +27,7 @@ start)
 		exit 2
 	fi
 
+	if [ "$NLIMIT" ]; then ulimit -n $NLIMIT; fi
 	sudo -u $RQUSER $RQDIR/bin/web_server.rb server
 	sudo -u $RQUSER $RQDIR/bin/queuemgr_ctl start
 ;;
