@@ -18,11 +18,7 @@ require 'json'
 
 ## TEST SECTION
 
-if ENV["RQ_PORT"].nil?
-  rq_port = 3333
-else
-  rq_port = ENV["RQ_PORT"].to_s
-end
+rq_port = (ENV['RQ_PORT'] || 3333).to_i
 
 
 uri_str = "http://127.0.0.1:#{rq_port}/q/test/config.json"

@@ -16,19 +16,6 @@ class MiniRouter
       return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/scripts"], :root => 'code')).call(env)
     end
 
-    # Is this an install?
-    if path == '/install'
-      load 'code/install.rb'
-      return RQ::Install.new.call(env)
-    end
-
-    # Not set up?? It is an install
-    if not File.exists?('config')
-      resp = Rack::Response.new()
-      resp.redirect('/install')
-      return resp.finish
-    end
-
     # Everything else goes into main
     load 'code/main.rb'
     status, headers, body = RQ::Main.new.call(env)

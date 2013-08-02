@@ -9,7 +9,7 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
   </head>
-  <% our_env = RQ::QueueMgrClient.environment rescue 'install' %>
+  <% our_env = RQ::QueueMgrClient.environment rescue 'UNCONFIGURED' %>
   <% our_env = (our_env.index('stage') == 0) ? 'stage' : our_env %>
   <body class="<%= our_env %>">
     <div class="container">
