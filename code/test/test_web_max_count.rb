@@ -12,11 +12,7 @@ require 'test/unit'
 
 class TC_WebAttachErrTest < Test::Unit::TestCase
   def setup
-    if ENV["RQ_PORT"].nil?
-      @rq_port = 3333
-    else
-      @rq_port = ENV["RQ_PORT"].to_i
-    end
+    @rq_port = (ENV['RQ_PORT'] || 3333).to_i
   end
 
   # def teardown
