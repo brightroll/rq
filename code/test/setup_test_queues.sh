@@ -1,60 +1,11 @@
 #!/bin/bash
 
-# SETUP THE QUEUES FOR A VALID TEST
-# we are using bash now since Ruby pthreads just don't
-# work correctly with fork
-
-echo "Stopping..."
-ruby ./code/queuemgr_ctl.rb stop
-echo "Stopped..."
-
-echo "Removing installation dirs"
-rm -rf './queue.noindex'
-rm -rf './queue'
-rm -rf './scheduler'
-rm -rf './config'
-rm -rf './config'
-rm -rf './test_dirs'
-rm -rf './cookie_jar'
-
 echo "Checking that system is ready for install..."
 if [ "x${RQ_PORT}" = "x" ] ; then
   rq_port=3333
 else
   rq_port=${RQ_PORT}
 fi
-
-curl -0 -sL -o _home.txt http://127.0.0.1:${rq_port}/
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ is not running"
-  exit 1
-fi
-
-egrep "Please fill out this form in order to setup this RQ\." _home.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system is still in an installed state"
-  exit 1
-fi
-
-echo "Starting install..."
-curl -0 http://127.0.0.1:${rq_port}/install -sL -F install[host]=127.0.0.1 -F install[port]=${rq_port} -F install[addr]=0.0.0.0 -F install[env]=test -o _install.txt
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, web server for RQ failed to respond correctly"
-  exit 1
-fi
-
-egrep "Your app is now setup\." _install.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system is still in an installed state"
-  exit 1
-fi
-
-while [ ! -f ./queue/relay/queue.pid ] ; do
-  sleep 1
-done
-
-# TODO: Find a better way to monitor service startup
-sleep 2
 
 echo "Checking that system is operational..."
 curl -0 -sL -o _home.txt http://127.0.0.1:${rq_port}/
@@ -169,4 +120,3 @@ rm _install_env_var_script.txt
 rm cookie_jar
 
 echo "ALL DONE SUCCESSFULLY"
-
