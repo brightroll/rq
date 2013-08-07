@@ -202,18 +202,6 @@ module RQ
 
           Dir.chdir(job_path)   # Chdir to child path
 
-          # TODO: log level
-          #RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
-
-          #RQ::Queue.log(job_path, "post fork - parent rd pipe fd: #{parent_rd.fileno}")
-          #RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
-
-          #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
-          #RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
-
-          #RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
-          #RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
-
           parent_rd.close
           parent_wr.close
 
@@ -235,9 +223,6 @@ module RQ
             next if [child_wr.fileno, child_rd.fileno].include? io
             IO.for_fd(io).fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) rescue nil
           end
-          #RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
-
-          #RQ::Queue.log(job_path, "running #{script_path}")
 
           load_aliases_config()
 
@@ -250,9 +235,9 @@ module RQ
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_FULL_MSG_ID"] = gen_full_msg_id(msg)
           ENV["RQ_MSG_DIR"] = job_path
-          ENV["RQ_PIPE"] = child_wr.fileno.to_s # DEPRECATED
-          ENV["RQ_WRITE"] = child_wr.fileno.to_s # USE THESE INSTEAD
-          ENV["RQ_READ"] = child_rd.fileno.to_s
+          ENV["RQ_PIPE"] = "3"   # DEPRECATED
+          ENV["RQ_WRITE"] = "3"  # USE THESE INSTEAD
+          ENV["RQ_READ"] = "4"
           ENV["RQ_COUNT"] = msg['count'].to_s
           ENV["RQ_PARAM1"] = msg['param1']
           ENV["RQ_PARAM2"] = msg['param2']
@@ -271,25 +256,50 @@ module RQ
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
 
-          # TODO
-#          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
-
           # Setting priority to BATCH mode
           Process.setpriority(Process::PRIO_PROCESS, 0, 19)
 
-          # TODO
-          #RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
+          # Force the child_wr and child_rd fds to 3 and 4, respectively.
+          if RUBY_VERSION < '1.9'
+            # WE MUST DO THIS BECAUSE WE MAY GET PIPE FDs IN THE 3-4 RANGE
+            # THIS GIVES US HIGHER # FDs SO WE CAN SAFELY CLOSE
+            child_wr_fd = child_wr.fcntl(Fcntl::F_DUPFD)
+            child_rd_fd = child_rd.fcntl(Fcntl::F_DUPFD)
+
+            # child_wr
+            IO.for_fd(3).close rescue nil
+            fd = IO.for_fd(child_wr_fd).fcntl(Fcntl::F_DUPFD, 3)
+            RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
+            IO.for_fd(child_wr_fd).close rescue nil
+
+            # child_rd
+            IO.for_fd(4).close rescue nil
+            fd = IO.for_fd(child_rd_fd).fcntl(Fcntl::F_DUPFD, 4)
+            RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
+            IO.for_fd(child_rd_fd).close rescue nil
+          end
+
+          RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
+
+          RQ::Queue.log(job_path, "post fork - parent rd pipe fd: #{parent_rd.fileno}")
+          RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
+
+          RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
+          RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
+
+          RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
+          RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
           exec_prefix = @config.conf['exec_prefix'] || "bash -lc "
           if exec_prefix.empty?
             #RQ::Queue.log(job_path, "exec path: #{script_path}")
-            exec(script_path, "") if RUBY_VERSION < '2.0'
-            exec(script_path, "", :close_others => false)
+            exec(script_path, "") if RUBY_VERSION < '1.9'
+            exec(script_path, "", 3 => child_wr.fileno, 4 => child_rd.fileno)
           else
             #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
-            exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
-            exec(exec_prefix + script_path, :close_others => false)
+            exec(exec_prefix + script_path) if RUBY_VERSION < '1.9'
+            exec(exec_prefix + script_path, 3 => child_wr.fileno, 4 => child_rd.fileno)
           end
         rescue
           RQ::Queue.log(job_path, $!)
