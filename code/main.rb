@@ -1,9 +1,11 @@
 require 'sinatra/base'
+require 'sinatra/flash'
 require 'erb'
 
 require 'version'
 require 'code/queuemgrclient'
 require 'code/queueclient'
+require 'code/errors'
 require 'code/hashdir'
 require 'code/portaproc'
 require 'code/overrides'
@@ -15,9 +17,10 @@ module RQ
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
     set :erb, :trim => '-'
+    register Sinatra::Flash
 
     def self.views
-      './code/views'
+      'views'
     end
 
     helpers do
@@ -39,7 +42,7 @@ module RQ
       end
 
       def queue_row(name, options={})
-        qc = get_queueclient(name)
+        qc = get_queueclient(name) rescue (return '')
         html = options[:odd] ?
              "<tr class=\"odd-row\">" :
              "<tr>"
@@ -66,29 +69,11 @@ module RQ
         html += "</form></td>"
         html += "</tr>"
       end
-
-      def flash(type, msg)
-        h = session[:flash] || {}
-        h[type] = msg
-        session[:flash] = h
-      end
-
-      def flash_now(type, msg)
-        h = @flash || {}
-        h[type] = msg
-        @flash = h
-      end
-    end
-
-    before do
-      val = session[:flash]
-      @flash = val || {}
-      session[:flash] = {}
     end
 
     # handle 404s
     not_found do
-      flash_now :error, "404 -- No route matches #{request.path_info}"
+      flash.now[:error] = "404 -- No route matches #{request.path_info}"
       erb :main
     end
 
@@ -97,16 +82,33 @@ module RQ
     end
 
     get '/new_queue' do
-      erb :new_queue
+      queue_defaults = {
+        'queue' => {
+          'num_workers' => 1,
+          'coalesce'    => 'no',
+          'exec_prefix' => 'bash -lc ',
+        }
+      }
+      erb :new_queue, :locals => { :params => queue_defaults }
     end
 
     post '/new_queue' do
-      # TODO: validation
-
-      # This creates and starts a queue
+      # This creates and starts a queue, or returns a failure and reason
       result = RQ::QueueMgrClient.create_queue(params['queue'])
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
-      redirect "/q/#{params['queue']['name']}"
+
+      # If the queue was not created, remain on the form page
+      case result[0]
+      when 'fail'
+        status 400
+        flash.now[:error] = "Failed: #{result[1]}"
+        erb :new_queue
+      when 'success'
+        flash[:notice] = "Success: #{result[1]}"
+        redirect "/q/#{params['queue']['name']}"
+      else
+        flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+        redirect "/q/#{params['queue']['name']}"
+      end
     end
 
     post '/new_queue_link' do
@@ -121,14 +123,14 @@ module RQ
         end
       result = RQ::QueueMgrClient.create_queue_link(params['queue']['json_path'])
       #TODO - do the right thing with the result code
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{js_data['name']}"
     end
 
     post '/delete_queue' do
       # This creates and starts a queue
       result = RQ::QueueMgrClient.delete_queue(params['queue_name'])
-      flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
+      flash[:notice] = "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/"
     end
 
@@ -167,11 +169,13 @@ module RQ
 
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = RQ::QueueClient.new(params[:name])
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
-
-      erb :queue
+      erb :queue, :locals => { :qc => qc }
     end
 
     get '/q/:name/done.json' do
@@ -179,8 +183,11 @@ module RQ
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
-      qc = RQ::QueueClient.new(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       limit = 10
       if params['limit']
@@ -191,14 +198,14 @@ module RQ
     end
 
     get '/q/:name/new_message' do
-      # check for queue
-      # TODO: sanitize names (no dots or slashes)
-      qc = get_queueclient(params[:name])
-
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       overrides = RQ::Overrides.new(params['name'])
-      erb :new_message, :layout => true, :locals => {:o => overrides }
+      erb :new_message, :layout => true, :locals => { :q_name => qc.name, :overrides => overrides }
     end
 
     post '/q/:name/new_message' do
@@ -247,9 +254,11 @@ module RQ
         end
       end
 
-      qc = get_queueclient(q_name)
-
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(q_name)
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       if the_method == 'prep'
         result = qc.prep_message(prms)
@@ -268,7 +277,7 @@ module RQ
       if api_call == 'json'
         "#{result.to_json}"
       else
-        erb :new_message_post, :layout => true, :locals => {:result => result, :q_name => q_name }
+        erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => q_name }
       end
     end
 
@@ -282,7 +291,7 @@ module RQ
         throw :halt, [500, "500 - Couldn't restart queue. #{res.inspect}."]
       end
 
-      flash :notice, "Successfully restarted queue #{params[:name]}"
+      flash[:notice] = "Successfully restarted queue #{params[:name]}"
       redirect back
     end
 
@@ -315,9 +324,11 @@ module RQ
         msg_id = msg_id[0..-6]
       end
 
-      qc = get_queueclient(params[:name])
-
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -327,9 +338,9 @@ module RQ
 
       if fmt == :html
         if msg['state'] == 'prep'
-          erb :prep_message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+          erb :prep_message, :locals => { :q_name => qc.name, :msg_id => msg_id, :msg => msg }
         else
-          erb :message, { :locals => { 'msg_id' => msg_id, 'msg' => msg } }
+          erb :message, :locals => { :q_name => qc.name,  :msg_id => msg_id, :msg => msg }
         end
       else
         #content_type 'application/json'
@@ -341,9 +352,11 @@ module RQ
       fmt = :json
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       ok, state = qc.get_message_state({ 'msg_id' => msg_id })
 
@@ -356,8 +369,12 @@ module RQ
 
 
     post '/q/:name/:msg_id/clone' do
-      qc = get_queueclient(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
 
       if not res
@@ -367,13 +384,16 @@ module RQ
         throw :halt, [500, "500 - Couldn't clone message. #{res.inspect}."]
       end
 
-      flash :notice, "Message cloned successfully"
+      flash[:notice] = "Message cloned successfully"
       redirect "/q/#{params[:name]}"
     end
 
     post '/q/:name/:msg_id/run_now' do
-      qc = get_queueclient(params[:name])
-      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
 
       res = qc.run_message({ 'msg_id' => params[:msg_id] })
 
@@ -384,7 +404,7 @@ module RQ
         throw :halt, [500, "500 - Couldn't run message. #{res.inspect}."]
       end
 
-      flash :notice, "Message in run successfully"
+      flash[:notice] = "Message in run successfully"
       redirect "/q/#{params[:name]}/#{params[:msg_id]}"
     end
 
@@ -392,9 +412,9 @@ module RQ
       # TODO: change URL for this call
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -442,7 +462,7 @@ module RQ
         result.to_json
       else
         if result[0] == "ok"
-          flash :notice, "Attached message successfully"
+          flash[:notice] = "Attached message successfully"
           redirect "/q/#{params[:name]}/#{params[:msg_id]}"
         else
           "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
@@ -451,9 +471,9 @@ module RQ
     end
 
     post '/q/:name/:msg_id/attach/:attachment_name' do
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -467,7 +487,7 @@ module RQ
           result.to_json
         else
           if result[0] == "ok"
-            flash :notice, "Attachment deleted successfully"
+            flash[:notice] = "Attachment deleted successfully"
             redirect "/q/#{params[:name]}/#{params[:msg_id]}"
           else
             "Delete of attach #{params[:attachment_name]} on #{params[:name]}/#{params[:msg_id]} got #{result}"
@@ -482,9 +502,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -514,9 +534,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -547,9 +567,9 @@ module RQ
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -575,16 +595,16 @@ module RQ
 
       in_iframe = params['in_iframe'] == '1'
 
-      erb :tailview, { :layout => false, :locals => { 'msg_id' => msg_id, 'msg' => msg, 'attach_name' => params['attach_name'], 'in_iframe' => in_iframe } }
+      erb :tailview, { :layout => false, :locals => { :msg_id => msg_id, :msg => msg, :attach_name => params['attach_name'], :in_iframe => in_iframe } }
     end
 
     get '/q/:name/:msg_id/tailviewlog/:log_name' do
 
       msg_id = params['msg_id']
 
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -597,8 +617,8 @@ module RQ
       erb :tailview, {
                        :layout => false,
                        :locals => {
-                         'path' => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                         'msg_path' => "/q/#{params[:name]}/#{msg_id}"
+                         :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                         :msg_path => "/q/#{params[:name]}/#{msg_id}"
                        },
                      }
     end
@@ -607,9 +627,9 @@ module RQ
     post '/q/:name/:msg_id' do
       # check for queue
       # TODO: sanitize names (no dots or slashes)
-      qc = get_queueclient(params[:name])
-
-      if not qc.exists?
+      begin
+        qc = get_queueclient(params[:name])
+      rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
@@ -621,10 +641,10 @@ module RQ
           result.to_json
         else
           if result[0] == "ok"
-            flash :notice, "Message deleted successfully"
+            flash[:notice] = "Message deleted successfully"
             redirect "/q/#{params[:name]}"
           else
-            flash :error, "Delete got #{result.inspect}"
+            flash[:error] = "Delete got #{result.inspect}"
             redirect "/q/#{params[:name]}/#{params[:msg_id]}"
           end
         end
@@ -634,9 +654,9 @@ module RQ
           result.to_json
         else
           if result[0] == "ok"
-            flash :notice, "Message committed successfully"
+            flash[:notice] = "Message committed successfully"
           else
-            flash :error, "Commit got #{result.inspect}"
+            flash[:error] = "Commit got #{result.inspect}"
           end
           redirect "/q/#{params[:name]}/#{params[:msg_id]}"
         end

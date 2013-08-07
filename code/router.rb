@@ -10,10 +10,10 @@ class MiniRouter
 
     # Gotta deal with static stuff first
     if path.index('/css') or path.index('/javascripts') or path.index('/favicon.ico')
-      return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/css", "/javascripts", "/favicon.ico"], :root => 'code/public')).call(env)
+      return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/css", "/javascripts", "/favicon.ico"], :root => 'public')).call(env)
     end
     if path.index('/scripts')
-      return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/scripts"], :root => 'code')).call(env)
+      return Rack::ConditionalGet.new(Rack::Static.new(nil, :urls => ["/scripts"], :root => 'scripts')).call(env)
     end
 
     # Everything else goes into main

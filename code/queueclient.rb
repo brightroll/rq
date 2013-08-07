@@ -1,7 +1,7 @@
-
 require 'socket'
 require 'json'
 require 'code/unixrack'
+require 'code/errors'
 
 module RQ
   class QueueClient
@@ -12,15 +12,11 @@ module RQ
     def initialize(name, path=".")
       @name = name
 
-      path = File.join(File.dirname(__FILE__), "..")
+      queue_path = File.join(path, 'queue', name)
+      @queue_pid_file = File.join(queue_path, 'queue.pid')
+      @queue_sock_file = File.join(queue_path, 'queue.sock')
 
-      @queue_path = "#{path}/queue/#{@name}"
-      @queue_sock_path = "#{path}/queue/#{@name}/queue.sock"
-    end
-
-    def exists?
-      # TODO: do more of a test, actual round trip ping
-      File.directory?(@queue_path)
+      raise RQ::RqQueueNotFound unless File.directory?(queue_path)
     end
 
     def running?(pid=read_pid)
@@ -37,10 +33,10 @@ module RQ
     # on create, the file might not quite exist yet
     # this could be bad
     def read_pid
-      File.read(@queue_path + '/queue.pid').to_i
+      File.read(@queue_pid_file).to_i
     rescue Errno::ENOENT
       sleep(1.0)
-      File.read(@queue_path + '/queue.pid').to_i
+      File.read(@queue_pid_file).to_i
     end
 
     def do_read(client, numr = 32768)
@@ -61,7 +57,7 @@ module RQ
 
     # msg is single word, data is assumbed to be content as json
     def send_recv(msg, data="")
-      client = UNIXSocket.open(@queue_sock_path)
+      client = UNIXSocket.open(@queue_sock_file)
 
       contents = "#{msg} #{data}"
       sock_msg = sprintf("rq1 %08d %s", contents.length, contents)
@@ -90,17 +86,15 @@ module RQ
 
       client.close
 
-      obj = JSON.parse(result[1])
-
-      obj
+      JSON.parse(result[1])
     end
 
     def ping
-      send_recv('ping')
+      send_recv('ping').first
     end
 
     def uptime
-      send_recv('uptime')
+      send_recv('uptime').first
     end
 
     def status
@@ -173,4 +167,3 @@ module RQ
 
   end
 end
-
