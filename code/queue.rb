@@ -290,7 +290,9 @@ module RQ
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_FULL_MSG_ID"] = gen_full_msg_id(msg)
           ENV["RQ_MSG_DIR"] = job_path
-          ENV["RQ_PIPE"] = "3"
+          ENV["RQ_PIPE"] = "3"  # DEPRECATED
+          ENV["RQ_WRITE"] = "3" # USE THESE INSTEAD
+          ENV["RQ_READ"] = "4"
           ENV["RQ_COUNT"] = msg['count'].to_s
           ENV["RQ_PARAM1"] = msg['param1']
           ENV["RQ_PARAM2"] = msg['param2']
