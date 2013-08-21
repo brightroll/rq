@@ -7,16 +7,21 @@ if not Rack.const_defined?("Handler")
   require 'rack/handler'
 end
 require 'time'
+require 'socket'
 require 'stringio'
 
 # Thx - Logan Capaldo
-require 'dl/import'
 module Alarm
   case RUBY_VERSION.to_f
     when 1.8
+      require 'dl/import'
       extend DL::Importable
     when 1.9
+      require 'dl/import'
       extend DL::Importer
+    else # 2.0+
+      require 'fiddle/import'
+      extend Fiddle::Importer
   end
   if RUBY_PLATFORM =~ /darwin/
     so_ext = 'dylib'
@@ -179,10 +184,19 @@ module UnixRack
       @hdr_method = @hdr_method_line.split(" ")
 
       @hdr_field_lines = @hdr_lines.slice(1..-1) # would prefer first, and rest
-      @headers = @hdr_field_lines.inject({}) { |h, line| k, v = line.split(": "); h[k] = v; h }
+      headers = @hdr_field_lines.inject({}) { |h, line| k, v = line.split(": "); h[k] = v; h }
+      @headers = canonicalize_headers(headers)
       true
     end
 
+    private
+
+    def canonicalize_headers(headers)
+      headers.keys.each do |key|
+        headers[key.split(/-/).map(&:capitalize).join('-')] = headers.delete(key)
+      end
+      headers
+    end
   end
 end
 
@@ -361,6 +375,7 @@ module Rack
 
               if sock.hdr_method[0] == "GET"
                 content = StringIO.new("")
+                content.set_encoding(Encoding::ASCII_8BIT)
               elsif sock.hdr_method[0] == "POST"
                 if not sock.headers.include?('Content-Length')
                   send_error_response!(sock, 400, "Bad Request no content-length", sock.hdr_method[0], sock.hdr_method[1])
@@ -383,6 +398,7 @@ module Rack
 
                 # It is required that we read all of the content prior to responding
                 content = sock.read_content
+                content.set_encoding(Encoding::ASCII_8BIT)
 
                 if content == nil
                   send_error_response!(sock, 400, "Bad Request not enough content", sock.hdr_method[0], sock.hdr_method[1])
@@ -405,7 +421,7 @@ module Rack
                 uri_parts[0] = uri_parts[0].sub(/http:\/\/[^\/]+/, '')
               end
 
-              env["SCRIPT_NAME"] = uri_parts[0]
+              env["SCRIPT_NAME"] = ''
               env["PATH_INFO"] = uri_parts[0]
               env["QUERY_STRING"] = uri_parts[1]
 
@@ -425,7 +441,15 @@ module Rack
               if sock.headers['Range']
                 env["HTTP_RANGE"] = sock.headers['Range']
               end
-
+              if sock.headers['X-Real-IP']
+                env["HTTP_X_REAL_IP'"] = sock.headers['Real-IP']
+              end
+              if sock.headers['X-Forwarded-For']
+                env["HTTP_X_FORWARDED_FOR'"] = sock.headers['X-Forwarded-For']
+              end
+              if sock.headers['Host']
+                env["HTTP_HOST"] = sock.headers['Host']
+              end
 
               env["HTTP_VERSION"] = "HTTP/1.1"
               if sock.headers['If-Modified-Since']
