@@ -220,6 +220,7 @@ module Rack
       end
 
       def self.log(response_code, message='-', method='-', url='-', options={})
+        return
         ip = @@client_ip || '-'
         now = Time.now
         duration = ((now.to_f - @@start_time.to_f) * 1000).to_i / 1000.0
@@ -286,6 +287,10 @@ module Rack
 
         ::UnixRack::Socket.write_buff(sock.sock, out_buff)
         ::UnixRack::Socket.close(sock.sock)
+
+        # Conforming to SPEC - I was noticing that Sinatra logging wasn't working
+        body.close if body.respond_to? :close
+
         exit! 0
       end
 
@@ -442,10 +447,10 @@ module Rack
                 env["HTTP_RANGE"] = sock.headers['Range']
               end
               if sock.headers['X-Real-IP']
-                env["HTTP_X_REAL_IP'"] = sock.headers['Real-IP']
+                env["HTTP_X_REAL_IP"] = sock.headers['Real-IP']
               end
               if sock.headers['X-Forwarded-For']
-                env["HTTP_X_FORWARDED_FOR'"] = sock.headers['X-Forwarded-For']
+                env["HTTP_X_FORWARDED_FOR"] = sock.headers['X-Forwarded-For']
               end
               if sock.headers['Host']
                 env["HTTP_HOST"] = sock.headers['Host']
