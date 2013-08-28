@@ -220,7 +220,6 @@ module Rack
       end
 
       def self.log(response_code, message='-', method='-', url='-', options={})
-        return
         ip = @@client_ip || '-'
         now = Time.now
         duration = ((now.to_f - @@start_time.to_f) * 1000).to_i / 1000.0
@@ -377,7 +376,7 @@ module Rack
 
               if sock.hdr_method[0] == "GET"
                 content = StringIO.new("")
-                content.set_encoding(Encoding::ASCII_8BIT)
+                content.set_encoding(Encoding::ASCII_8BIT) if content.respond_to?(:set_encoding)
               elsif sock.hdr_method[0] == "POST"
                 if not sock.headers.include?('Content-Length')
                   send_error_response!(sock, 400, "Bad Request no content-length", sock.hdr_method[0], sock.hdr_method[1])
@@ -400,7 +399,7 @@ module Rack
 
                 # It is required that we read all of the content prior to responding
                 content = sock.read_content
-                content.set_encoding(Encoding::ASCII_8BIT)
+                content.set_encoding(Encoding::ASCII_8BIT) if content.respond_to?(:set_encoding)
 
                 if content == nil
                   send_error_response!(sock, 400, "Bad Request not enough content", sock.hdr_method[0], sock.hdr_method[1])
