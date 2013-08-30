@@ -4,7 +4,7 @@ RQ Queue Config JSON
 
 A typical config:
 
-{"fsync":"no-fsync","ordering":"none","script":".\/code\/relay_script.rb","num_workers":"1","exec_prefix":"","name":"relay"}
+{"ordering":"none","script":".\/code\/relay_script.rb","num_workers":"1","exec_prefix":"","name":"relay"}
 
 
 Mandatory Fields

@@ -27,7 +27,6 @@ def create_queues
     'script'      => './code/relay_script.rb',
     'ordering'    => 'none',
     'num_workers' => '1',
-    'fsync'       => 'no-fsync',
     'exec_prefix' => '',
   }
   puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
@@ -37,7 +36,6 @@ def create_queues
     'script'      => './code/webhook_script.rb',
     'ordering'    => 'none',
     'num_workers' => '1',
-    'fsync'       => 'no-fsync',
     'exec_prefix' => '',
   }
   puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
@@ -47,7 +45,6 @@ def create_queues
     'script'      => './code/cleaner_script.rb',
     'ordering'    => 'none',
     'num_workers' => '1',
-    'fsync'       => 'no-fsync',
     'exec_prefix' => '',
   }
   puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
@@ -57,7 +54,6 @@ def create_queues
     'script'      => './code/rq_router_script.rb',
     'ordering'    => 'none',
     'num_workers' => '1',
-    'fsync'       => 'no-fsync',
     'exec_prefix' => '',
   }
   puts "Created queue #{queue}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"

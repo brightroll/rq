@@ -128,7 +128,7 @@ module RQ
 
       when 'create_queue'
         options = JSON.parse(arg)
-        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }}
+        # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "num_workers"=>"1", }}
 
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
