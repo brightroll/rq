@@ -591,13 +591,17 @@ module RQ
     def run_job(msg, from_state = 'que')
       msg_id = msg['msg_id']
       begin
-        basename = @queue_path + "/#{from_state}/" + msg_id
-        return false unless File.exists? basename
-        newname = @queue_path + "/run/" + msg_id
+        basename = File.join(@queue_path, from_state, msg_id)
+        newname = File.join(@queue_path, 'run', msg_id)
         File.rename(basename, newname)
       rescue
         log("FATAL - couldn't run message #{msg_id}")
         log("        [ #{$!} ]")
+
+        # Remove the job from the queue. This may leave things in que state that
+        # will be attempted again after a restart, but avoids the job jamming
+        # the top of the queue. TODO: move the job to the err queue?
+        @que.delete(msg)
         return false
       end
 
@@ -608,8 +612,6 @@ module RQ
       handle_dups(msg)
 
       run_queue_script!(msg)
-
-      return true
     end
 
     def lookup_msg(msg, state = 'prep', options={:consistency => true})
@@ -1193,9 +1195,7 @@ module RQ
       @status.update!
 
       # This could be DOWN, PAUSE, SCRIPTERROR
-      if @status.oper_status != "UP"
-        return
-      end
+      return unless @status.oper_status == 'UP'
 
       # Are we arleady running max workers
       active_count = @run.inject(0) do |acc, o|
