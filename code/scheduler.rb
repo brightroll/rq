@@ -1,6 +1,6 @@
 require 'socket'
 require 'json'
-require 'code/unixrack'
+require 'unixrack'
 
 module RQ
   class Scheduler

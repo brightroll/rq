@@ -1,6 +1,6 @@
 require 'socket'
 require 'json'
-require 'code/unixrack'
+require 'unixrack'
 require 'code/errors'
 
 module RQ

@@ -1,8 +1,7 @@
-require 'vendor/bundle/bundler/setup'
-require 'code/unixrack'
-require 'code/router'
 require 'fileutils'
 require 'json'
+require 'unixrack'
+require 'code/router'
 
 module RQ
   class WebServer

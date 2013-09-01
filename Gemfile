@@ -5,6 +5,7 @@ gem 'thin'
 gem 'daemons'
 gem 'sinatra'
 gem 'sinatra-flash'
+gem 'unixrack'
 
 # For some of the unit tests
 group :development do

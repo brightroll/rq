@@ -19,6 +19,8 @@ GEM
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
     tilt (1.4.1)
+    unixrack (1.0.1)
+      rack (~> 1.5)
 
 PLATFORMS
   ruby
@@ -30,3 +32,4 @@ DEPENDENCIES
   sinatra
   sinatra-flash
   thin
+  unixrack
