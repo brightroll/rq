@@ -11,6 +11,17 @@ require 'code/jsonconfigfile'
 require 'pathname'
 
 module RQ
+  class Worker < Struct.new(
+    :qc,
+    :name,
+    :status,
+    :child_write_pipe,
+    :pid,
+    :num_restarts,
+    :options
+  )
+  end
+
   class Queue
 
     def initialize(options, parent_pipe)
@@ -110,6 +121,11 @@ module RQ
       child_rd, parent_wr = IO.pipe
 
       child_pid = fork do
+        # Restore default signal handlers from those inherited from queuemgr
+        Signal.trap('TERM', 'DEFAULT')
+        Signal.trap('CHLD', 'DEFAULT')
+        Signal.trap('HUP', 'DEFAULT')
+
         queue_path = "queue/#{options['name']}"
         $0 = "[rq-que] [#{options['name']}]"
         begin
@@ -143,7 +159,15 @@ module RQ
         return nil
       end
 
-      [child_pid, parent_wr]
+      worker = Worker.new
+      worker.qc = QueueClient.new(options['name'])
+      worker.name = options['name']
+      worker.status = 'RUNNING'
+      worker.child_write_pipe = parent_wr
+      worker.pid = child_pid
+      worker.num_restarts = 0
+      worker.options = options
+      worker
     end
 
     def self.close_all_fds(exclude_fds)

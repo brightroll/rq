@@ -3,7 +3,6 @@ require 'socket'
 require 'json'
 
 require 'code/queue'
-require 'code/queueclient'
 require 'code/scheduler'
 require 'version'
 
@@ -14,11 +13,6 @@ def log(mesg)
 end
 
 module RQ
-
-  class Worker < Struct.new(:qc, :status, :child_write_pipe, :name,
-                            :pid, :num_restarts, :options)
-  end
-
   class QueueMgr
 
     attr_accessor :queues
@@ -120,13 +114,10 @@ module RQ
           # TODO
           # when I have timers, do this as a message to main event loop
           # to centralize this code
-          results = RQ::Queue.start_process(worker.options)
-          if results
-            log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
-            worker.status = "RUNNING"
-            worker.num_restarts = 0
-            worker.pid = results[0]
-            worker.child_write_pipe = results[1]
+          new_worker = RQ::Queue.start_process(worker.options)
+          if new_worker
+            log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
+            worker = new_worker
             status = 'ok'
           end
         end
@@ -148,22 +139,13 @@ module RQ
           # No '.' or '/' since that could change path
           # Basically it should just be alphanum and '-' or '_'
           name_test = options['name'].tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*')
-          if name_test.index("*")
-            resp = ['fail', "queue name has invalid characters"].to_json
+          if name_test.index('*')
+            resp = ['fail', 'queue name has invalid characters'].to_json
           else
             resp = ['fail', 'queue not created'].to_json
-            results = RQ::Queue.create(options)
-            log("create_queue STARTED [ #{options['name']}#{results[0]} ]")
-            if results
-              qc = QueueClient.new(options['name'])
-              worker = Worker.new
-              worker.name = options['name']
-              worker.qc = qc
-              worker.options = options
-              worker.status = "RUNNING"
-              worker.pid = results[0]
-              worker.child_write_pipe = results[1]
-              worker.num_restarts = 0
+            worker = RQ::Queue.create(options)
+            if worker
+              log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
               @queues << worker
               resp = ['success', 'queue created - awesome'].to_json
             end
@@ -264,18 +246,9 @@ module RQ
 
         if not err
           resp = ['fail', 'queue not created'].to_json
-          results = RQ::Queue.create(options, json_path)
-          log("create_queue STARTED [ #{options['name']}#{results[0]} ]")
-          if results
-            qc = QueueClient.new(options['name'])
-            worker = Worker.new
-            worker.name = options['name']
-            worker.qc = qc
-            worker.options = options
-            worker.status = "RUNNING"
-            worker.pid = results[0]
-            worker.child_write_pipe = results[1]
-            worker.num_restarts = 0
+          worker = RQ::Queue.create(options, json_path)
+          log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
+          if worker
             @queues << worker
             resp = ['success', 'queue created - awesome'].to_json
           end
@@ -310,6 +283,12 @@ module RQ
       log("RESP [ ERROR ] - Unhandled message")
     end
 
+    def reload
+      @queues.each do |q|
+        Process.kill("HUP", q.pid) if q.pid
+      end
+    end
+
     def shutdown
       final_shutdown! if @queues.empty?
 
@@ -338,38 +317,18 @@ module RQ
     end
 
     def start_queue(qname)
-      options = { }
-      options['name'] = qname
-      results = RQ::Queue.start_process(options)
-      if results
-        qc = QueueClient.new(options['name'])
-        worker = Worker.new
-        worker.name = options['name']
-        worker.qc = qc
-        worker.options = options
-        worker.status = "RUNNING"
-        worker.pid = results[0]
-        worker.child_write_pipe = results[1]
-        worker.num_restarts = 0
+      worker = RQ::Queue.start_process({'name' => qname})
+      if worker
         @queues << worker
-        log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
+        log("STARTED [ #{worker.name} - #{worker.pid} ]")
       end
     end
 
     def start_scheduler
-      options = { }
-      results = RQ::Scheduler.start_process(options)
-      if results
-        worker = Worker.new
-        worker.name = "scheduler"
-        worker.qc = nil
-        worker.options = options
-        worker.status = "RUNNING"
-        worker.pid = results[0]
-        worker.child_write_pipe = results[1]
-        worker.num_restarts = 0
+      worker = RQ::Scheduler.start_process
+      if worker
         @scheduler = worker
-        log("STARTED [ scheduler ] - #{results[0]} ]")
+        log("STARTED [ #{worker.name} - #{worker.pid} ]")
       end
     end
 
@@ -400,6 +359,10 @@ def run_loop
 
   Signal.trap("CHLD") do
     log("received CHLD signal")
+  end
+
+  Signal.trap("HUP") do
+    qmgr.reload
   end
 
   qmgr.load_queues
@@ -472,10 +435,9 @@ def run_loop
                 worker.child_write_pipe = nil
                 log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
               else
-                results = RQ::Queue.start_process(worker.options)
-                log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
-                worker.pid = results[0]
-                worker.child_write_pipe = results[1]
+                new_worker = RQ::Queue.start_process(worker.options)
+                log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
+                worker = new_worker
               end
             elsif worker.status == "DELETE"
               RQ::Queue.delete(worker.name)
