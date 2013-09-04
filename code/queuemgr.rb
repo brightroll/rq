@@ -71,47 +71,42 @@ module RQ
     end
 
     def handle_request(sock)
-      data = sock.recvfrom(1024)
-      log("REQ [ #{data[0]} ]");
-      if data[0].index('ping') == 0
+      data, = sock.recvfrom(1024)
+      cmd, arg = data.split(' ', 2)
+      log("REQ [ #{cmd} #{arg} ]");
+
+      case cmd
+      when 'ping'
         sock.send("pong", 0)
         sock.close
         log("RESP [ pong ]");
-        return
-      end
-      if data[0].index('environment') == 0
+
+      when 'environment'
         sock.send(ENV['RQ_ENV'], 0)
         sock.close
         log("RESP [ environment - #{ENV['RQ_ENV']} ]")
-        return
-      end
-      if data[0].index('version') == 0
+
+      when 'version'
         data = [ ENV['RQ_VER'], ENV['RQ_SEMVER'] ].to_json
         sock.send(data, 0)
         sock.close
         log("RESP [ version - #{data} ]")
-        return
-      end
-      if data[0].index('queues') == 0
+
+      when 'queues'
         data = @queues.map { |q| q.name }.to_json
         log("RESP [ queues - #{data} ]")
         sock.send(data, 0)
         sock.close
-        return
-      end
 
-      if data[0].index('uptime') == 0
+      when 'uptime'
         data = [(Time.now - @start_time).to_i, ].to_json #['local','brserv_push'].to_json
         log("RESP [ uptime - #{data} ]")
         sock.send(data, 0)
         sock.close
-        return
-      end
 
-      if data[0].index('restart_queue ') == 0
-        queuename = data[0].split(' ', 2)[1]
-        log("RESP [ restart_queue - #{queuename} ]")
-        worker = @queues.find { |i| i.name == queuename }
+      when 'restart_queue'
+        log("RESP [ restart_queue - #{arg} ]")
+        worker = @queues.find { |i| i.name == arg }
         status = 'fail'
         if worker.status == "RUNNING"
           Process.kill("TERM", worker.pid) rescue nil
@@ -127,15 +122,12 @@ module RQ
             status = 'ok'
           end
         end
-        resp = [status, queuename].to_json #['ok','brserv_push'].to_json
+        resp = [status, arg].to_json #['ok','brserv_push'].to_json
         sock.send(resp, 0)
         sock.close
-        return
-      end
 
-      if data[0].index('create_queue ') == 0
-        json = data[0].split(' ', 2)[1]
-        options = JSON.parse(json)
+      when 'create_queue'
+        options = JSON.parse(arg)
         # "queue"=>{"name"=>"local", "script"=>"local.rb", "ordering"=>"ordered", "fsync"=>"fsync", "num_workers"=>"1", }}
 
         if @queues.any? { |q| q.name == options['name'] }
@@ -156,19 +148,15 @@ module RQ
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close
-        return
-      end
 
-      if data[0].index('create_queue_link ') == 0
-        json_path = data[0].split(' ', 2)[1]
-
+      when 'create_queue_link'
         options = {}
         err = false
 
         # Validate path
         json_data = false
         begin
-          json_data = File.read(json_path)
+          json_data = File.read(arg)
         rescue
           resp = ['fail', 'could not read json config'].to_json
           err = true
@@ -247,7 +235,7 @@ module RQ
 
         if not err
           resp = ['fail', 'queue not created'].to_json
-          worker = RQ::Queue.create(options, json_path)
+          worker = RQ::Queue.create(options, arg)
           log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
           if worker
             @queues << worker
@@ -258,12 +246,9 @@ module RQ
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
         sock.close
-        return
-      end
 
-      if data[0].index('delete_queue ') == 0
-        queuename = data[0].split(' ', 2)[1]
-        worker = @queues.find { |i| i.name == queuename }
+      when 'delete_queue'
+        worker = @queues.find { |i| i.name == arg }
         status = 'fail'
         msg = 'no such queue'
         if worker
@@ -276,12 +261,12 @@ module RQ
         sock.send(resp, 0)
         sock.close
         log("RESP [ #{resp} ]")
-        return
-      end
 
-      sock.send("ERROR", 0)
-      sock.close
-      log("RESP [ ERROR ] - Unhandled message")
+      else
+        sock.send("ERROR", 0)
+        sock.close
+        log("RESP [ ERROR ] - Unhandled message")
+      end
     end
 
     def reload
@@ -399,7 +384,7 @@ def run_loop
     #log(io_list.inspect)
     log('sleeping')
     begin
-      ready = IO.select(io_list, nil, nil, 60)
+      ready, _, _ = IO.select(io_list, nil, nil, 60)
     rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
       log("error on SELECT #{$!}")
       retry
@@ -407,7 +392,7 @@ def run_loop
 
     next unless ready
 
-    ready[0].each do |io|
+    ready.each do |io|
       if io.fileno == $sock.fileno
         begin
           client_socket, client_sockaddr = $sock.accept
@@ -474,15 +459,6 @@ def run_loop
 
       end
     end
-
-#     begin
-#       #client_socket, client_sockaddr = $sock.accept_nonblock
-#       client_socket, client_sockaddr = $sock.accept
-#     rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-#       log('sleeping')
-#       IO.select([$sock], nil, nil, 60)
-#       retry
-#     end
 
   end
 end
