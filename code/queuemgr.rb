@@ -315,7 +315,8 @@ def run_loop
 
   qmgr.load_queues
 
-  qmgr.start_scheduler
+  # TODO implement cron-like scheduler and start it up
+  # qmgr.start_scheduler
 
   require 'fcntl'
   flag = File::NONBLOCK
