@@ -1,4 +1,3 @@
-
 require 'socket'
 require 'json'
 
@@ -62,6 +61,13 @@ module RQ
       $sock = UNIXServer.open('config/queuemgr.sock')
 
       load_config
+    end
+
+    # Validate characters in name
+    # No '.' or '/' since that could change path
+    # Basically it should just be alphanum and '-' or '_'
+    def valid_queue_name(name)
+      nil == name.tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*').index('*')
     end
 
     def handle_request(sock)
@@ -135,11 +141,7 @@ module RQ
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
         else
-          # Validate characters in name
-          # No '.' or '/' since that could change path
-          # Basically it should just be alphanum and '-' or '_'
-          name_test = options['name'].tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*')
-          if name_test.index('*')
+          if !valid_queue_name(options['name'])
             resp = ['fail', 'queue name has invalid characters'].to_json
           else
             resp = ['fail', 'queue not created'].to_json
@@ -237,8 +239,7 @@ module RQ
         end
 
         if not err
-          name_test = options['name'].tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*')
-          if name_test.index("*")
+          if !valid_queue_name(options['name'])
             resp = ['fail', "queue name has invalid characters"].to_json
             err = true
           end
@@ -284,9 +285,23 @@ module RQ
     end
 
     def reload
-      @queues.each do |q|
-        Process.kill("HUP", q.pid) if q.pid
+      # Stop queues whose configs have gone away
+      dirs = Hash[Dir.entries('queue').select { |q| valid_queue_name q }.zip]
+
+      # Notify running queues to reload configs
+      @queues.each do |worker|
+        if dirs.has_key? worker.name
+          log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING HUP")
+          Process.kill("HUP", worker.pid) if worker.pid rescue nil
+        else
+          log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING TERM")
+          worker.status = "SHUTDOWN"
+          Process.kill("TERM", worker.pid) if worker.pid rescue nil
+        end
       end
+
+      # Start new queues if new configs were added
+      load_queues
     end
 
     def shutdown
@@ -316,8 +331,8 @@ module RQ
       Process.exit! 0
     end
 
-    def start_queue(qname)
-      worker = RQ::Queue.start_process({'name' => qname})
+    def start_queue(name)
+      worker = RQ::Queue.start_process({'name' => name})
       if worker
         @queues << worker
         log("STARTED [ #{worker.name} - #{worker.pid} ]")
@@ -332,12 +347,11 @@ module RQ
       end
     end
 
-
     def load_queues
-      queues = Dir.entries('queue').reject {|i| i.include? '.'}
-
-      queues.each do |q|
-        start_queue q
+      # Skip dot dirs and queues already running
+      Dir.entries('queue').select { |q| valid_queue_name q }.each do |name|
+        next if @queues.any? { |q| q.name == name }
+        start_queue name
       end
     end
 
