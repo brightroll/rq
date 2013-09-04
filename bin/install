@@ -20,7 +20,7 @@ def create_queues
   # http://support.apple.com/kb/TA24975?viewlocale=en_US
   FileUtils.mkdir_p('queue.noindex')
   FileUtils.ln_sf('queue.noindex', 'queue') unless File.symlink?('queue')
-  FileUtils.mkdir_p('scheduler')
+  # TODO implement the scheduler FileUtils.mkdir_p('scheduler')
 
   queue = {
     'name'        => 'relay',

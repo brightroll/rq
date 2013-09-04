@@ -11,6 +11,17 @@ require 'code/jsonconfigfile'
 require 'pathname'
 
 module RQ
+  class Worker < Struct.new(
+    :qc,
+    :name,
+    :status,
+    :child_write_pipe,
+    :pid,
+    :num_restarts,
+    :options
+  )
+  end
+
   class Queue
 
     def initialize(options, parent_pipe)
@@ -110,6 +121,11 @@ module RQ
       child_rd, parent_wr = IO.pipe
 
       child_pid = fork do
+        # Restore default signal handlers from those inherited from queuemgr
+        Signal.trap('TERM', 'DEFAULT')
+        Signal.trap('CHLD', 'DEFAULT')
+        Signal.trap('HUP', 'DEFAULT')
+
         queue_path = "queue/#{options['name']}"
         $0 = "[rq-que] [#{options['name']}]"
         begin
@@ -143,7 +159,15 @@ module RQ
         return nil
       end
 
-      [child_pid, parent_wr]
+      worker = Worker.new
+      worker.qc = QueueClient.new(options['name'])
+      worker.name = options['name']
+      worker.status = 'RUNNING'
+      worker.child_write_pipe = parent_wr
+      worker.pid = child_pid
+      worker.num_restarts = 0
+      worker.options = options
+      worker
     end
 
     def self.close_all_fds(exclude_fds)
@@ -156,6 +180,58 @@ module RQ
         rescue
         end
       end
+    end
+
+    def self.validate_options(options)
+      err = false
+
+      if not err
+        if options.include?('name')
+          if (1..128).include?(options['name'].size)
+            if options['name'].class != String
+              resp = "json config has invalid name (not String)"
+              err = true
+            end
+          else
+            resp = "json config has invalid name (size)"
+            err = true
+          end
+        else
+          resp = 'json config is missing name field'
+          err = true
+        end
+      end
+
+      if not err
+        if options.include?('num_workers')
+          if not ( (1..128).include?(options['num_workers'].to_i) )
+            resp = "json config has invalid num_workers field (out of range 1..128)"
+            err = true
+          end
+        else
+          resp = 'json config is missing num_workers field'
+          err = true
+        end
+      end
+
+      if not err
+        if options.include?('script')
+          if (1..1024).include?(options['script'].size)
+            if options['script'].class != String
+              resp = "json config has invalid script (not String)"
+              err = true
+            end
+          else
+            resp = "json config has invalid script (size)"
+            err = true
+          end
+        else
+          resp = 'json config is missing script field'
+          err = true
+        end
+      end
+
+      [err, resp]
     end
 
     def run_queue_script!(msg)
