@@ -182,6 +182,58 @@ module RQ
       end
     end
 
+    def self.validate_options(options)
+      err = false
+
+      if not err
+        if options.include?('name')
+          if (1..128).include?(options['name'].size)
+            if options['name'].class != String
+              resp = "json config has invalid name (not String)"
+              err = true
+            end
+          else
+            resp = "json config has invalid name (size)"
+            err = true
+          end
+        else
+          resp = 'json config is missing name field'
+          err = true
+        end
+      end
+
+      if not err
+        if options.include?('num_workers')
+          if not ( (1..128).include?(options['num_workers'].to_i) )
+            resp = "json config has invalid num_workers field (out of range 1..128)"
+            err = true
+          end
+        else
+          resp = 'json config is missing num_workers field'
+          err = true
+        end
+      end
+
+      if not err
+        if options.include?('script')
+          if (1..1024).include?(options['script'].size)
+            if options['script'].class != String
+              resp = "json config has invalid script (not String)"
+              err = true
+            end
+          else
+            resp = "json config has invalid script (size)"
+            err = true
+          end
+        else
+          resp = 'json config is missing script field'
+          err = true
+        end
+      end
+
+      [err, resp]
+    end
+
     def run_queue_script!(msg)
       msg_id = msg['msg_id']
 

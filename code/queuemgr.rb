@@ -133,7 +133,7 @@ module RQ
         if @queues.any? { |q| q.name == options['name'] }
           resp = ['fail', 'already created'].to_json
         else
-          if !valid_queue_name(options['name'])
+          if not valid_queue_name(options['name'])
             resp = ['fail', 'queue name has invalid characters'].to_json
           else
             resp = ['fail', 'queue not created'].to_json
@@ -150,98 +150,47 @@ module RQ
         sock.close
 
       when 'create_queue_link'
-        options = {}
         err = false
 
-        # Validate path
-        json_data = false
         begin
-          json_data = File.read(arg)
+          options = JSON.parse(File.read(arg))
         rescue
-          resp = ['fail', 'could not read json config'].to_json
+          reason = "could not read queue config [ #{arg} ]: #{$!}"
           err = true
         end
 
-        # Lightweight validate json
-
         if not err
-          begin
-            options = JSON.parse(json_data)
-          rescue
-            resp = ['fail', 'could not parse json config'].to_json
-            err = true
-          end
-        end
-
-        if not err
-          if options.include?('name')
-            if (1..128).include?(options['name'].size)
-              if options['name'].class != String
-                resp = ['fail', "json config has invalid name (not String)"].to_json
-                err = true
-              end
-            else
-              resp = ['fail', "json config has invalid name (size)"].to_json
-              err = true
-            end
-          else
-            resp = ['fail', 'json config is missing name field'].to_json
-            err = true
-          end
-        end
-
-        if not err
-          if options.include?('num_workers')
-            if not ( (1..128).include?(options['num_workers'].to_i) )
-              resp = ['fail', "json config has invalid num_workers field (out of range 1..128)"].to_json
-              err = true
-            end
-          else
-            resp = ['fail', 'json config is missing num_workers field'].to_json
-            err = true
-          end
-        end
-
-        if not err
-          if options.include?('script')
-            if (1..1024).include?(options['script'].size)
-              if options['script'].class != String
-                resp = ['fail', "json config has invalid script (not String)"].to_json
-                err = true
-              end
-            else
-              resp = ['fail', "json config has invalid script (size)"].to_json
-              err = true
-            end
-          else
-            resp = ['fail', 'json config is missing script field'].to_json
-            err = true
-          end
+          err, reason = RQ::Queue.validate_options(options)
         end
 
         if not err
           if @queues.any? { |q| q.name == options['name'] }
-            resp = ['fail', 'already created'].to_json
+            reason = 'queue is already running'
             err = true
           end
         end
 
         if not err
-          if !valid_queue_name(options['name'])
-            resp = ['fail', "queue name has invalid characters"].to_json
+          if not valid_queue_name(options['name'])
+            reason = 'queue name has invalid characters'
             err = true
           end
         end
 
         if not err
-          resp = ['fail', 'queue not created'].to_json
           worker = RQ::Queue.create(options, arg)
           log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
           if worker
             @queues << worker
-            resp = ['success', 'queue created - awesome'].to_json
+            reason = 'queue created - awesome'
+            err = false
+          else
+            reason = 'queue not created'
+            err = true
           end
         end
+
+        resp = [ (err ? 'fail' : 'success'), reason ].to_json
 
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
