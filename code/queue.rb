@@ -11,6 +11,7 @@ require 'code/jsonconfigfile'
 require 'pathname'
 
 module RQ
+
   class Worker < Struct.new(
     :qc,
     :name,
@@ -19,6 +20,17 @@ module RQ
     :pid,
     :num_restarts,
     :options
+  )
+  end
+
+  class QueueConfig < Struct.new(
+    :name,
+    :script,
+    :num_workers,
+    :exec_prefix,
+    :env_vars,
+    :coalesce,
+    :coalesce_params
   )
   end
 
@@ -57,13 +69,13 @@ module RQ
         @signal_hup_wr.syswrite('.')
       end
 
-      if load_rq_config() == nil
+      unless load_rq_config
         sleep 5
         log("Invalid main rq config for #{@name}. Exiting." )
         exit! 1
       end
 
-      if not load_config()
+      unless load_config
         sleep 5
         log("Invalid config for #{@name}. Exiting." )
         exit! 1
@@ -245,7 +257,7 @@ module RQ
       # Also, fix an old issue where we didn't deref the symlink when executing a script
       # This meant that a script would see a new directory on a code deploy if that 
       # script lived under a symlinked path
-      script_path = Pathname.new(@config.conf['script']).realpath.to_s
+      script_path = Pathname.new(@config.script).realpath.to_s
       if (not File.exists?(script_path)) && (not File.executable?(script_path))
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
         if @status.oper_status != 'SCRIPTERROR'
@@ -357,7 +369,7 @@ module RQ
 
           load_aliases_config()
 
-          ENV["RQ_SCRIPT"] = @config.conf['script']
+          ENV["RQ_SCRIPT"] = @config.script
           ENV["RQ_REALSCRIPT"] = script_path
           ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
           ENV["RQ_HOSTNAMES"] = @hostnames.join(" ")
@@ -378,8 +390,8 @@ module RQ
           ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
           # Set env vars specified in queue config file
-          if @config.conf['env_vars']
-            @config.conf['env_vars'].each do |varname,value|
+          if @config.env_vars
+            @config.env_vars.each do |varname,value|
               ENV[varname] = value unless varname.match(/^RQ_/) # Don't let the config override RQ-specific env vars though
             end
           end
@@ -397,7 +409,7 @@ module RQ
           #RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
-          exec_prefix = @config.conf['exec_prefix'] || "bash -lc "
+          exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
             #RQ::Queue.log(job_path, "exec path: #{script_path}")
             exec(script_path, "")
@@ -447,10 +459,10 @@ module RQ
         js_data = JSON.parse(data)
         @host = js_data['host']
         @port = js_data['port']
+        true
       rescue
-        return nil
+        false
       end
-      return js_data
     end
 
     def load_aliases_config
@@ -471,8 +483,23 @@ module RQ
 
     def load_config
       @config_check = Time.now
-      @config = JSONConfigFile.new(@queue_path + '/config.json')
-      @config.load_config
+      @config_file = JSONConfigFile.new(File.join(@queue_path, 'config.json'))
+      sublimate_config
+    end
+
+    def sublimate_config
+      # TODO config validation
+      @config = QueueConfig.new
+      @config.name = @config_file.conf['name']
+      @config.script = @config_file.conf['script']
+      @config.num_workers = @config_file.conf['num_workers'].to_i
+      @config.exec_prefix = @config_file.conf['exec_prefix']
+      @config.env_vars = @config_file.conf['env_vars']
+      @config.coalesce = !!(%w{true yes 1}.include? @config_file.conf['coalesce'])
+      @config.coalesce_params = {}
+      (1..4).each do |x|
+        @config.coalesce_params[x] = !!(@config_file.conf["coalesce_param#{x}"].to_i == 1)
+      end
     end
 
     # It is called right before check_msg
@@ -576,17 +603,10 @@ module RQ
     end
 
     def is_duplicate?(msg1, msg2)
-      if @config.conf['coalesce_param1'] == '1'
-        return false if msg1['param1'] != msg2['param1']
-      end
-      if @config.conf['coalesce_param2'] == '1'
-        return false if msg1['param2'] != msg2['param2']
-      end
-      if @config.conf['coalesce_param3'] == '1'
-        return false if msg1['param3'] != msg2['param3']
-      end
-      if @config.conf['coalesce_param4'] == '1'
-        return false if msg1['param4'] != msg2['param4']
+      (1..4).each do |x|
+        if @config.coalesce_params[x] and msg1["param#{x}"] != msg2["param#{x}"]
+          return false
+        end
       end
       true
     end
@@ -623,7 +643,7 @@ module RQ
     end
 
     def handle_dups(msg)
-      return if @config.conf['coalesce'] != 'yes'
+      return unless @config.coalesce
 
       duplicates = @que.select { |i| is_duplicate?(msg, i) }
 
@@ -1281,7 +1301,7 @@ module RQ
         acc
       end
 
-      if active_count >= @config.conf['num_workers'].to_i
+      if active_count >= @config.num_workers
         #log("Already running #{active_count} config is max: #{@config['num_workers']}")
         return
       end
@@ -1516,8 +1536,9 @@ module RQ
 
         # Check if it has been > 5 seconds since last config file check
         if (now - @config_check) > 5
-          if @config.check_for_change == JSONConfigFile::CHANGED
+          if @config_file.check_for_change == JSONConfigFile::CHANGED
             log('Config file changed. Using new config')
+            sublimate_config
           end
           @config_check = now
         end
@@ -1628,7 +1649,8 @@ module RQ
       end
 
       if packet.index('config ') == 0
-        resp = [ 'ok', @config.conf].to_json
+        # Sadly there's no struct-to-hash method until Ruby 2.0
+        resp = [ 'ok', Hash[@config.each_pair.to_a]].to_json
         send_packet(sock, resp)
         return
       end
