@@ -1,4 +1,3 @@
-
 require 'socket'
 require 'json'
 require 'fcntl'
@@ -18,25 +17,7 @@ module RQ
       @parent_pipe = parent_pipe
       init_socket
 
-      @wait_time = 1
-
       @config = {}
-
-      @status = {}
-      @status["admin_status"] = "UP"
-      @status["oper_status"]  = "UP"
-
-      if load_rq_config == nil
-        sleep 5
-        log("Invalid main rq config. Exiting." )
-        exit! 1
-      end
-
-      if load_config == false
-        sleep 5
-        log("Invalid config for #{@name}. Skipping." )
-        #exit! 1
-      end
     end
 
     def self.log(path, mesg)
@@ -115,8 +96,7 @@ module RQ
     def init_socket
       # Show pid
       File.unlink(@sched_path + '/sched.pid') rescue nil
-      File.open(@sched_path + '/sched.pid', "w") do
-        |f|
+      File.open(@sched_path + '/sched.pid', "w") do |f|
         f.write("#{Process.pid}\n")
       end
 
@@ -125,62 +105,25 @@ module RQ
       @sock = UNIXServer.open(@sched_path + '/sched.sock')
     end
 
-    def load_rq_config
-      begin
-        data = File.read(@rq_config_path + 'config.json')
-        js_data = JSON.parse(data)
-        @host = js_data['host']
-        @port = js_data['port']
-      rescue
-        return nil
-      end
-      return js_data
-    end
-
-    def load_config
-      begin
-        data = File.read(@sched_path + '/config.json')
-        @config = JSON.parse(data)
-      rescue
-        return false
-      end
-      return true
-    end
-
     def log(mesg)
-      File.open(@sched_path + '/sched.log', "a") do
-        |f|
+      File.open(@sched_path + '/sched.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
 
     def shutdown!
       log("Received shutdown")
-      # TODO: proper oper status
-      # write_status
       Process.exit! 0
     end
 
-    def run_scheduler!
-      @wait_time = 60
-
-      # Look at priority queue for things to schedule
-    end
-
     def run_loop
-
-      Signal.trap("TERM") do
+      Signal.trap('TERM') do
         log("received TERM signal")
         shutdown!
       end
 
-      while true
-        #run_scheduler!
-        sleep 60
-      end
+      sleep while true
     end
 
   end
 end
-
-
