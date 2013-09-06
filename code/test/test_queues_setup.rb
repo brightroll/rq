@@ -40,7 +40,7 @@ def test_key(que_name, under_test, key, expected)
 end
 
 # expected
-#{"script":".\/code\/test\/test_script.sh","name":"test","url":"http:\/\/127.0.0.1:3333\/","num_workers":"1"}
+#{"script":"./code/test/test_script.sh","name":"test","url":"http://127.0.0.1:3333/","num_workers":"1"}
 #
 test_key 'test', result, 'name', 'test'
 test_key 'test', result, 'num_workers', '1'
