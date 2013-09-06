@@ -45,7 +45,7 @@ module RQ
       end
     end
 
-    def self.start_process(options)
+    def self.start_process(options={})
       # nice pipes writeup
       # http://www.cim.mcgill.ca/~franco/OpSys-304-427/lecture-notes/node28.html
       child_rd, parent_wr = IO.pipe
@@ -54,6 +54,7 @@ module RQ
         # Restore default signal handlers from those inherited from queuemgr
         Signal.trap('TERM', 'DEFAULT')
         Signal.trap('CHLD', 'DEFAULT')
+        Signal.trap('HUP', 'DEFAULT')
 
         sched_path = "scheduler/"
         $0 = "[rq-scheduler]"
@@ -88,7 +89,15 @@ module RQ
         return nil
       end
 
-      [child_pid, parent_wr]
+      worker = Worker.new
+      worker.qc = nil
+      worker.name = 'scheduler'
+      worker.status = 'RUNNING'
+      worker.child_write_pipe = parent_wr
+      worker.pid = child_pid
+      worker.num_restarts = 0
+      worker.options = options
+      worker
     end
 
     def self.close_all_fds(exclude_fds)
