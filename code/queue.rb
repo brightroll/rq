@@ -484,22 +484,20 @@ module RQ
     def load_config
       @config_check = Time.now
       @config_file = JSONConfigFile.new(File.join(@queue_path, 'config.json'))
-      sublimate_config
+      @config = sublimate_config(@config_file.conf)
     end
 
-    def sublimate_config
+    def sublimate_config(conf)
       # TODO config validation
-      @config = QueueConfig.new
-      @config.name = @config_file.conf['name']
-      @config.script = @config_file.conf['script']
-      @config.num_workers = @config_file.conf['num_workers'].to_i
-      @config.exec_prefix = @config_file.conf['exec_prefix']
-      @config.env_vars = @config_file.conf['env_vars']
-      @config.coalesce = !!(%w{true yes 1}.include? @config_file.conf['coalesce'])
-      @config.coalesce_params = {}
-      (1..4).each do |x|
-        @config.coalesce_params[x] = !!(@config_file.conf["coalesce_param#{x}"].to_i == 1)
-      end
+      new_config                 = QueueConfig.new
+      new_config.name            = conf['name']
+      new_config.script          = conf['script']
+      new_config.num_workers     = conf['num_workers'].to_i
+      new_config.exec_prefix     = conf['exec_prefix']
+      new_config.env_vars        = conf['env_vars']
+      new_config.coalesce        = !!(%w{true yes 1}.include? conf['coalesce'])
+      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, !!(conf["coalesce_param#{x}"].to_i == 1)]} ]
+      new_config
     end
 
     # It is called right before check_msg
@@ -1538,7 +1536,7 @@ module RQ
         if (now - @config_check) > 5
           if @config_file.check_for_change == JSONConfigFile::CHANGED
             log('Config file changed. Using new config')
-            sublimate_config
+            @config = sublimate_config(@config_file.conf)
           end
           @config_check = now
         end
