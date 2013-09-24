@@ -63,13 +63,10 @@ class TC_ConfigChangeTest < Test::Unit::TestCase
     uri_str = "http://127.0.0.1:#{@rq_port}/q/test_change/config"
     res = Net::HTTP.get_response(URI.parse(uri_str))
     assert_equal("200", res.code)
-    result = res.body
 
     result = JSON.parse(res.body)
+    assert_equal(1, result['num_workers'])
 
-    assert_equal('1', result["num_workers"])
-
-    expected_num_workers = '4'
     new_config_path = './code/test/fixtures/jsonconfigfile/good_new.json'
     config_path = 'queue/test_change/config.json'
 
@@ -87,12 +84,9 @@ class TC_ConfigChangeTest < Test::Unit::TestCase
     uri_str = "http://127.0.0.1:#{@rq_port}/q/test_change/config"
     res = Net::HTTP.get_response(URI.parse(uri_str))
     assert_equal("200", res.code)
-    result = res.body
 
     result = JSON.parse(res.body)
-
-    assert_equal(expected_num_workers, result['num_workers'])
+    assert_equal(4, result['num_workers'])
   end
 
 end
-
