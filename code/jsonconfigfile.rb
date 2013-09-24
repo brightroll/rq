@@ -17,31 +17,32 @@ module RQ
 
     def initialize(path)
       @path = path
+      @stat = File.stat(@path) rescue nil
+      load_config
     end
 
     def load_config
-      begin
-        data = File.read(@path)
-        js_data = JSON.parse(data)
-        @conf = js_data
-        @stat = File.stat(@path)
-      rescue
-        return nil
-      end
-      self
+      @conf = JSON.parse(File.read(@path))
+      true
+    rescue
+      false
     end
 
     def check_for_change
-      begin
-        stat = File.stat(@path)
-        if (stat.ino != @stat.ino) || (stat.mtime != @stat.mtime)
-          load_config ? CHANGED : ERROR_IGNORED
+      stat = File.stat(@path)
+      if !@stat || (stat.ino != @stat.ino || stat.mtime != @stat.mtime)
+        if load_config
+          @stat = stat
+          CHANGED
         else
-          NO_CHANGE
+          ERROR_IGNORED
         end
-      rescue
-        ERROR_IGNORED
+      else
+        NO_CHANGE
       end
+    rescue
+      ERROR_IGNORED
     end
+
   end
 end

@@ -17,24 +17,24 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
   # end
 
   def test_load
-    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/good.json').load_config
-    assert_not_nil(config)
+    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/good.json')
+    assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
   end
 
   def test_missing_initial_load
-    config = RQ::JSONConfigFile.new('ZZZZZZZZcode/test/test_config.jsonZZZZZZZZZ').load_config
-    assert_nil(config)
+    config = RQ::JSONConfigFile.new('ZZZZZZZZcode/test/test_config.jsonZZZZZZZZZ')
+    assert_nil(config.conf)
   end
 
   def test_corrupt_initial_load
-    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/bad.json').load_config
-    assert_nil(config)
+    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/bad.json')
+    assert_nil(config.conf)
   end
 
   def test_config_no_change
-    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/good.json').load_config
-    assert_not_nil(config)
+    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/good.json')
+    assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
 
     changed = config.check_for_change
@@ -50,8 +50,8 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
     FileUtils.rm_f(test_path)
     FileUtils.cp(good_path, test_path)
 
-    config = RQ::JSONConfigFile.new(test_path).load_config
-    assert_not_nil(config)
+    config = RQ::JSONConfigFile.new(test_path)
+    assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
 
     # Unamazingly, ruby cp does the wrong thing
@@ -73,8 +73,8 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
     FileUtils.rm_f(test_path)
     FileUtils.cp(good_path, test_path)
 
-    config = RQ::JSONConfigFile.new(test_path).load_config
-    assert_not_nil(config)
+    config = RQ::JSONConfigFile.new(test_path)
+    assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
 
     # Unamazingly, ruby cp does the wrong thing
@@ -96,8 +96,8 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
     FileUtils.rm_f(test_path)
     FileUtils.cp(good_path, test_path)
 
-    config = RQ::JSONConfigFile.new(test_path).load_config
-    assert_not_nil(config)
+    config = RQ::JSONConfigFile.new(test_path)
+    assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
 
     FileUtils.rm_f(test_path)
