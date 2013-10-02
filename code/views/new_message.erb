@@ -59,15 +59,6 @@
 <p class="note">'single_que' only creates a message in 'que' state if that state is empty, otherwise it returns a msg_id of what is there. used for event coalescing.</p>
 </div>
 
-<div class="field" id="mesg_relay_ok_field" <%= overrides.show_field('mesg_relay_ok') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_relay_ok">Relay ok?</label>
-<label for="mesg_relay_ok">yes</label>
-<input type="radio" name="mesg[relay_ok]" value="yes" checked />
-<label for="mesg_relay_ok">no</label>
-<input type="radio" name="mesg[relay_ok]" value="no" />
-<p class="note">Determine if relaying is ok for this message, if not destined for this queue.</p>
-</div>
-
 <div class="field" id="mesg_post_run_webhook_field" <%= overrides.show_field('mesg_post_run_webhook') ? '' : "style=\"display: none;\"" %>>
 <label class="field_label" for="mesg_post_run_webhook">post_run_hook</label>
 <input type="text" name="mesg[post_run_webhook]" value="" size="100" />
