@@ -168,10 +168,11 @@ module RQ
       # check for queue
       # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
+      ok, config = qc.get_config
 
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
-      erb :queue
+      erb :queue, :locals => { :q => params[:name], :qc => qc, :config => config }
     end
 
     get '/q/:name/done.json' do

@@ -1,5 +1,3 @@
-<% q = params[:name] %>
-<% qc = RQ::QueueClient.new(q) %>
 <div id="header">
   <p id="new-message"><a href="<%= "#{url}q/#{q}/new_message" %>">New Message</a></p>
   <h1><a href="<%= url %>">RQ</a> : <%= q %></h1>
@@ -18,16 +16,7 @@
   <% end %>
   </div>
   <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{q}/config.json" %>">raw</a> ]</p>
-  <% json_path = "queue/#{q}/config.json" %>
-  <% if File.exists?(json_path) %>
-  <pre id="config" class="json hidden">
-  <% File.open(json_path) do |file| %>
-   <%= file.gets.gsub(/,/, "\n\t").gsub(/\{/, "\t").gsub(/\}/, "").gsub(/\\\//, "/").gsub(/"\:"/, "\" : \"") %>
-  <% end %>
-  </pre>
-  <% else %>
-    <p>config.json doesn't currently exist?</p>
-  <% end %>
+  <pre id="config" class="json hidden"><%= config.to_json %></pre>
 </div>
 
 <% if admin_status == 'UP' %>
