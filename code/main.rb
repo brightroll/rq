@@ -165,13 +165,10 @@ module RQ
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
-      # check for queue
-      # TODO: sanitize names (no dots or slashes)
       qc = RQ::QueueClient.new(params[:name])
-      ok, config = qc.get_config
-
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
+      ok, config = qc.get_config
       erb :queue, :locals => { :q => params[:name], :qc => qc, :config => config }
     end
 
@@ -192,10 +189,7 @@ module RQ
     end
 
     get '/q/:name/new_message' do
-      # check for queue
-      # TODO: sanitize names (no dots or slashes)
       qc = get_queueclient(params[:name])
-
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       overrides = RQ::Overrides.new(params['name'])
@@ -249,7 +243,6 @@ module RQ
       end
 
       qc = get_queueclient(q_name)
-
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       if the_method == 'prep'
@@ -299,14 +292,13 @@ module RQ
 
     get '/q/:name/config' do
       qc = get_queueclient(params[:name])
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+
       ok, config = qc.get_config()
       config.to_json
     end
 
     get '/q/:name/:msg_id' do
-      # check for queue
-      # TODO: sanitize names (no dots or slashes)
-
       fmt = :html
       msg_id = params['msg_id']
 
@@ -317,7 +309,6 @@ module RQ
       end
 
       qc = get_queueclient(params[:name])
-
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
@@ -343,7 +334,6 @@ module RQ
       msg_id = params['msg_id']
 
       qc = get_queueclient(params[:name])
-
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, state = qc.get_message_state({ 'msg_id' => msg_id })
@@ -359,6 +349,7 @@ module RQ
     post '/q/:name/:msg_id/clone' do
       qc = get_queueclient(params[:name])
       throw :halt, [404, "404 - Queue not found"] unless qc.exists?
+
       res = qc.clone_message({ 'msg_id' => params[:msg_id] })
 
       if not res
@@ -389,15 +380,10 @@ module RQ
       redirect "/q/#{params[:name]}/#{params[:msg_id]}"
     end
 
+    # TODO: change URL for this call
     post '/q/:name/:msg_id/attach/new' do
-      # TODO: change URL for this call
-      # check for queue
-      # TODO: sanitize names (no dots or slashes)
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       # Sample of what params look like
       # {"name"=>"test", "filedata"=>{:type=>"image/jpeg", :head=>"Content-Disposition: form-data; name=\"data\"; filename=\"studio3.jpg\"\r\nContent-Type: image/jpeg\r\n", :tempfile=>#<File:/var/folders/st/st7hSqrMFB0Sfm3p4OeypE+++TM/-Tmp-/RackMultipart20091218-76387-t47zdi-0>, :name=>"filedata", :filename=>"studio3.jpg"}, "msg_id"=>"20091215.1829.21.853", "x_format"=>"json"}
@@ -453,10 +439,7 @@ module RQ
 
     post '/q/:name/:msg_id/attach/:attachment_name' do
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       api_call = params.fetch('x_format', 'html')
 
@@ -484,10 +467,7 @@ module RQ
       msg_id = params['msg_id']
 
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -516,10 +496,7 @@ module RQ
       msg_id = params['msg_id']
 
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -549,10 +526,7 @@ module RQ
       msg_id = params['msg_id']
 
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -584,10 +558,7 @@ module RQ
       msg_id = params['msg_id']
 
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       ok, msg = qc.get_message({ 'msg_id' => msg_id })
 
@@ -606,13 +577,8 @@ module RQ
 
 
     post '/q/:name/:msg_id' do
-      # check for queue
-      # TODO: sanitize names (no dots or slashes)
       qc = get_queueclient(params[:name])
-
-      if not qc.exists?
-        throw :halt, [404, "404 - Queue not found"]
-      end
+      throw :halt, [404, "404 - Queue not found"] unless qc.exists?
 
       api_call = params.fetch('x_format', 'html')
 
