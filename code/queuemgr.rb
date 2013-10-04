@@ -255,7 +255,7 @@ module RQ
 
     def final_shutdown!
       # Once all the queues are down, take the scheduler down
-      Process.kill("TERM", @scheduler.pid) if @scheduler.pid
+      # Process.kill("TERM", @scheduler.pid) if @scheduler.pid
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
