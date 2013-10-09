@@ -96,11 +96,11 @@ module RQ
     end
 
     def ping
-      send_recv('ping')
+      send_recv('ping').first
     end
 
     def uptime
-      send_recv('uptime')
+      send_recv('uptime').first
     end
 
     def status

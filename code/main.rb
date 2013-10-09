@@ -45,24 +45,23 @@ module RQ
              "<tr>"
         html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{name}</a></td>"
         html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{(url+'q/'+name.to_s)}</a></td>"
-        if qc.running?
+        if (qc.running? rescue nil)
           admin_stat, oper_stat = qc.status
           html += "<td>"
-            html += "<span class=\"#{admin_stat == 'UP' ? 'green' : 'red'}\">#{admin_stat}</span>:"
-            html += "<span class=\"#{oper_stat  == 'UP' ? 'green' : 'red'}\">#{oper_stat}</span>"
+          html += "<span class=\"#{admin_stat == 'UP' ? 'green' : 'red'}\">#{admin_stat}</span>:"
+          html += "<span class=\"#{oper_stat  == 'UP' ? 'green' : 'red'}\">#{oper_stat}</span>"
           html += "</td>"
           html += "<td>#{qc.ping}</td>"
           html += "<td>#{qc.read_pid}</td>"
           html += "<td>#{qc.uptime}</td>"
         else
-          html +=
           html += "<td><span class=\"red\">DOWN</span></td>"
           html += "<td>-</td>"
           html += "<td>-</td>"
           html += "<td>-</td>"
         end
         html += "<td><form method=\"post\" action=\"#{url}q/#{name}/restart\">"
-          html += "<button id=\"restart-queue\">Restart</button>"
+        html += "<button id=\"restart-queue\">Restart</button>"
         html += "</form></td>"
         html += "</tr>"
       end
