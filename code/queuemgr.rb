@@ -70,6 +70,13 @@ module RQ
       nil == name.tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*').index('*')
     end
 
+    def queue_dirs
+      Dir.entries('queue').select do |x|
+        valid_queue_name x and
+        File.readable? File.join('queue', x, 'config.json')
+      end
+    end
+
     def handle_request(sock)
       data, = sock.recvfrom(1024)
       cmd, arg = data.split(' ', 2)
@@ -220,7 +227,7 @@ module RQ
 
     def reload
       # Stop queues whose configs have gone away
-      dirs = Hash[Dir.entries('queue').select { |q| valid_queue_name q }.zip]
+      dirs = Hash[queue_dirs.zip]
 
       # Notify running queues to reload configs
       @queues.each do |worker|
@@ -283,7 +290,7 @@ module RQ
 
     def load_queues
       # Skip dot dirs and queues already running
-      Dir.entries('queue').select { |q| valid_queue_name q }.each do |name|
+      queue_dirs.each do |name|
         next if @queues.any? { |q| q.name == name }
         start_queue name
       end
