@@ -341,9 +341,11 @@ def run_loop
     #log(io_list.inspect)
     log('sleeping')
     begin
-      ready, _, _ = IO.select(io_list, nil, nil, 60)
-    rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+      ready, _, _ = IO.select(io_list, nil, io_list, 60)
+    rescue SystemCallError # This is the parent for all Errno::EFOO exceptions
       log("error on SELECT #{$!}")
+      closed_sockets = io_list.delete_if { |i| i.closed? }
+      log("removing closed sockets #{closed_sockets.inspect} from io_list")
       retry
     end
 
@@ -392,8 +394,10 @@ def run_loop
                 log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
               else
                 new_worker = RQ::Queue.start_process(worker.options)
-                log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
-                worker = new_worker
+                if new_worker
+                  log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
+                  worker = new_worker
+                end
               end
             elsif worker.status == "DELETE"
               RQ::Queue.delete(worker.name)
