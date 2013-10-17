@@ -341,7 +341,7 @@ def run_loop
     #log(io_list.inspect)
     log('sleeping')
     begin
-      ready, _, _ = IO.select(io_list, nil, io_list, 60)
+      ready, _, _ = IO.select(io_list, nil, nil, 60)
     rescue SystemCallError, StandardError # SystemCallError is the parent for all Errno::EFOO exceptions
       log("error on SELECT #{$!}")
       closed_sockets = io_list.delete_if { |i| i.closed? }
