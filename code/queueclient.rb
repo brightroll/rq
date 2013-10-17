@@ -1,4 +1,3 @@
-
 require 'socket'
 require 'json'
 require 'code/unixrack'
@@ -53,8 +52,7 @@ module RQ
         #puts "Got an EOF from socket read"
         return nil
       rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-        puts "Got an #{$!} from socket read"
-        exit! 0
+        raise "Got an #{$!} from socket read"
       end
       dat
     end
@@ -173,4 +171,3 @@ module RQ
 
   end
 end
-

@@ -39,23 +39,26 @@ module RQ
       end
 
       def queue_row(name, options={})
-        qc = get_queueclient(name)
         html = options[:odd] ?
              "<tr class=\"odd-row\">" :
              "<tr>"
         html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{name}</a></td>"
-        html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{(url+'q/'+name.to_s)}</a></td>"
-        if (qc.running? rescue nil)
+        html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{url}q/#{name}</a></td>"
+        begin
+          qc = get_queueclient(name)
+          raise unless qc.running?
           admin_stat, oper_stat = qc.status
-          html += "<td>"
-          html += "<span class=\"#{admin_stat == 'UP' ? 'green' : 'red'}\">#{admin_stat}</span>:"
-          html += "<span class=\"#{oper_stat  == 'UP' ? 'green' : 'red'}\">#{oper_stat}</span>"
-          html += "</td>"
-          html += "<td>#{qc.ping}</td>"
-          html += "<td>#{qc.read_pid}</td>"
-          html += "<td>#{qc.uptime}</td>"
-        else
-          html += "<td><span class=\"red\">DOWN</span></td>"
+          html += <<-END
+          <td>
+          <span class="#{admin_stat == 'UP' ? 'green' : 'red'}">#{admin_stat}</span>:
+          <span class="#{oper_stat  == 'UP' ? 'green' : 'red'}">#{oper_stat}</span>
+          </td>
+          <td>#{qc.ping}</td>
+          <td>#{qc.read_pid}</td>
+          <td>#{qc.uptime}</td>
+          END
+        rescue
+          html += "<td><span class=\"red\">DOWN #{$!}</span></td>"
           html += "<td>-</td>"
           html += "<td>-</td>"
           html += "<td>-</td>"
