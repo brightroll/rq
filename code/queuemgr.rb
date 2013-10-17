@@ -342,7 +342,7 @@ def run_loop
     log('sleeping')
     begin
       ready, _, _ = IO.select(io_list, nil, io_list, 60)
-    rescue SystemCallError # This is the parent for all Errno::EFOO exceptions
+    rescue SystemCallError, StandardError # SystemCallError is the parent for all Errno::EFOO exceptions
       log("error on SELECT #{$!}")
       closed_sockets = io_list.delete_if { |i| i.closed? }
       log("removing closed sockets #{closed_sockets.inspect} from io_list")
@@ -368,13 +368,7 @@ def run_loop
         qmgr.handle_request(client_socket)
       else
         # probably a child pipe that closed
-        worker = qmgr.queues.find do |i|
-          if i.child_write_pipe
-            i.child_write_pipe.fileno == io.fileno
-          else
-            false
-          end
-        end
+        worker = qmgr.queues.find { |i| i.child_write_pipe.fileno == io.fileno rescue false }
         if worker
           res = Process.wait2(worker.pid, Process::WNOHANG)
           if res
