@@ -28,19 +28,11 @@ start)
 	fi
 
 	if [ "$NLIMIT" ]; then ulimit -n $NLIMIT; fi
-	sudo -H -u $RQUSER $RQDIR/bin/web_server.rb server
-	sudo -H -u $RQUSER $RQDIR/bin/queuemgr_ctl start
+	sudo -H -u $RQUSER $RQDIR/bin/rq-mgr start
 ;;
 stop)
-	# Stop the web interface
-	for pid in $(pgrep -u $RQUSER -f rq-web || exit 0)
-	do
-		echo "Stopping RQ web_server"
-		kill $pid
-	done
-
 	# Stop the queues
-	sudo -H -u $RQUSER $RQDIR/bin/queuemgr_ctl stop
+	sudo -H -u $RQUSER $RQDIR/bin/rq-mgr stop
 
 	# Make sure the queues are stopped
 	for pid in $(pgrep -u $RQUSER -f rq-que || exit 0)
