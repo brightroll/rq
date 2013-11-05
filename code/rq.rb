@@ -1,4 +1,5 @@
 require 'vendor/environment'
+require 'code/rule_processor'
 require 'code/queueclient'
 
 # needs some sort of error handling -- move out of this file
@@ -288,8 +289,6 @@ class Commands
   end
 
   def cmd_verify_rules(args)
-    require 'code/rule_processor'
-
     raise RqMissingArgument if not args['path']
 
     rp = RQ::RuleProcessor.process_pathname(args['path'], args['verbose'])
