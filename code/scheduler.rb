@@ -2,7 +2,7 @@ require 'socket'
 require 'json'
 require 'fcntl'
 require 'fileutils'
-require 'code/unixrack'
+require 'unixrack'
 require 'code/hashdir'
 
 module RQ

@@ -1,4 +1,6 @@
-# unixrack - ruby webserver compatible with rack using unix philosophy
+require "unixrack/version"
+
+# unixrack - ruby webserver compatible with rack using old unix style
 #
 # license  - see COPYING
 
@@ -10,9 +12,11 @@ require 'time'
 require 'socket'
 require 'stringio'
 
-# Thx - Logan Capaldo
-module Alarm
-  case RUBY_VERSION.to_f
+module UnixRack
+
+  module Alarm
+    # Thx - Logan Capaldo
+    case RUBY_VERSION.to_f
     when 1.8
       require 'dl/import'
       extend DL::Importable
@@ -22,17 +26,16 @@ module Alarm
     else # 2.0+
       require 'fiddle/import'
       extend Fiddle::Importer
+    end
+    if RUBY_PLATFORM =~ /darwin/
+      so_ext = 'dylib'
+    else
+      so_ext = 'so.6'
+    end
+    dlload "libc.#{so_ext}"
+    extern "unsigned int alarm(unsigned int)"
   end
-  if RUBY_PLATFORM =~ /darwin/
-    so_ext = 'dylib'
-  else
-    so_ext = 'so.6'
-  end
-  dlload "libc.#{so_ext}"
-  extern "unsigned int alarm(unsigned int)"
-end
 
-module UnixRack
   class Socket
 
     attr_accessor :hdr_method, :headers
@@ -220,6 +223,9 @@ module Rack
       end
 
       def self.log(response_code, message='-', method='-', url='-', options={})
+        return
+        #TODO: Ignore the early return
+        #TODO: I'm going to make this a config debug option, use your other middleware logging for now
         ip = @@client_ip || '-'
         now = Time.now
         duration = ((now.to_f - @@start_time.to_f) * 1000).to_i / 1000.0
@@ -271,7 +277,8 @@ module Rack
 
         headers['Connection'] ||= 'close'
 
-        headers.each do |k, vs|
+        headers.each do
+        |k, vs|
           vs.split("\n").each { |v| hdr_ary << ["#{k}: #{v}"] }
         end
 
@@ -294,6 +301,8 @@ module Rack
 
 
       def self.run(app, options={})
+
+        require 'socket'
         port = options[:Port] || 8080
         host = options[:Hostname] || 'localhost'
         listen = options[:Host] || '127.0.0.1'
@@ -352,7 +361,7 @@ module Rack
             trap("ALRM") { log(0, "Child received ALARM during read_headers. Exiting."); exit! 2 }
             trap(:TERM) { log(0, "Child received TERM. Exiting."); exit! 0 }
 
-            Alarm.alarm(5) # if no command received in 5 secs
+            ::UnixRack::Alarm.alarm(5) # if no command received in 5 secs
 
             sock = ::UnixRack::Socket.new(conn)
             @@client_ip = sock.peeraddr.last
@@ -362,7 +371,7 @@ module Rack
             end
 
             trap("ALRM") { log(0, "Child received ALARM during response. Exiting."); exit! 2 }
-            Alarm.alarm(120) # if command not handled in 120 seconds
+            ::UnixRack::Alarm.alarm(120) # if command not handled in 120 seconds
 
             if not allowed_ips.empty?
               if not (allowed_ips.any? { |e| @@client_ip.include? e })
