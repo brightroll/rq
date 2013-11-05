@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+Dir.chdir(File.expand_path('..', File.dirname(__FILE__)))
+$: << '.'
+require 'vendor/bundle/bundler/setup'
+require 'code/web_server'
+
+$0 = '[rq-web]'
+config = RQ::WebServer.conf_rq_web
+RQ::WebServer.start_rq_web(config)

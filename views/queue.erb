@@ -1,0 +1,226 @@
+<div id="header">
+  <p id="new-message"><a href="<%= "#{url}q/#{qc.name}/new_message" %>">New Message</a></p>
+  <h1><a href="<%= url %>">RQ</a> : <%= qc.name %></h1>
+</div>
+
+<div id="sub-header">
+  <% if qc.running? %>
+  <% admin_status, oper_status = qc.status %>
+  <div id="queue-status">
+    <p><span class="<%= admin_status == "UP" ? "green" : "red" %>"><%= admin_status %></span>:<span class="<%= oper_status == "UP" ? "green" : "red" %>"><%= oper_status %></span>
+    <span class=""> <%=  qc.ping %></span>
+    <span class=""> <%=  qc.read_pid %></span>
+    up for <%= qc.uptime %> seconds</p>
+  <% else %>
+   <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
+  <% end %>
+  </div>
+  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{qc.name}/config.json" %>">raw</a> ]</p>
+  <pre id="config" class="json hidden"><%= config.to_json %></pre>
+</div>
+
+<% if admin_status == 'UP' %>
+<h2>Message List</h2>
+
+<% num_msgs = qc.num_messages %>
+
+<table id="queue-lists" cellspacing="0" cellpading="5">
+  <thead>
+    <tr>
+      <th class="prep"><h4>PREP</h4><%= num_msgs['prep'] %></th>
+      <th class="que"><h4>QUE</h4><%= num_msgs['que'] %></th>
+      <th class="run"><h4>RUN</h4><%= num_msgs['run'] %></th>
+      <% if qc.name != 'relay' %>
+        <th class="done"><h4>DONE</h4><%= num_msgs['done'] %></th>
+      <% end %>
+      <th class="err"><h4>ERR</h4><%= num_msgs['err'] %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <!-- PREP -->
+      <td class="prep">
+<% msg_ids = qc.messages({'state' => 'prep', 'limit' => 50}) %>
+<% grouped = {} %>
+<% msg_ids.each do |msg_id| %>
+  <% next if msg_id.nil? %>
+  <% date, rest = msg_id.split('.', 2) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+      <!-- QUE -->
+      <td class="que">
+<% msgs_and_backoffs = qc.messages({'state' => 'que'}) %>
+<% grouped = {} %>
+<% msgs_and_backoffs.each do |msg_and_backoff| %>
+  <% date, rest = msg_and_backoff[0].split('.', 2) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << [ rest, msg_and_backoff[1] ] %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs_and_backoffs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs_and_backoffs.sort.reverse.each do |msg_and_backoff| %>
+    <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
+    <li>
+      <span class="">
+        <a href="<%= "#{url}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
+      </span>
+      <% if qc.name == 'relay' %>
+        <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
+        <% if ok == 'ok' %>
+          dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+        <% end %>
+      <% end %>
+      : in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs</span>
+      <span class="">
+        <form id="delete-form" method="post" action="<%= "#{url}q/#{qc.name}/#{msg_id}" %>">
+          <input name="_method" type="hidden" value="delete" />
+          <button id="delete-button" type="submit">Destroy it</button>
+        </form>
+      </span>
+    </li>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+      <!-- RUN -->
+      <td class="run">
+<% msgs = qc.messages({'state' => 'run'}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% m = msg[0] %>
+  <% next if m.nil? %>
+  <% date, rest = m.split('.', 2) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <%# hotfix for indika's problem. this needs to be revisited. %>
+  <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
+    <% msg_id = msg %>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
+    <% if qc.name == 'relay' %>
+      <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
+      <% if ok == 'ok' %>
+        dest: <span class="yellow"> <%= msg_full['dest'] %></span>
+        STATUS: <span class="yellow"> <%= msg_full['status'] %></span>
+      <% else %>
+        STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
+      <% end %>
+    <% end %>
+    <form id="destroy-form" method="post" action="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>">
+      <input name="_method" type="hidden" value="delete" />
+      <button id="destroy-button" type="submit">Destroy it</button>
+    </form>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+      <% if qc.name != 'relay' %>
+      <!-- DONE -->
+      <td class="done">
+<% msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg.split('.', 2) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+    <% end %>
+      <!-- ERR -->
+      <td class="err">
+<% msgs = qc.messages({'state' => 'err'}) %>
+<% grouped = {} %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg.split('.', 2) %>
+  <% grouped[date] ||= [] %>
+  <% grouped[date] << rest %>
+<% end %>
+<% grouped.sort.reverse.each do |date, msgs| %>
+  <h5><%= date %></h5>
+  <ul>
+  <% msgs.sort.reverse.each do |msg| %>
+    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
+  <% end %>
+  </ul>
+<% end %>
+      </td>
+  </tbody>
+</table>
+
+<!-- RELAYED -->
+<% if qc.name == 'relay' %>
+<div class="relayed">
+  <h4><b><%= num_msgs['relayed'] %></b> in RELAYED</h4>
+  <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
+  <% grouped = {} %>
+  <% msgs.each do |msg| %>
+    <% date, rest = msg.split('.', 2) %>
+    <% grouped[date] ||= [] %>
+    <% grouped[date] << rest %>
+  <% end %>
+  <% grouped.sort.reverse.each do |date, msgs| %>
+    <h5><%= date %></h5>
+    <ul>
+    <% msgs.sort.reverse.each do |msg| %>
+      <li class="relayed-li">
+        <a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a>
+        <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
+        <% if ok == 'ok' %>
+          <%  status, new_location = msg_full['status'].split(' - ', 2) %>
+          <!-- <%= status %> -->
+          <a title="<%= new_location %>" href="<%= new_location %>"> - <span class="green">relayed</span> - <%= new_location %></a>
+        <% end %>
+      </li>
+    <% end %>
+    </ul>
+  <% end %>
+<% end %>
+
+<% else %>
+  <h3>Queue is HARD DOWN</h3>
+  <p>Nothing to display.</p>
+<% end %>
+
+<script>
+  function show_toggle() {
+    var cfg = document.getElementById('config');
+    if (cfg.className.indexOf('hidden') >= 0) {
+      cfg.className = cfg.className.replace('hidden', '').replace(/\s+$/, "");
+    } else {
+      cfg.className += ' hidden';
+    }
+    return false;
+  }
+  var deleteForm = document.getElementById('delete-form');
+  deleteForm.addEventListener('submit', function (e) {
+    var deleteButton = document.getElementById('delete-button');
+    deleteButton.disabled = true;
+  });
+  var destroyForm = document.getElementById('destroy-form');
+  destroyForm.addEventListener('submit', function (e) {
+    var destroyButton = document.getElementById('destroy-button');
+    destroyButton.disabled = true;
+  });
+</script>

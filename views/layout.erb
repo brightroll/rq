@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% if params[:name] && !params[:name].empty? %>
+      <title>RQ :: <%= params[:name] %></title>
+    <% else %>
+      <title>RQ</title>
+    <% end %>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
+  </head>
+  <% our_env = RQ::QueueMgrClient.environment rescue '' %>
+  <body class="<%= our_env %>">
+    <div class="container">
+      <div id="flash-container">
+        <%= styled_flash %>
+      </div>
+      <span id="env"><%= our_env %></span>
+      <%= yield %>
+      <p><em><%= Time.now %></em></p>
+    </div>
+  </body>
+</html>

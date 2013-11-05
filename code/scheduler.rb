@@ -1,9 +1,6 @@
 require 'socket'
 require 'json'
-require 'fcntl'
-require 'fileutils'
-require 'code/unixrack'
-require 'code/hashdir'
+require 'unixrack'
 
 module RQ
   class Scheduler
@@ -44,16 +41,13 @@ module RQ
           #child only code block
           RQ::Scheduler.log(sched_path, 'post fork')
 
-          # Unix house keeping
-          self.close_all_fds([child_rd.fileno])
-          # TODO: probly some other signal, session, proc grp, etc. crap
-
-          RQ::Scheduler.log(sched_path, 'post close_all')
           q = RQ::Scheduler.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
           RQ::Scheduler.log(sched_path, 'post new')
-          q.run_loop
+          while true
+            sleep 60
+          end
         rescue Exception
           self.log(sched_path, "Exception!")
           self.log(sched_path, $!)
@@ -81,18 +75,6 @@ module RQ
       worker
     end
 
-    def self.close_all_fds(exclude_fds)
-      0.upto(1023) do |fd|
-        begin
-          next if exclude_fds.include? fd
-          if io = IO::new(fd)
-            io.close
-          end
-        rescue
-        end
-      end
-    end
-
     def init_socket
       # Show pid
       File.unlink(@sched_path + '/sched.pid') rescue nil
@@ -111,15 +93,10 @@ module RQ
       end
     end
 
-    def shutdown!
-      log("Received shutdown")
-      Process.exit! 0
-    end
-
     def run_loop
-      Signal.trap('TERM') do
+      Signal.trap("TERM") do
         log("received TERM signal")
-        shutdown!
+        exit 0
       end
 
       sleep while true

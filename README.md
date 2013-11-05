@@ -119,39 +119,31 @@ Table Of Contents
 <a name='section_Quick_Setup'></a>
 ## Quick Setup
 
-You will need:
+```sh
+bundle install --path vendor/bundle --standalone
+```
 
-1. Source to RQ
-2. A unique FQDN for the system if production.
+* Install the initial queues and configs
 
-Clone the github repo.
-Untar the system in a directory of your choosing.
+```sh
+bin/install
+```
 
-Run `./bin/web_server.rb --install`
+* Start the queue manager
 
-Now go to the web UI to follow the steps to complete an installation.
+```sh
+bin/queuemgr_ctl
+```
 
-This should setup the RQ directory system and a few default queues.
+* View the web interface [on port 3333](http://localhost:3333)
 
-Run the `/etc/init.d/rq stop` script
+* Use the RQ command-line tool
 
-There should be no processes with rq running.
+```sh
+bin/rq
+```
 
-Run the `/etc/init.d/rq start` script
-
-This should start several processes. There should be 1 rq-mgr process and one rq process per queue.
-There should also be one `web_server.rb` process running.
-
-(Also, I did 
-
-1. clone the git repository
-2. kill queue manager if it is running (pname: `[rq-mgr]`)
-3. delete the config directory if it exists
-4. bundle by typing `$ gem bundle` (bundler ~< 1.x.x) or `bundle install`
-5. run the installer with `$ bin/webserver.rb install`
-6. use a browser to hit the running server, set the domain of the machine
-7. restart the `web_server.rb` process (after killing, just `bin/web_server.rb`)
-
+Happy RQing!
 
 <a name='section_Features'></a>
 ## Features
@@ -261,7 +253,7 @@ Essentially, this turns into a
 end
 
 def write_status(state, mesg = '')
-  io = IO.for_fd(ENV['RQ_PIPE'].to_i)
+  io = IO.for_fd(ENV['RQ_WRITE'].to_i)
   msg = "#{state} #{mesg}\n"
   io.syswrite(msg)
 end
@@ -472,7 +464,8 @@ ENV["RQ_FULL_MSG_ID"] = Full msg id of message being processed
 ENV["RQ_MSG_DIR"]    = Dir for msg (Should be Current Dir unless dir is changed
                        by script)
 
-ENV["RQ_PIPE"]       = Pipe FD to Queue management process
+ENV["RQ_READ"]       = Read pipe FD to Queue management process
+ENV["RQ_WRITE"]      = Write pipe FD to Queue management process
 
 ENV["RQ_COUNT"]      = Number of times message has been relayed or processed
 

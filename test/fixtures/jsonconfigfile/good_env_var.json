@@ -1,0 +1,1 @@
+{"name":"test_env_var","script":"./test/env_var_test_queue_script.sh","num_workers":"1","env_vars":{"RQTESTENV1":"OWEN","RQTESTENV2":"32"},"exec_prefix":""}

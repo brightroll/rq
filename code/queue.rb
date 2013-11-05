@@ -3,7 +3,7 @@ require 'json'
 require 'fcntl'
 require 'digest'
 require 'fileutils'
-require 'code/unixrack'
+require 'unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
@@ -306,69 +306,29 @@ module RQ
           #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
           #RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
 
-          # WE MUST DO THIS BECAUSE WE MAY GET PIPE FDs IN THE 3-4 RANGE
-          # THIS GIVES US HIGHER # FDs SO WE CAN SAFELY CLOSE
-          child_wr_fd = child_wr.fcntl(Fcntl::F_DUPFD)
-          child_rd_fd = child_rd.fcntl(Fcntl::F_DUPFD)
-
           #RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
           #RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
 
           parent_rd.close
           parent_wr.close
 
-          # Unix house keeping
-          #self.close_all_fds([child_wr.fileno])
-
-          #... the pipe fd will get closed on exec
-
-          # child_wr
-          IO.for_fd(3).close rescue nil
-          fd = IO.for_fd(child_wr_fd).fcntl(Fcntl::F_DUPFD, 3)
-          RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
-          IO.for_fd(child_wr_fd).close rescue nil
-
-          # child_rd
-          IO.for_fd(4).close rescue nil
-          fd = IO.for_fd(child_rd_fd).fcntl(Fcntl::F_DUPFD, 4)
-          RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
-          IO.for_fd(child_rd_fd).close rescue nil
-
-
           f = File.open(job_path + "/stdio.log", "a")
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
           f.flush
 
-          #RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
-          if f.fileno != 0
-            IO.for_fd(0).close rescue nil
-          end
-          if f.fileno != 1
-            IO.for_fd(1).close rescue nil
-          end
-          if f.fileno != 2
-            IO.for_fd(2).close rescue nil
-          end
+          $stdin.close
+          $stdout.reopen f
+          $stderr.reopen f
 
-          if f.fileno != 0
-            fd = f.fcntl(Fcntl::F_DUPFD, 0)
-            RQ::Queue.log(job_path, "Error duping fd for 0 - got #{fd}") unless fd == 0
-          end
-          if f.fileno != 1
-            fd = f.fcntl(Fcntl::F_DUPFD, 1)
-            RQ::Queue.log(job_path, "Error duping fd for 1 - got #{fd}") unless fd == 1
-          end
-          if f.fileno != 2
-            fd = f.fcntl(Fcntl::F_DUPFD, 2)
-            RQ::Queue.log(job_path, "Error duping fd for 2 - got #{fd}") unless fd == 2
-          end
+          # Ruby 2.0 sets CLOEXEC by default, turn it off explicitly
+          child_wr.fcntl(Fcntl::F_SETFD, child_wr.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
+          child_rd.fcntl(Fcntl::F_SETFD, child_rd.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
 
-          #RQ::Queue.log(job_path, 'post stdio re-assigning') unless fd == 2
-          (5..32).each do |io|
-            io = IO.for_fd(io) rescue nil
-            next unless io
-            io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
+          # Set close-on-exec for all fds except 0, 1, 2 and the pipes
+          (3..32).each do |io|
+            next if [child_wr.fileno, child_rd.fileno].include? io
+            IO.for_fd(io).fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC) rescue nil
           end
           #RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
 
@@ -385,9 +345,9 @@ module RQ
           ENV["RQ_MSG_ID"] = msg_id
           ENV["RQ_FULL_MSG_ID"] = gen_full_msg_id(msg)
           ENV["RQ_MSG_DIR"] = job_path
-          ENV["RQ_PIPE"] = "3"  # DEPRECATED
-          ENV["RQ_WRITE"] = "3" # USE THESE INSTEAD
-          ENV["RQ_READ"] = "4"
+          ENV["RQ_PIPE"] = child_wr.fileno.to_s # DEPRECATED
+          ENV["RQ_WRITE"] = child_wr.fileno.to_s # USE THESE INSTEAD
+          ENV["RQ_READ"] = child_rd.fileno.to_s
           ENV["RQ_COUNT"] = msg['count'].to_s
           ENV["RQ_PARAM1"] = msg['param1']
           ENV["RQ_PARAM2"] = msg['param2']
@@ -419,10 +379,12 @@ module RQ
           exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
             #RQ::Queue.log(job_path, "exec path: #{script_path}")
-            exec(script_path, "")
+            exec(script_path, "") if RUBY_VERSION < '2.0'
+            exec(script_path, "", :close_others => false)
           else
             #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
-            exec(exec_prefix + script_path)
+            exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
+            exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
           RQ::Queue.log(job_path, $!)
@@ -1170,10 +1132,11 @@ module RQ
               que_name = new_dest
             end
 
-            qc = RQ::QueueClient.new(que_name)
-            if not qc.exists?
+            begin
+              qc = RQ::QueueClient.new(que_name)
+            rescue RQ::RqQueueNotFound
               log("#{@name}:#{Process.pid} couldn't DUP message - #{que_name} not available.")
-              msg['child_write_pipe'].syswrite("fail couldn\'t connect to queue - #{que_name}\n")
+              msg['child_write_pipe'].syswrite("fail couldn't connect to queue - #{que_name}\n")
               return
             end
 
@@ -1553,15 +1516,14 @@ module RQ
 
     # Inject a message into 'que' state
     def webhook_message(url, msg, new_state)
-      require 'code/queueclient'
-      qc = RQ::QueueClient.new('webhook')
-
-      msg_id = gen_full_msg_id(msg)
-
-      if not qc.exists?
+      begin
+        qc = RQ::QueueClient.new('webhook')
+      rescue RQ::RqQueueNotFound
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
         return
       end
+
+      msg_id = gen_full_msg_id(msg)
 
       # Copy orig message
       msg_copy = msg.clone
