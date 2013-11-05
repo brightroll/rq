@@ -101,7 +101,7 @@ end_time=$(date +%s)
 time_elapsed=$(($end_time-$start_time))
 echo "Script execution took $time_elapsed seconds."
 
-./bin/queuemgr_ctl stop
+./bin/rq-mgr stop
 
 echo "-=-=-=-=-=-=-=-=-"
 echo " ALL TESTS DONE  "

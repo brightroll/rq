@@ -113,7 +113,7 @@ end
 File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
 
 # Stop the queue
-`ruby ./code/queuemgr_ctl.rb stop`
+`./bin/rq-mgr stop`
 
 # Kill the workers
 begin
@@ -157,7 +157,7 @@ if !pid2_dead
 end
 
 # Restart the queue administratively pause
-`ruby ./code/queuemgr_ctl.rb start`
+`./bin/rq-mgr start`
 
 # TODO: properly check for proper start
 
