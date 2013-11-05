@@ -185,7 +185,7 @@ module RQ
 
     # If anything went wrong at all log it and return nil.
     rescue Exception
-      self.log("Failed to start worker #{options.inspect}: #{$!}")
+      self.log("startup", "Failed to start worker #{options.inspect}: #{$!}")
       nil
     end
 

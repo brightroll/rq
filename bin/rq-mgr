@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Find ourselves
+RQ_DIR=$(cd "$(dirname "$0")" && pwd)
+
+# Force Ruby to use higher FDs for its internal pipes, we need 3 and 4 for RQ
+exec 3>/dev/null 4>/dev/null
+
+# Here we go
+exec /usr/bin/env ruby -C "$RQ_DIR/.." -I . -e "require 'code/queuemgr_ctl'" -- $@
