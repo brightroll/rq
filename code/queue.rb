@@ -191,13 +191,8 @@ module RQ
 
     def self.close_all_fds(exclude_fds)
       0.upto(1023) do |fd|
-        begin
-          next if exclude_fds.include? fd
-          if io = IO::new(fd)
-            io.close
-          end
-        rescue
-        end
+        next if exclude_fds.include? fd
+        IO.new(fd).close rescue nil
       end
     end
 
