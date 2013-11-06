@@ -362,7 +362,13 @@ module RQ
             RQ::Queue.log(job_path, "Error duping fd for 2 - got #{fd}") unless fd == 2
           end
 
-          #RQ::Queue.log(job_path, 'post stdio re-assigning') unless fd == 2
+          # Ruby 2.0 sets CLOEXEC by default, turn it off explicitly
+          fd_3 = IO.for_fd(3)
+          fd_4 = IO.for_fd(4)
+          fd_3.fcntl(Fcntl::F_SETFD, fd_3.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
+          fd_4.fcntl(Fcntl::F_SETFD, fd_4.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
+
+          # Turn CLOEXEC explicitly on for all other likely open fds
           (5..32).each do |io|
             io = IO.for_fd(io) rescue nil
             next unless io
@@ -417,10 +423,12 @@ module RQ
           exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
             #RQ::Queue.log(job_path, "exec path: #{script_path}")
-            exec(script_path, "")
+            exec(script_path, "") if RUBY_VERSION < '2.0'
+            exec(script_path, "", :close_others => false)
           else
             #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
-            exec(exec_prefix + script_path)
+            exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
+            exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
           RQ::Queue.log(job_path, $!)
