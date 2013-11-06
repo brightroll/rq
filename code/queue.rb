@@ -333,35 +333,14 @@ module RQ
           RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
           IO.for_fd(child_rd_fd).close rescue nil
 
-
           f = File.open(job_path + "/stdio.log", "a")
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
           f.flush
 
-          #RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
-          if f.fileno != 0
-            IO.for_fd(0).close rescue nil
-          end
-          if f.fileno != 1
-            IO.for_fd(1).close rescue nil
-          end
-          if f.fileno != 2
-            IO.for_fd(2).close rescue nil
-          end
-
-          if f.fileno != 0
-            fd = f.fcntl(Fcntl::F_DUPFD, 0)
-            RQ::Queue.log(job_path, "Error duping fd for 0 - got #{fd}") unless fd == 0
-          end
-          if f.fileno != 1
-            fd = f.fcntl(Fcntl::F_DUPFD, 1)
-            RQ::Queue.log(job_path, "Error duping fd for 1 - got #{fd}") unless fd == 1
-          end
-          if f.fileno != 2
-            fd = f.fcntl(Fcntl::F_DUPFD, 2)
-            RQ::Queue.log(job_path, "Error duping fd for 2 - got #{fd}") unless fd == 2
-          end
+          $stdin.close
+          $stdout.reopen f
+          $stderr.reopen f
 
           # Ruby 2.0 sets CLOEXEC by default, turn it off explicitly
           fd_3 = IO.for_fd(3)
