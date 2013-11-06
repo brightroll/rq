@@ -1,13 +1,16 @@
 #!/usr/bin/env ruby
 $: << File.expand_path('../..', File.dirname(__FILE__))
 
-require 'vendor/environment'
 require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
-require 'json'
 require 'test/unit'
+
+require 'vendor/environment'
+require 'json'
+
+require 'rubygems' if RUBY_VERSION < '1.9'
 require 'nokogiri'
 
 class TC_HtmlLogsTest < Test::Unit::TestCase
