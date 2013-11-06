@@ -376,7 +376,7 @@ module RQ
             rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
               log('error acception on main sock, supposed to be readysleeping')
             end
-            # Linux Doesn't inherit and BSD does... recomended behavior is to set again 
+            # Linux Doesn't inherit and BSD does... recomended behavior is to set again
             flag = 0xffffffff ^ File::NONBLOCK
             if defined?(Fcntl::F_GETFL)
               flag &= client_socket.fcntl(Fcntl::F_GETFL)
@@ -407,7 +407,7 @@ module RQ
                   # would really like a timer on the event loop so I can sleep a sec, but
                   # whatever
                   #
-                  # If queue.rb code fails/exits 
+                  # If queue.rb code fails/exits
                   if worker.num_restarts >= 11
                     worker.status = "ERROR"
                     worker.pid = nil
