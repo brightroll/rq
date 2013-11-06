@@ -194,7 +194,7 @@ module RQ
       0.upto(1023) do |fd|
         begin
           next if exclude_fds.include? fd
-          IO.new(fd).close
+          IO.for_fd(fd).close
         rescue Exception
         end
       end
@@ -500,10 +500,6 @@ module RQ
       begin
         z = Time.now.getutc
         name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
-        #fd = IO::sysopen(@queue_path + '/mesgs/' + name, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT)
-        # There we have created a name and inode
-        #IO.new(fd).close
-
         Dir.mkdir(@queue_path + "/prep/" + name)
         stat = File.stat(@queue_path + "/prep/" + name)
         new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
@@ -521,7 +517,7 @@ module RQ
         sleep 0.001
         retry
       end
-      nil  # fail
+      nil
     end
 
     # This copies certain fields over and insures consistency in a new
