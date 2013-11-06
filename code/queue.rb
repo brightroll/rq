@@ -514,7 +514,7 @@ module RQ
           log("FAILED TO ALLOC ID")
           return nil
         end
-        sleep 0.001
+        sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       end
       nil
@@ -1077,6 +1077,7 @@ module RQ
           break
         rescue Errno::EAGAIN, Errno::EINTR
           #log("Error: #{$!}")
+          sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         rescue EOFError
           #log("EOFError - #{$!}")
@@ -1348,6 +1349,7 @@ module RQ
           ready = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
           log("error on SELECT #{$!}")
+          sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         end
 
@@ -1567,6 +1569,7 @@ module RQ
       begin
         dat = client.sysread(numr)
       rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+        sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       rescue EOFError
         #TODO: add debug mode

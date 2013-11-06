@@ -361,6 +361,7 @@ module RQ
         begin
           ready, _, _ = IO.select(io_list, nil, nil, 60)
         rescue SystemCallError, StandardError # SystemCallError is the parent for all Errno::EFOO exceptions
+          sleep 0.001 # A tiny pause to prevent consuming all CPU
           log("error on SELECT #{$!}")
           closed_sockets = io_list.delete_if { |i| i.closed? }
           log("removing closed sockets #{closed_sockets.inspect} from io_list")
