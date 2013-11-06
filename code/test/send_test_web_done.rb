@@ -1,19 +1,9 @@
 #!/usr/bin/env ruby
 
-
 require 'net/http'
 require 'uri'
 require 'fileutils'
 require 'fcntl'
-
-def log(mesg)
-  print "#{Process.pid} - #{Time.now} - #{mesg}\n"
-end
-
-
-log(Dir.pwd.inspect)
-
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
 require 'json'
 
 ## TEST SECTION

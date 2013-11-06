@@ -1,35 +1,11 @@
 #!/usr/bin/env ruby
+$:.unshift(File.join(File.dirname(__FILE__), ".."))
 
+require 'vendor/environment'
 require 'fileutils'
 require 'date'
 require 'time'
-
-$rq_msg_dir = Dir.pwd
-Dir.chdir("#{File.dirname(__FILE__)}")
-require 'hashdir'
-Dir.chdir($rq_msg_dir)
-
-################################################################################
-# Stuff that goes everywhere in RQ
-################################################################################
-
-Dir.glob(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems", "*", "lib")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-Dir.glob(File.join("..", "..", "..", "..", "..")).each do |lib|
-  $LOAD_PATH.unshift(File.expand_path(lib))
-end
-
-require 'rubygems'
-gem_paths = [File.expand_path(File.join("..", "..", "..", "..", "..", "code", "vendor", "gems")),  Gem.default_dir]
-Gem.clear_paths
-if Gem::Version.new(Gem::VERSION) < Gem::Version.new('1.8.0')
-  Gem.send :set_paths, gem_paths.join(":")
-else
-  Gem.paths = gem_paths.join(":")
-end
-
-
+require 'code/hashdir'
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)

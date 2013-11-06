@@ -4,8 +4,6 @@ require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
-
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
 require 'json'
 
 require 'test/unit'

@@ -1,12 +1,9 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
 require 'fileutils'
 require 'fcntl'
-
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
 require 'code/jsonconfigfile'
-
-
 require 'test/unit'
 
 class TC_JSONConfigFileTest < Test::Unit::TestCase
