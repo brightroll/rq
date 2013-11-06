@@ -1,3 +1,4 @@
+require 'vendor/environment'
 require 'socket'
 require 'json'
 require 'fcntl'

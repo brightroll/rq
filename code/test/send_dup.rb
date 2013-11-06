@@ -1,12 +1,13 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
+require 'vendor/environment'
+require 'test/unit'
 require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
 require 'json'
-
-require 'test/unit'
 
 class TC_SendDupTest < Test::Unit::TestCase
 

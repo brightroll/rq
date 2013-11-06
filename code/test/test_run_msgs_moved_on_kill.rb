@@ -1,4 +1,12 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
+
+require 'vendor/environment'
+require 'net/http'
+require 'uri'
+require 'fileutils'
+require 'fcntl'
+require 'json'
 
 #+ Use a new queue test_run_states with num_workers 3
 #+ Inject two slow running messages into the queue
@@ -10,12 +18,6 @@
 #- Verify nothing in run dirs
 #- Verify nothing in run state
 
-
-require 'net/http'
-require 'uri'
-require 'fileutils'
-require 'fcntl'
-require 'json'
 
 ## TEST SECTION
 
