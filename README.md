@@ -122,36 +122,18 @@ Table Of Contents
 You will need:
 
 1. Source to RQ
-2. A unique FQDN for the system if production.
+1. A unique FQDN for the system (if running in production).
+1. Ruby 1.8.7.
 
 Clone the github repo.
-Untar the system in a directory of your choosing.
 
-Run `./bin/web_server.rb --install`
+1. Run `./bin/install`. You probably want to add `--tmpdir`, since it defaults to `/rq/tmp`. Other useful options include `--host` and `--env`.
+1. Run `./bin/queuemgr_ctl start`.
+1. Run `./bin/web_server.rb`.
 
-Now go to the web UI to follow the steps to complete an installation.
+This should set up the RQ directory system and a few default queues. It will also start 1 rq-mgr process, one rq process per queue, and the web server.
 
-This should setup the RQ directory system and a few default queues.
-
-Run the `/etc/init.d/rq stop` script
-
-There should be no processes with rq running.
-
-Run the `/etc/init.d/rq start` script
-
-This should start several processes. There should be 1 rq-mgr process and one rq process per queue.
-There should also be one `web_server.rb` process running.
-
-(Also, I did 
-
-1. clone the git repository
-2. kill queue manager if it is running (pname: `[rq-mgr]`)
-3. delete the config directory if it exists
-4. bundle by typing `$ gem bundle` (bundler ~< 1.x.x) or `bundle install`
-5. run the installer with `$ bin/webserver.rb install`
-6. use a browser to hit the running server, set the domain of the machine
-7. restart the `web_server.rb` process (after killing, just `bin/web_server.rb`)
-
+For production use, `bin/rc.rq` will point in the right direction.
 
 <a name='section_Features'></a>
 ## Features
