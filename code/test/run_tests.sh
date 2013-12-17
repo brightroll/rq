@@ -1,25 +1,20 @@
 #!/bin/bash
 start_time=$(date +%s)
 
-# Stop this RQ before starting it up
-if [ -e config/queuemgr.pid ]; then
-  kill $(cat config/queuemgr.pid)
-fi
-
 # Use an alternate port so we don't interfere with real RQ on this host
 # Vary the port by Ruby version so that we can run multiple tests at once
 export RQ_PORT=33$(ruby -e 'puts RUBY_VERSION.delete(".")')
 
-./bin/install --force --host 127.0.0.1 --port $RQ_PORT --tmpdir '/tmp'
-./bin/web_server.rb server
-./bin/queuemgr_ctl start
+./bin/rq-mgr stop
+./bin/rq-install --force --host 127.0.0.1 --port $RQ_PORT --tmpdir '/tmp'
+./bin/rq-mgr start
 
 sleep 1
 
 # Clean up the running RQ at exit
-trap 'kill $(cat config/queuemgr.pid)' EXIT
-trap 'kill $(cat config/queuemgr.pid)' TERM
-trap 'kill $(cat config/queuemgr.pid)' QUIT
+trap './bin/rq-mgr stop' EXIT
+trap './bin/rq-mgr stop' TERM
+trap './bin/rq-mgr stop' QUIT
 
 # TODO: Consolidate these two scripts
 echo "Running ./code/test/setup_test_queues.sh"
@@ -106,7 +101,7 @@ end_time=$(date +%s)
 time_elapsed=$(($end_time-$start_time))
 echo "Script execution took $time_elapsed seconds."
 
-./bin/queuemgr_ctl stop
+./bin/rq-mgr stop
 
 echo "-=-=-=-=-=-=-=-=-"
 echo " ALL TESTS DONE  "

@@ -1,15 +1,16 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
 require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
+require 'test/unit'
 
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
+require 'vendor/environment'
 require 'json'
 
-require 'test/unit'
-require 'rubygems'
+require 'rubygems' if RUBY_VERSION < '1.9'
 require 'nokogiri'
 
 class TC_WebOverridesTest < Test::Unit::TestCase
@@ -20,7 +21,7 @@ class TC_WebOverridesTest < Test::Unit::TestCase
   def teardown
     FileUtils.rm_f('queue/test/form.json')
   end
-  
+
   def test_web_form_not_hidden
     uri_str = "http://127.0.0.1:#{@rq_port}/q/test/new_message"
     res = Net::HTTP.get_response(URI.parse(uri_str))

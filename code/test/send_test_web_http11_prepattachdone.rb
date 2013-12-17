@@ -1,17 +1,11 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
+require 'vendor/environment'
 require 'net/http'
 require 'uri'
 require 'fileutils'
 require 'fcntl'
-
-def log(mesg)
-  print "#{Process.pid} - #{Time.now} - #{mesg}\n"
-end
-
-log(Dir.pwd.inspect)
-
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
 require 'json'
 
 ## TEST SECTION
@@ -19,7 +13,6 @@ require 'json'
 # prep message
 
 rq_port = (ENV['RQ_PORT'] || 3333).to_i
-
 
 mesg = { 'dest' => "http://127.0.0.1:#{rq_port}/q/test",
          'src'  => 'test',

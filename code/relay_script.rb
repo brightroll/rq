@@ -1,11 +1,15 @@
 #!/usr/bin/env ruby
+$:.unshift(File.join(File.dirname(__FILE__), ".."))
 
+require 'vendor/environment'
+require 'json'
 require 'net/http'
 require 'uri'
 require 'fileutils'
 require 'fcntl'
 require 'digest'
 require 'resolv-replace'
+require 'code/queueclient'
 
 def log(mesg)
   puts "\033[0;36m#{$$} - #{Time.now}\033[0m - #{mesg}"
@@ -13,11 +17,6 @@ def log(mesg)
 end
 
 log(Dir.pwd.inspect)
-
-$LOAD_PATH.unshift(File.expand_path("../../../../.."))
-$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/json_pure-1.1.6/lib"))
-$LOAD_PATH.unshift(File.expand_path("../../../../../vendor/gems/rack-1.4.1/lib"))
-require 'json'
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(ENV['RQ_PIPE'].to_i)
@@ -310,14 +309,9 @@ if destq == 'relay'
 end
 
 # If valid queue, attempt to relay message
-require 'code/queueclient'
-qc = RQ::QueueClient.new(destq, "../../../../..")
-
 log("Attempting connect with local queue #{destq}")
 
-if not qc.exists?
-  soft_fail("#{destq} does not exist")
-end
+qc = RQ::QueueClient.new(destq, "../../../../..") rescue soft_fail("#{destq} does not exist")
 
 # 2 phase commit section
 

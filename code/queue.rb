@@ -1,9 +1,10 @@
+require 'vendor/environment'
 require 'socket'
 require 'json'
 require 'fcntl'
 require 'digest'
 require 'fileutils'
-require 'code/unixrack'
+require 'unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
@@ -185,7 +186,7 @@ module RQ
 
     # If anything went wrong at all log it and return nil.
     rescue Exception
-      self.log("Failed to start worker #{options.inspect}: #{$!}")
+      self.log("startup", "Failed to start worker #{options.inspect}: #{$!}")
       nil
     end
 
@@ -193,10 +194,8 @@ module RQ
       0.upto(1023) do |fd|
         begin
           next if exclude_fds.include? fd
-          if io = IO::new(fd)
-            io.close
-          end
-        rescue
+          IO.for_fd(fd).close
+        rescue Exception
         end
       end
     end
@@ -334,37 +333,22 @@ module RQ
           RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
           IO.for_fd(child_rd_fd).close rescue nil
 
-
           f = File.open(job_path + "/stdio.log", "a")
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
           f.flush
 
-          #RQ::Queue.log(job_path, "stdio.log has fd of #{f.fileno}")
-          if f.fileno != 0
-            IO.for_fd(0).close rescue nil
-          end
-          if f.fileno != 1
-            IO.for_fd(1).close rescue nil
-          end
-          if f.fileno != 2
-            IO.for_fd(2).close rescue nil
-          end
+          $stdin.close
+          $stdout.reopen f
+          $stderr.reopen f
 
-          if f.fileno != 0
-            fd = f.fcntl(Fcntl::F_DUPFD, 0)
-            RQ::Queue.log(job_path, "Error duping fd for 0 - got #{fd}") unless fd == 0
-          end
-          if f.fileno != 1
-            fd = f.fcntl(Fcntl::F_DUPFD, 1)
-            RQ::Queue.log(job_path, "Error duping fd for 1 - got #{fd}") unless fd == 1
-          end
-          if f.fileno != 2
-            fd = f.fcntl(Fcntl::F_DUPFD, 2)
-            RQ::Queue.log(job_path, "Error duping fd for 2 - got #{fd}") unless fd == 2
-          end
+          # Ruby 2.0 sets CLOEXEC by default, turn it off explicitly
+          fd_3 = IO.for_fd(3)
+          fd_4 = IO.for_fd(4)
+          fd_3.fcntl(Fcntl::F_SETFD, fd_3.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
+          fd_4.fcntl(Fcntl::F_SETFD, fd_4.fcntl(Fcntl::F_GETFD, 0) & ~Fcntl::FD_CLOEXEC) rescue nil
 
-          #RQ::Queue.log(job_path, 'post stdio re-assigning') unless fd == 2
+          # Turn CLOEXEC explicitly on for all other likely open fds
           (5..32).each do |io|
             io = IO.for_fd(io) rescue nil
             next unless io
@@ -419,10 +403,12 @@ module RQ
           exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
             #RQ::Queue.log(job_path, "exec path: #{script_path}")
-            exec(script_path, "")
+            exec(script_path, "") if RUBY_VERSION < '2.0'
+            exec(script_path, "", :close_others => false)
           else
             #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
-            exec(exec_prefix + script_path)
+            exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
+            exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
           RQ::Queue.log(job_path, $!)
@@ -514,10 +500,6 @@ module RQ
       begin
         z = Time.now.getutc
         name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
-        #fd = IO::sysopen(@queue_path + '/mesgs/' + name, Fcntl::O_WRONLY | Fcntl::O_EXCL | Fcntl::O_CREAT)
-        # There we have created a name and inode
-        #IO.new(fd).close
-
         Dir.mkdir(@queue_path + "/prep/" + name)
         stat = File.stat(@queue_path + "/prep/" + name)
         new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
@@ -532,10 +514,10 @@ module RQ
           log("FAILED TO ALLOC ID")
           return nil
         end
-        sleep 0.001
+        sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       end
-      nil  # fail
+      nil
     end
 
     # This copies certain fields over and insures consistency in a new
@@ -1095,6 +1077,7 @@ module RQ
           break
         rescue Errno::EAGAIN, Errno::EINTR
           #log("Error: #{$!}")
+          sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         rescue EOFError
           #log("EOFError - #{$!}")
@@ -1170,10 +1153,11 @@ module RQ
               que_name = new_dest
             end
 
-            qc = RQ::QueueClient.new(que_name)
-            if not qc.exists?
+            begin
+              qc = RQ::QueueClient.new(que_name)
+            rescue RqQueueNotFound
               log("#{@name}:#{Process.pid} couldn't DUP message - #{que_name} not available.")
-              msg['child_write_pipe'].syswrite("fail couldn\'t connect to queue - #{que_name}\n")
+              msg['child_write_pipe'].syswrite("fail couldn't connect to queue - #{que_name}\n")
               return
             end
 
@@ -1365,6 +1349,7 @@ module RQ
           ready = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
           log("error on SELECT #{$!}")
+          sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         end
 
@@ -1553,15 +1538,14 @@ module RQ
 
     # Inject a message into 'que' state
     def webhook_message(url, msg, new_state)
-      require 'code/queueclient'
-      qc = RQ::QueueClient.new('webhook')
-
-      msg_id = gen_full_msg_id(msg)
-
-      if not qc.exists?
+      begin
+        qc = RQ::QueueClient.new('webhook')
+      rescue RqQueueNotFound
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
         return
       end
+
+      msg_id = gen_full_msg_id(msg)
 
       # Copy orig message
       msg_copy = msg.clone
@@ -1585,6 +1569,7 @@ module RQ
       begin
         dat = client.sysread(numr)
       rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+        sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       rescue EOFError
         #TODO: add debug mode

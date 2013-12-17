@@ -1,6 +1,8 @@
+require 'vendor/environment'
 require 'socket'
 require 'json'
-require 'code/unixrack'
+require 'unixrack'
+require 'code/errors'
 
 module RQ
   class QueueClient
@@ -13,13 +15,10 @@ module RQ
 
       path = File.join(File.dirname(__FILE__), "..")
 
-      @queue_path = "#{path}/queue/#{@name}"
-      @queue_sock_path = "#{path}/queue/#{@name}/queue.sock"
-    end
+      @queue_path = File.join(path, 'queue', @name)
+      @queue_sock_path = File.join(@queue_path, 'queue.sock')
 
-    def exists?
-      # TODO: do more of a test, actual round trip ping
-      File.directory?(@queue_path)
+      raise RQ::RqQueueNotFound unless File.directory?(@queue_path)
     end
 
     def running?(pid=read_pid)
@@ -46,6 +45,7 @@ module RQ
       begin
         dat = client.sysread(numr)
       rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+        sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       rescue EOFError
         #TODO: add debug mode
@@ -88,9 +88,7 @@ module RQ
 
       client.close
 
-      obj = JSON.parse(result[1])
-
-      obj
+      JSON.parse(result[1])
     end
 
     def ping

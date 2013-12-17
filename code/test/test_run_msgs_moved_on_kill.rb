@@ -1,4 +1,12 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
+
+require 'vendor/environment'
+require 'net/http'
+require 'uri'
+require 'fileutils'
+require 'fcntl'
+require 'json'
 
 #+ Use a new queue test_run_states with num_workers 3
 #+ Inject two slow running messages into the queue
@@ -10,21 +18,6 @@
 #- Verify nothing in run dirs
 #- Verify nothing in run state
 
-
-require 'net/http'
-require 'uri'
-require 'fileutils'
-require 'fcntl'
-
-def log(mesg)
-  print "#{Process.pid} - #{Time.now} - #{mesg}\n"
-end
-
-
-log(Dir.pwd.inspect)
-
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
-require 'json'
 
 ## TEST SECTION
 
@@ -111,9 +104,10 @@ end
 
 # Set que admin pause
 File.open('config/test_run.pause', 'w') { |f| f.write(' ') }
+at_exit { File.unlink('config/test_run.pause') }
 
 # Stop the queue
-`ruby ./code/queuemgr_ctl.rb stop`
+`./bin/rq-mgr stop`
 
 # Kill the workers
 begin
@@ -157,7 +151,7 @@ if !pid2_dead
 end
 
 # Restart the queue administratively pause
-`ruby ./code/queuemgr_ctl.rb start`
+`./bin/rq-mgr start`
 
 # TODO: properly check for proper start
 
@@ -189,6 +183,5 @@ if result['que_size'] != 2
   exit 1
 end
 
-File.unlink('config/test_run.pause')
 puts "ALL DONE SUCCESSFULLY"
 

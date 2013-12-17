@@ -5,7 +5,7 @@ require 'getoptlong'
 require 'pp'
 
 @server = "localhost"
-@port = ENV.has_key?("RQ_PORT") ? ENV['RQ_PORT'] : 3333
+@port = (ENV['RQ_PORT'] || 3333).to_i
 
 # thresh [WARNING, CRITICAL, WARNING MAX, CRITICAL MAX, RELAYED WARN, RELAYED MAX]
 thresh = [10, 20, 2000, 2500, 3000, 3500]
@@ -106,9 +106,9 @@ qinfo.keys.each do |q|
   end
   if qinfo[q]["err"].to_i > 0
     if rq_errors.has_key? q
-	    rq_errors[q] += " errors => #{qinfo[q]['err'].to_s}"
+      rq_errors[q] += " errors => #{qinfo[q]['err'].to_s}"
     else
-	    rq_errors[q] = "errors => #{qinfo[q]['err'].to_s}"
+      rq_errors[q] = "errors => #{qinfo[q]['err'].to_s}"
     end
     exitcode = 2
   end
@@ -116,17 +116,17 @@ qinfo.keys.each do |q|
   ["done", "relayed"].each do |k|
     if qinfo[q][k].to_i >= thresh[5]
       if rq_errors.has_key? q
-  	    rq_errors[q] += " #{k} => #{qinfo[q][k]}"
+        rq_errors[q] += " #{k} => #{qinfo[q][k]}"
       else
-  	    rq_errors[q] = "#{k} => #{qinfo[q][k]}"
+        rq_errors[q] = "#{k} => #{qinfo[q][k]}"
         exitcode = 2
       end
       exitcode = 2
     elsif qinfo[q][k].to_i >= thresh[4]
       if rq_errors.has_key? q
-  	    rq_errors[q] += " #{k} => #{qinfo[q][k]}"
+        rq_errors[q] += " #{k} => #{qinfo[q][k]}"
       else
-  	    rq_errors[q] = "#{k} => #{qinfo[q][k]}"
+        rq_errors[q] = "#{k} => #{qinfo[q][k]}"
         exitcode = 2
       end
       if exitcode < 2

@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Find ourselves
+RQ_DIR=$(cd "$(dirname "$0")/.." && pwd)
+
+# Force Ruby to use higher FDs for its internal pipes, we need 3 and 4 for RQ
+exec 3>/dev/null 4>/dev/null
+
+# Here we go
+exec /usr/bin/env ruby -C "$RQ_DIR" -I . -e "
+  require 'vendor/environment'
+  require 'daemons'
+
+  require 'code/queuemgr'
+
+  options = {
+    :app_name   => 'queuemgr',
+    :dir_mode   => :normal,
+    :dir        => '$RQ_DIR/config',
+    :multiple   => false,
+    :mode       => :exec,
+    :backtrace  => true,
+    :monitor    => true,
+    :log_dir    => '$RQ_DIR/log',
+    :log_output => false,
+  }
+
+  Daemons.run_proc('queuemgr', options) do
+    Dir.chdir('$RQ_DIR')
+    RQ::QueueMgr.new.run!
+  end
+" -- $@

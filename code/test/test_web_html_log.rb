@@ -1,15 +1,16 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
 require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
+require 'test/unit'
 
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
+require 'vendor/environment'
 require 'json'
 
-require 'test/unit'
-require 'rubygems'
+require 'rubygems' if RUBY_VERSION < '1.9'
 require 'nokogiri'
 
 class TC_HtmlLogsTest < Test::Unit::TestCase
@@ -17,9 +18,6 @@ class TC_HtmlLogsTest < Test::Unit::TestCase
     @rq_port = (ENV['RQ_PORT'] || 3333).to_i
   end
 
-  def teardown
-  end
-  
   def run_command(cmd)
     out = `#{cmd}`
 

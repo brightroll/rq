@@ -40,7 +40,7 @@ if [ "$?" -eq "0" ]; then
   echo "Sorry, system created bad queue 'bad que test' queue"
   exit 1
 fi
-egrep "failqueue name has invalid characters" _install_bad1.txt > /dev/null
+egrep "queue name has invalid characters" _install_bad1.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system created bad queue 'bad que test' queue"
   exit 1
@@ -58,7 +58,7 @@ if [ "$?" -eq "0" ]; then
   echo "Sorry, system created bad queue 'bad.que.test' queue"
   exit 1
 fi
-egrep "failqueue name has invalid characters" _install_bad2.txt > /dev/null
+egrep "queue name has invalid characters" _install_bad2.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system created bad queue 'bad.que.test' queue"
   exit 1
@@ -76,7 +76,7 @@ if [ "$?" -eq "0" ]; then
   echo "Sorry, system created bad queue 'bad/que/test' queue"
   exit 1
 fi
-egrep "failqueue name has invalid characters" _install_bad3.txt > /dev/null
+egrep "queue name has invalid characters" _install_bad3.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system created bad queue 'bad/que/test' queue"
   exit 1

@@ -1,14 +1,13 @@
 #!/usr/bin/env ruby
+$: << File.expand_path('../..', File.dirname(__FILE__))
 
+require 'vendor/environment'
+require 'test/unit'
 require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
-
-$LOAD_PATH.unshift(File.expand_path("./vendor/gems/json_pure-1.1.6/lib"))
 require 'json'
-
-require 'test/unit'
 
 class TC_SendDupTest < Test::Unit::TestCase
 
