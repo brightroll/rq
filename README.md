@@ -123,17 +123,15 @@ You will need:
 
 1. Source to RQ
 1. A unique FQDN for the system (if running in production).
-1. Ruby 1.8.7.
 
 Clone the github repo.
 
-1. Run `./bin/install`. You probably want to add `--tmpdir`, since it defaults to `/rq/tmp`. Other useful options include `--host` and `--env`.
-1. Run `./bin/queuemgr_ctl start`.
-1. Run `./bin/web_server.rb`.
+1. Run `./bin/rq-install`. You probably want to add `--tmpdir`, since it defaults to `/rq/tmp`. Other useful options include `--host` and `--env`.
+1. Run `./bin/rq-mgr start`.
 
-This should set up the RQ directory system and a few default queues. It will also start 1 rq-mgr process, one rq process per queue, and the web server.
+This will set up the RQ directory system and a few default queues. It will also start 1 rq-mgr process, one rq process per queue, and the web interface.
 
-For production use, `bin/rc.rq` will point in the right direction.
+For production use, copy `bin/rc.rq` to your init scripts directory.
 
 <a name='section_Features'></a>
 ## Features
