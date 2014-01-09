@@ -5,14 +5,14 @@ messages in **any language**.
 It is designed to run on every machine in your distributed system.
 Think of it as another one of those small, but
 important services (like crond). It uses directories and json text files on the Unix filesystem
-as its database. It does not use a specialized database. As a result, it is easy to 
+as its database. It does not use a specialized database. As a result, it is easy to
 understand and debug.
 
 Each item in the queue is a **Message**. Messages can be small, but RQ was designed for a medium to large granularity.
 For example, messages could have attachments with 100s to 1000s of megabytes.
 Each message can be processed by the local machine or relayed reliably to another
 machine for processing. These machines don't have to be in the same data center and in fact can be on another continent. When a message is received in a queue, a worker process is started to process the message. The worker process is one-to-one with a unix process. (some call
-this a 'forking' model). The code required to implement a worker is very small. Also, API is compatible with any language that runs on Unix. While a worker is processing a message, you can 
+this a 'forking' model). The code required to implement a worker is very small. Also, API is compatible with any language that runs on Unix. While a worker is processing a message, you can
 view a real-time display of logs (with ANSI colors) via the browser.
 
 It has been used in production since 2009 and processed billions of messages at brightroll.
@@ -20,7 +20,7 @@ It has a full test suite that verifies the system.
 
 In the future, there is a goal of building a version that uses a single consistent store (something like MongoDB).
 
-Here is a sample screenshot of a single queue: 
+Here is a sample screenshot of a single queue:
 
 ![Screen Shot](docs/rq_screen_shot.png "Example Screen Shot")
 
@@ -28,7 +28,7 @@ Here is a sample screenshot of a single queue:
 Once RQ is installed, the user creates a queue. The queue requires only a few
 parameters, but the most important one is the 'queue script'. This is a program
 written in *any* language that will process each message. The API for the queue
-script is easy to 
+script is easy to
 implement and described below. Whenever a message is received on that queue,
 this program runs. The program will either succeed, fail, or ask to retry *x* seconds in
 the future. If the script takes a long time to run, it can send periodic updates
@@ -44,7 +44,7 @@ time frame (say under 1 seconds). You should also avoid using a lot of memory in
 of your application stack as well. If you know a particular computation will exceed
 those requirements, you should hand off the task to a queueing system.
 
-If you have scripts that run via cron, you should probably run that under RQ. In this scenario, RQ will monitor that the script properly executed.  
+If you have scripts that run via cron, you should probably run that under RQ. In this scenario, RQ will monitor that the script properly executed.
 
 Here are some examples:
 
@@ -65,7 +65,7 @@ Here are some examples:
 ## Small Dose of Philosophy
 The people behind RQ have been working on Unix since the late 1980's. The focus
 of RQ has been on reliability and the ease of understanding. The author prefers
-systems that allow him to sleep soundly at night, and he thinks the design of 
+systems that allow him to sleep soundly at night, and he thinks the design of
 RQ allows him to achieve this. There is a lot to talk about here and why the existing
 systems didn't solve the problem. If you are interested in that, read the full
 philosphy section below.
@@ -112,7 +112,6 @@ Table Of Contents
 * [Philosophy](#section_Philosophy)
 * [History](#section_History)
 * [Future](#section_Future)
-* [Meta](#section_Meta)
 * [Contributors](#section_Contributors)
 
 
@@ -139,10 +138,10 @@ For production use, copy `bin/rc.rq` to your init scripts directory.
 <a name='section_Hip_Tips'></a>
 ## Hip Tips
 
-* Scripts should be idempotent if at all possible. You should assume that 
+* Scripts should be idempotent if at all possible. You should assume that
 * Messages should not go to error frequently
   * RQ can retry a message if the error is transient. let you kno. If this is happening, something is wrong with your assumptions.
-* Do not fire and forget an RQ message. 
+* Do not fire and forget an RQ message.
   * It is ok to be more lax in side of the queue script that processes that message
 * Log output that might help someone other than you diagnose the issue
 * Crypto - sign and encrypt your message before giving it to RQ. Secure channels is too hard of a problem.
@@ -209,9 +208,9 @@ It *does not try* hard to guarantee ordering
 given the above, use timestamp versioning to insure an older message
 doesn't over-write a newer message. if you see the same timestamp again
 for a previously successful txn, it might be that ultra-ultra rare duplicate,
-so drop it. 
+so drop it.
 
-- You must exit properly with the proper handshake. 
+- You must exit properly with the proper handshake.
 
 
 <a name='section_Your_First_Queue_Script'></a>
@@ -508,8 +507,8 @@ goes into this queue.
 <a name='section_Ruby_on_Rails'></a>
 ### Ruby on Rails
 
-Typically, what we have done to run Rails code is to just have the `queue script` 
-setup the environment and run the `./script/runner` facility that rails provides..  
+Typically, what we have done to run Rails code is to just have the `queue script`
+setup the environment and run the `./script/runner` facility that rails provides.
 
 <a name='section_Master_Script'></a>
 ### Master Script
@@ -523,7 +522,7 @@ setup the environment and run the `./script/runner` facility that rails provides
 <a name='section_For_The_Ops_People'></a>
 ## For The Ops People
 
-RQ can do a few things that aren't obvious above. 
+RQ can do a few things that aren't obvious above.
 
 One important topic to cover is the 'RQ Router' mode. In this mode, you basically have
 a system or pair of systems set up to process.
@@ -556,13 +555,13 @@ For more on that decision, see the [History](#secion_History) below.
 RQ depends heavily on the Unix API.
 
 We use Unix Domain Sockets for the primary RPC mechanism. They work just like TCP sockets, except
-we don't have to worry about network security. You rendezvous with the listening process via a 
+we don't have to worry about network security. You rendezvous with the listening process via a
 special file on the filessystem. They are better than pipes since they provide 2 way communication.
 
-There are 3 primary systems that make up RQ. The rq-mgr process, the individual rq queue processes, and the 
+There are 3 primary systems that make up RQ. The rq-mgr process, the individual rq queue processes, and the
 web server process.
 
-The primary process is the rq-mgr process. It sets up a Unix Domain socket and communicates via that for 
+The primary process is the rq-mgr process. It sets up a Unix Domain socket and communicates via that for
 its primary API. Its
 primary function is to watch over and restart the individual rq *queue* processes. It maintains a standard
 Unix pipe to the child rq process to detect child death.
@@ -595,16 +594,16 @@ Here is a great list of many of the types of failures that can occur:
 
 http://aphyr.com/posts/288-the-network-is-reliable
 
-Why do developers work this way? Most of the time, it is just time pressure to get something out the door. Other 
+Why do developers work this way? Most of the time, it is just time pressure to get something out the door. Other
 times it is just a lack of understanding. Modern systems tend to have many layers and components. It would
-be difficult to know them all. 
+be difficult to know them all.
 
 Currently, it takes effort to mitigate these issues. There is some progress, but there isn't a single framework
 that handles all of the issues defined above. All to often the solution is to silently ignore the errors.
 
 Another important point to make is that knowledge transfer has not been good here. For example, many people
 use Unix now without really knowing the fundamental concepts of the system. There are common idioms and
-best practices. For example, when DHH proclaimed to 
+best practices. For example, when DHH proclaimed to
 'cheat' by running ImageMagick in a separate process, this was a huge revelation to the Rails community. Yet,
 this was one of the core tenets of Unix from its earliest days.
 
@@ -649,14 +648,14 @@ I decided to make several bets:
 However, only a few of these panned out.
 
 At the time, it was the goto language of choice at BrightRoll.
-Other languages were considered that were significantly different than Ruby, but didn't seem 
+Other languages were considered that were significantly different than Ruby, but didn't seem
 appropriate.
 
 * Java - memory footprint is way too high. POSIX support is poor (process control, signals, etc.).
 * Python - practically equivalent to Ruby, and most were rubyists
 * NodeJS - was not nearly baked, very promissing. They are the only system to get Unix since C.
 * Go / Golang - may not have existed. If it did, it surely was not baked.
-* Erlang - interesting language under consideration. I really liked the concurrency model, but the 
+* Erlang - interesting language under consideration. I really liked the concurrency model, but the
            environment was way too out of our experience zone.
 * Lisp, ML, Haskell,  etc. - A lot like Erlang, except without a good concurrency model.
 * C - would take way too much time
@@ -676,7 +675,7 @@ It was pretty easy to get certain features implemented and into production. The 
 drawbacks to ruby were
 
 1. Poor IO support for async IO
-2. GEMS. GEM conflicts are a huge problem. 
+2. GEMS. GEM conflicts are a huge problem.
 3. Overall speed of the language
 
 - When it was initially developed on Mac OS X, it was immediately discovered that the directories would have
@@ -703,29 +702,26 @@ most of the issues that someone would run into with.
 * Distributed Worker Model with MongoDB
   * Without changing the Queue Script API, have workers check in
     with a cluster of RQ managers
-  * These managers use MongoDB for persistent queue state 
+  * These managers use MongoDB for persistent queue state
   * MongoDB provides a highly reliable, single-data center store
 * Have another persistent store
-
-<a name='section_Meta'></a>
-## Meta
-
-This document was produced via Emacs in Viper Mode.
-
-This project uses [Semantic Versioning][sv].
 
 <a name='section_Contributors'></a>
 ## Contributors
 
 Dru Nelson
-http://github.com/drudru 
+http://github.com/drudru
 @drudru
+
+Aaron Stone
+http://github.com/sodabrew
+@sodabrew
 
 The overall concepts are very similar to the original UUCP systems that use to span the internet.
 
 The idea for the directory storage was copied from the Qmail architecture by Dan J. Bernstein.
 
-The code for RQ was largely written in-house.  
+The code for RQ was largely written in-house.
 
 Thanks to the BrightRoll engineers who used the system to help work the bugs out.
 
@@ -734,11 +730,7 @@ http://github.com/TJeezy is largely responsible for making RQ look a lot better.
 I looked to resque for inspiration for this documentation. I treat it as a goal that I still
 want to achieve.
 
-[sv]: http://semver.org/
-
-
 Good links on Unix Process stuff:
-
 
 Daemons in unix
 http://www.enderunix.org/docs/eng/daemon.php
