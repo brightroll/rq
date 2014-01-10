@@ -157,7 +157,7 @@ module RQ
       if not ok
         throw :halt, [503, "503 - Could not get process list"]
       end
-      erb :proc_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues, :procs => procs}, :trim => '-'
+      erb :proc_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues, :procs => procs}
     end
 
     get '/q/:name' do
@@ -595,7 +595,13 @@ module RQ
 
       in_iframe = params['in_iframe'] == '1'
 
-      erb :tailview, { :layout => false, :locals => { :msg_id => msg_id, :msg => msg, :attach_name => params['attach_name'], :in_iframe => in_iframe } }
+      erb :tailview, :layout => false,
+                     :locals => {
+                       :msg_id      => msg_id,
+                       :msg         => msg,
+                       :attach_name => params['attach_name'],
+                       :in_iframe   => in_iframe,
+                     }
     end
 
     get '/q/:name/:msg_id/tailviewlog/:log_name' do
@@ -612,12 +618,10 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
-      erb :tailview, {
-                       :layout => false,
-                       :locals => {
-                         :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                         :msg_path => "/q/#{params[:name]}/#{msg_id}"
-                       },
+      erb :tailview, :layout => false,
+                     :locals => {
+                       :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                       :msg_path => "/q/#{params[:name]}/#{msg_id}",
                      }
     end
 
