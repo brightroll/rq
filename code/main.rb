@@ -48,27 +48,26 @@ module RQ
              "<tr class=\"odd-row\">" :
              "<tr>"
         html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{name}</a></td>"
-        html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{url}q/#{name}</a></td>"
         begin
           qc = get_queueclient(name)
           raise unless qc.running?
           admin_stat, oper_stat = qc.status
           html += <<-END
+          <td><code>#{msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| ab.join(':').ljust(9, "\u00A0")}.join}</code></td>
+          <td>#{qc.ping}</td>
+          <td>#{qc.read_pid}</td>
+          <td>#{qc.uptime}</td>
           <td>
           <span class="#{admin_stat == 'UP' ? 'green' : 'red'}">#{admin_stat}</span>:
           <span class="#{oper_stat  == 'UP' ? 'green' : 'red'}">#{oper_stat}</span>
           </td>
-          <td>#{msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| ab.join ':'}.join ' ' }</td>
-          <td>#{qc.ping}</td>
-          <td>#{qc.read_pid}</td>
-          <td>#{qc.uptime}</td>
           END
         rescue
+          html += "<td>-</td>"
+          html += "<td>-</td>"
+          html += "<td>-</td>"
+          html += "<td>-</td>"
           html += "<td><span class=\"red\">DOWN #{$!}</span></td>"
-          html += "<td>-</td>"
-          html += "<td>-</td>"
-          html += "<td>-</td>"
-          html += "<td>-</td>"
         end
         html += "<td><form method=\"post\" action=\"#{url}q/#{name}/restart\">"
         html += "<button id=\"restart-queue\">Restart</button>"
