@@ -145,6 +145,10 @@ a:visited {}
 #flash-error {background: red}
 #flash-notice {background: green}
 
+pre {
+  margin: 0;
+}
+
 #filedata {
   padding: 0; margin: 0 auto;
   font-family: monaco, "Courier New", Courier, monospace;
@@ -209,11 +213,6 @@ th.done {background: #cfc}
 .relayed-li a {display: inline}
 .relayed-li span {padding: 5px}
 th.err {background: #f99}
-pre {
-  line-height: 1.5;
-  background: white;
-  overflow: auto;
-}
 #log-output {
   padding: 20px;
 }

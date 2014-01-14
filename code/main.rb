@@ -53,7 +53,7 @@ module RQ
           raise unless qc.running?
           admin_stat, oper_stat = qc.status
           html += <<-END
-          <td><code>#{msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| ab.join(':').ljust(9, "\u00A0")}.join}</code></td>
+          <td><pre>#{msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join}</pre></td>
           <td>#{qc.ping}</td>
           <td>#{qc.read_pid}</td>
           <td>#{qc.uptime}</td>
