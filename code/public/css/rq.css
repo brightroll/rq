@@ -35,18 +35,6 @@ td {
   padding: 0 20px; margin: 0 auto; max-width: 1024px; position: relative
 }
 
-/* Increase that readability */
-.documentation {
-  font-size: 14px;
-  line-height: 1.6;
-  max-width: 680px;
-  color: #444;
-}
-.documentation ul {list-style: disc;}
-
-#queue-list {
-}
-
 #queue-list th {
   background: #AB9B7D;
   color: #FEF9EE;
@@ -88,12 +76,12 @@ td {
 
 ul {list-style: none;}
 #message-json {
-
   background: white;
   line-height: 1.5;
   padding: 20px 0 20px 40px;
   font-family: monospace;
 }
+
 #message-json-default {
   background: white;
   line-height: 1.5;
