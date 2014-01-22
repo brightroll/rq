@@ -14,22 +14,23 @@ set -e
 PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin
 export PATH
 
-if [ ! -d /rq/current ] ; then
-	echo "RQ is not installed at /rq/current"
-	exit 1
-fi
-
 case $COMMAND in
 start)
+	if [ ! -d /rq/current ] ; then
+		echo "RQ is not installed at /rq/current"
+		exit 5
+	fi
+
 	RQPID=$(pgrep -u $RQUSER -f rq-mgr || exit 0)
 	if [ "$RQPID" ]; then
 		echo "RQ is already running at pid $RQPID"
-		exit 2
+		exit 0
 	fi
 
 	if [ "$NLIMIT" ]; then ulimit -n $NLIMIT; fi
 	sudo -H -u $RQUSER $RQDIR/bin/rq-mgr start
 ;;
+
 stop)
 	# Stop the queues
 	sudo -H -u $RQUSER $RQDIR/bin/rq-mgr stop
@@ -48,7 +49,7 @@ stop)
 		kill -9 $pid
 	done
 
-	# Old style names. This code can be removed after Feb 2013
+	# Old style names. This code can be removed after Feb 2014
 	for pid in $(pgrep -u $RQUSER -f web_server.rb\|\\[rq || exit 0)
 	do
 		echo "Killing old-style rq $pid"
@@ -56,11 +57,22 @@ stop)
 	done
 	# End of old style names.
 ;;
+
 restart)
 	$0 stop && $0 start
 ;;
+
+status)
+	RQPID=$(pgrep -u $RQUSER -f rq-mgr || exit 0)
+	if [ "$RQPID" ]; then
+		echo "RQ is running at pid $RQPID"
+		exit 0
+	fi
+	exit 3
+;;
+
 *)
-	echo "Usage: $0 start | stop | restart"
+	echo "Usage: $0 start | stop | restart | status"
 	exit 1
 ;;
 esac
