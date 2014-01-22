@@ -23,7 +23,7 @@ fi
 
 echo "Prepped message: ${result[1]}"
 
-out1=`./bin/rq attachmesg  --msg_id ${result[1]} --pathname code/test/fixtures/cornell-box.png`
+out1=`./bin/rq attachmesg  --msg_id ${result[1]} --pathname test/fixtures/cornell-box.png`
 if [ "$?" -ne "0" ]; then
     echo "Sorry, system didn't commit test message properly"
     exit 1

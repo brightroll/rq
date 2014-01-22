@@ -14,23 +14,23 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
   # end
 
   def test_load
-    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/good.json')
+    config = RQ::JSONConfigFile.new('test/fixtures/jsonconfigfile/good.json')
     assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
   end
 
   def test_missing_initial_load
-    config = RQ::JSONConfigFile.new('ZZZZZZZZcode/test/test_config.jsonZZZZZZZZZ')
+    config = RQ::JSONConfigFile.new('ZZZZZZZZtest/test_config.jsonZZZZZZZZZ')
     assert_nil(config.conf)
   end
 
   def test_corrupt_initial_load
-    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/bad.json')
+    config = RQ::JSONConfigFile.new('test/fixtures/jsonconfigfile/bad.json')
     assert_nil(config.conf)
   end
 
   def test_config_no_change
-    config = RQ::JSONConfigFile.new('code/test/fixtures/jsonconfigfile/good.json')
+    config = RQ::JSONConfigFile.new('test/fixtures/jsonconfigfile/good.json')
     assert_not_nil(config.conf)
     assert_equal("1", config.conf['num_workers'])
 
@@ -39,10 +39,10 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
   end
 
   def test_config_change_good
-    test_path = 'code/test/fixtures/jsonconfigfile/test.json'
-    good_path = 'code/test/fixtures/jsonconfigfile/good.json'
-    good_new_path = 'code/test/fixtures/jsonconfigfile/good_new.json'
-    bad_path = 'code/test/fixtures/jsonconfigfile/bad.json'
+    test_path = 'test/fixtures/jsonconfigfile/test.json'
+    good_path = 'test/fixtures/jsonconfigfile/good.json'
+    good_new_path = 'test/fixtures/jsonconfigfile/good_new.json'
+    bad_path = 'test/fixtures/jsonconfigfile/bad.json'
 
     FileUtils.rm_f(test_path)
     FileUtils.cp(good_path, test_path)
@@ -63,9 +63,9 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
   end
 
   def test_config_change_bad
-    test_path = 'code/test/fixtures/jsonconfigfile/test.json'
-    good_path = 'code/test/fixtures/jsonconfigfile/good.json'
-    bad_path = 'code/test/fixtures/jsonconfigfile/bad.json'
+    test_path = 'test/fixtures/jsonconfigfile/test.json'
+    good_path = 'test/fixtures/jsonconfigfile/good.json'
+    bad_path = 'test/fixtures/jsonconfigfile/bad.json'
 
     FileUtils.rm_f(test_path)
     FileUtils.cp(good_path, test_path)
@@ -86,9 +86,9 @@ class TC_JSONConfigFileTest < Test::Unit::TestCase
   end
 
   def test_config_change_missing
-    test_path = 'code/test/fixtures/jsonconfigfile/test.json'
-    good_path = 'code/test/fixtures/jsonconfigfile/good.json'
-    bad_path = 'code/test/fixtures/jsonconfigfile/bad.json'
+    test_path = 'test/fixtures/jsonconfigfile/test.json'
+    good_path = 'test/fixtures/jsonconfigfile/good.json'
+    bad_path = 'test/fixtures/jsonconfigfile/bad.json'
 
     FileUtils.rm_f(test_path)
     FileUtils.cp(good_path, test_path)

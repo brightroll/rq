@@ -36,10 +36,10 @@ end
 
 
 def run(msg_id)
-  hdr = File.read('code/test/fixtures/bad_mime.header')
+  hdr = File.read('test/fixtures/bad_mime.header')
 
   new_hdr = hdr.sub('XXXXMSG_IDXXXX', msg_id)
-  data = File.read('code/test/fixtures/bad_mime.data')
+  data = File.read('test/fixtures/bad_mime.data')
   port = (ENV['RQ_PORT'] || 3333).to_i
   t = TCPSocket.new('127.0.0.1', port)
 

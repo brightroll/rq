@@ -32,7 +32,7 @@ class TC_WebAttachErrTest < Test::Unit::TestCase
     assert_equal("ok", ok)
     msg_id = res[1]
 
-    ok,res,out = run_command("./bin/rq attachmesg  --msg_id #{msg_id} --pathname code/test/fixtures/studio3.jpg")
+    ok,res,out = run_command("./bin/rq attachmesg  --msg_id #{msg_id} --pathname test/fixtures/studio3.jpg")
     assert_equal("ok", ok)
     expected="ok 14a1a7845cc7f981977fbba6a60f0e42-Attached successfully for Message: #{msg_id} attachment\n"
     assert_equal(expected, out)

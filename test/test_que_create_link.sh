@@ -29,7 +29,7 @@ fi
 
 
 echo "Attempting to create a queue via symlink"
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue_link -s -L -F queue[json_path]=./code/test/fixtures/que_create/test_config.json -o _install_bad1.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue_link -s -L -F queue[json_path]=./test/fixtures/que_create/test_config.json -o _install_bad1.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   cat _install_bad1.txt

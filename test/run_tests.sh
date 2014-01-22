@@ -17,15 +17,15 @@ trap './bin/rq-mgr stop' TERM
 trap './bin/rq-mgr stop' QUIT
 
 # TODO: Consolidate these two scripts
-echo "Running ./code/test/setup_test_queues.sh"
-./code/test/setup_test_queues.sh
+echo "Running ./test/setup_test_queues.sh"
+./test/setup_test_queues.sh
 if [ $? -ne 0 ] ; then
   echo " *** FAILED TO RUN SETUP"
   exit 1
 fi
 
-echo "Running ./code/test/test_queues_setup.rb"
-./code/test/test_queues_setup.rb
+echo "Running ./test/test_queues_setup.rb"
+./test/test_queues_setup.rb
 if [ $? -ne 0 ] ; then
   echo " *** FAILED TO SETUP QUEUES"
   exit 1
@@ -84,7 +84,7 @@ for test in \
    env_var_test.rb ; do
 
       echo "RUNNING TEST: ${test}"
-      output=`./code/test/$test 2>&1`
+      output=`./test/$test 2>&1`
       status=$?
       echo "$output" | sed "s/^/${test}: /g"
       echo -n "        TEST: "

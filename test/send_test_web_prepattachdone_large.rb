@@ -50,7 +50,7 @@ print "Msg ID: #{msg_id}\n"
 # attach message
 
 #form =  :x_format => 'json', '_method' => 'commit', :msg_id => msg_id }
-attach_path = File.expand_path("./code/test/fixtures/cornell-box.png")
+attach_path = File.expand_path("./test/fixtures/cornell-box.png")
 
 pipe_res = `curl -0 -s -F filedata=@#{attach_path} -F pathname=cornell-box.png -F msg_id=#{msg_id} -F x_format=json #{remote_q_uri}/#{msg_id}/attach/new`
 #p $?

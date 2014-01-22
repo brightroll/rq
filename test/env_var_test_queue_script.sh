@@ -1,6 +1,6 @@
 #!/bin/bash
 # This is a test queue script to make sure that a queue which has custom env vars works correctly
-# See code/test/fixtures/jsonconfigfile/good_env_var.json for the configuration
+# See test/fixtures/jsonconfigfile/good_env_var.json for the configuration
 function write_status {
   echo $1 $2 >&3
 }
