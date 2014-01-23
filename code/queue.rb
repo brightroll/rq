@@ -261,10 +261,10 @@ module RQ
 
       # Identify executable to run, if there is no script, go oper down
       # Also, fix an old issue where we didn't deref the symlink when executing a script
-      # This meant that a script would see a new directory on a code deploy if that 
+      # This meant that a script would see a new directory on a code deploy if that
       # script lived under a symlinked path
-      script_path = Pathname.new(@config.script).realpath.to_s
-      if (not File.exists?(script_path)) && (not File.executable?(script_path))
+      script_path = Pathname.new(@config.script).realpath.to_s rescue @config.script
+      if (!File.executable?(script_path) rescue false)
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
         if @status.oper_status != 'SCRIPTERROR'
           @status.set_daemon_status('SCRIPTERROR')
@@ -272,7 +272,9 @@ module RQ
           log("OPER STATUS is now: #{@status.oper_status}")
         end
         return
-      elsif @status.oper_status == 'SCRIPTERROR'
+      end
+
+      if @status.oper_status == 'SCRIPTERROR'
         @status.set_daemon_status('UP')
         log("SCRIPTERROR FIXED - DAEMON STATUS is set to UP")
         log("OPER STATUS is now: #{@status.oper_status}")
