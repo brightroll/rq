@@ -6,6 +6,6 @@ rvm:
  - 2.1.0
 script:
  - gem install nokogiri -v '< 1.6.0'
- - code/test/run_tests.sh
+ - test/run_tests.sh
 after_failure:
  - cat log/*.log
