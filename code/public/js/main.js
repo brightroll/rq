@@ -1,20 +1,18 @@
-require(['config', 'ansi2html', "/scripts/jquery-1.7.2.min.js"],
-        function(config, a2h) {
+$(function() {
+  var a2hObj = ansi2html.ansi_to_html_obj();
+  var last_fragment = "";
 
-          var a2hObj = a2h.ansi_to_html_obj();
-          var last_fragment = "";
+  var path = config.path;
+  var msg_path = config.msg_path + "/state.json";
+  var BUFFER_SIZE = 8192;  // constant
+  var last_done = 0;
+  var last_file_start = 0;
+  var last_file_end = BUFFER_SIZE;
 
-          var path = config.path;
-          var msg_path = config.msg_path + "/state.json";
-          var BUFFER_SIZE = 8192;  // constant
-          var last_done = 0;
-          var last_file_start = 0;
-          var last_file_end = BUFFER_SIZE;
-
-          function clone(obj) {
-            var p = Object.getPrototypeOf(obj);
-            return Object.create(p);
-          };
+  function clone(obj) {
+    var p = Object.getPrototypeOf(obj);
+    return Object.create(p);
+  };
 
   function process(txt) {
 
