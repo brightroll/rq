@@ -206,3 +206,9 @@ th.err {background: #f99}
 }
 .hidden {display: none}
 p {margin-bottom: 5px}
+
+.float-right {
+  float: right;
+  padding: 0px;
+  margin: 0px;
+}

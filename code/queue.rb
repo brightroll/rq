@@ -1928,13 +1928,30 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.has_key?('msg_id')
-          resp = [ "fail", "lacking 'msg_id' field"].to_json
+        if options.has_key?('all')
+          state = options['all']
+          unless %w{prep que done err relay}.include? state
+            resp = [ "fail", "invalid state to delete all messages" ].to_json
+            send_packet(sock, resp)
+            return
+          end
+
+          all_msgs = Dir.glob("#{@queue_path}/#{state}/*")
+          all_msgs.each do |dir|
+            FileUtils.rm_rf(dir)
+          end
+          resp = [ "ok", all_msgs.length ].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = [ "fail", "unknown reason"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field" ].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        resp = [ "fail", "unknown reason" ].to_json
 
         if lookup_msg(options, '*')
           delete_msg!(options)

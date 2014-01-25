@@ -159,6 +159,19 @@ module RQ
       erb :proc_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues, :procs => procs}
     end
 
+    post '/q/:name' do
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
+
+      ok, num_msgs = qc.delete_message({:all => params[:state]})
+
+      flash :notice, "Deleted #{num_msgs} messages in #{params[:state]} state"
+      redirect request.path_info
+    end
+
     get '/q/:name' do
       if params[:name].index(".txt")
         content_type 'text/plain', :charset => 'utf-8'
