@@ -24,28 +24,6 @@ Or install it yourself as:
 
     $ gem install unixrack
 
-## Sample sinatra bring up
-
-put instructions here
-
-    $ gem install sinatra
-    $ gem build unixrack.gemspec
-    $ gem install unirack*gem
-
-    #!/usr/bin/ruby
-
-    require 'rubygems'
-    require 'sinatra/base'
-    require 'unixrack'
-
-    class MyApp < Sinatra::Base
-      get '/' do
-        "Hello"
-      end
-    end
-
-    Rack::Handler::UnixRack.run(MyApp.new)
-
 ## Usage
 
 Here is an example command to run the standard Rack lobster web app. 

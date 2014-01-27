@@ -52,16 +52,16 @@ module UnixRack
     end
 
     def self.write_buff(io, buff)
-      len = buff.length
       nwritten = 0
 
       out_buff = buff
 
+      # buff could be UTF-8
       while true
         nw = io.syswrite(out_buff)
         nwritten = nwritten + nw
-        break if nw == out_buff.length
-        out_buff = out_buff.slice(nw..-1)
+        break if nw == out_buff.bytesize
+        out_buff = out_buff.byteslice(nw..-1)
       end
       nwritten
     end
@@ -92,7 +92,7 @@ module UnixRack
         rescue EOFError
           retval = [false, "EOF", buff]
           break
-        rescue EOFError, Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
+        rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
           retval = [false, "Exception occurred on socket read"]
           #log("Got an #{$!} from socket read")
           break
@@ -111,7 +111,7 @@ module UnixRack
         puts "#{$$}: Got an EOF from socket read"
         $stdout.flush
         return nil
-      rescue EOFError, Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
+      rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
         puts "#{$$}: Got an #{$!} from socket read"
         $stdout.flush
         exit! 0
@@ -327,7 +327,7 @@ module Rack
         end
 
         trap(:TERM) { log(0, "Listener received TERM. Exiting."); exit! 0 }
-        trap("SIGINT") { log(0, "Listener received INT. Exiting."); exit! 0 }
+        trap(:INT) { log(0, "Listener received INT. Exiting."); exit! 0 }
 
         if not @@chdir.empty?
           Dir.chdir @@chdir
@@ -358,7 +358,7 @@ module Rack
             server.close
             @@start_time = Time.now
 
-            trap("ALRM") { log(0, "Child received ALARM during read_headers. Exiting."); exit! 2 }
+            trap(:ALRM) { log(0, "Child received ALARM during read_headers. Exiting."); exit! 2 }
             trap(:TERM) { log(0, "Child received TERM. Exiting."); exit! 0 }
 
             ::UnixRack::Alarm.alarm(5) # if no command received in 5 secs
@@ -367,10 +367,10 @@ module Rack
             @@client_ip = sock.peeraddr.last
 
             if not sock.read_headers()
-              send_error_response!(sock, 400, "Bad Request")
+              send_error_response!(sock, 400, "Bad Request", "-", "-")
             end
 
-            trap("ALRM") { log(0, "Child received ALARM during response. Exiting."); exit! 2 }
+            trap(:ALRM) { log(0, "Child received ALARM during response. Exiting."); exit! 2 }
             ::UnixRack::Alarm.alarm(120) # if command not handled in 120 seconds
 
             if not allowed_ips.empty?
@@ -456,6 +456,9 @@ module Rack
               end
               if sock.headers['X-Forwarded-For']
                 env["HTTP_X_FORWARDED_FOR"] = sock.headers['X-Forwarded-For']
+              end
+              if sock.headers['X-Forwarded-Proto']
+                env["HTTP_X_FORWARDED_PROTO"] = sock.headers['X-Forwarded-Proto']
               end
               if sock.headers['Host']
                 env["HTTP_HOST"] = sock.headers['Host']
