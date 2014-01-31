@@ -5,7 +5,6 @@ require 'fcntl'
 require 'code/queue'
 require 'code/scheduler'
 require 'code/web_server'
-require 'version'
 
 def log(mesg)
   File.open('log/queuemgr.log', "a") do |f|
@@ -33,24 +32,6 @@ module RQ
       # Read config
       @host = ""
       @port = ""
-    end
-
-    def load_config
-      ENV["RQ_VER"] = VERSION_NUMBER
-      ENV["RQ_SEMVER"] = SEMANTIC_VERSION_NUMBER
-      ENV["RQ_ENV"] = "development"
-      begin
-        data = File.read('config/config.json')
-        options = JSON.parse(data)
-        ENV["RQ_ENV"] = options['env']
-        @host = options['host']
-        @port = options['port']
-      rescue
-        puts ""
-        puts "Bad config file. Exiting"
-        puts ""
-        exit! 1
-      end
     end
 
     def init
@@ -300,11 +281,13 @@ module RQ
     def start_webserver
       @web_server = fork do
         # Restore default signal handlers from those inherited from queuemgr
+        $stderr.reopen(File.open('log/web_server.log', 'a'))
+
         Signal.trap('TERM', 'DEFAULT')
         Signal.trap('CHLD', 'DEFAULT')
 
         $0 = '[rq-web]'
-        config = RQ::WebServer.conf_rq_web
+        config = RQ::WebServer.load_config
         RQ::WebServer.start_rq_web(config)
       end
     end
@@ -321,7 +304,6 @@ module RQ
       $0 = '[rq-mgr]'
 
       init
-      load_config
 
       Signal.trap("TERM") do
         log("received TERM signal")

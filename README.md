@@ -550,7 +550,7 @@ Then inject messages into the queue and verify that the messages are consumed an
 
 Currently RQ is written in Ruby.
 Ruby definitely has its problems, but overall was an excellent choice.
-For more on that decision, see the [History](#secion_History) below.
+For more on that decision, see the [History](#section_History) below.
 
 RQ depends heavily on the Unix API.
 
