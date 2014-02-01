@@ -3,6 +3,7 @@ require 'unixrack'
 require 'fileutils'
 require 'json'
 require 'code/router'
+require 'version'
 
 module RQ
   class WebServer
@@ -29,22 +30,32 @@ module RQ
       })
     end
 
-    def self.conf_rq_web(conffile = 'config/config.json')
-      config = JSON.parse(File.read(conffile))
-      if config['tmpdir']
-        dir = File.expand_path(config['tmpdir'])
-        if File.directory?(dir) and File.writable?(dir)
-          # This will affect the class Tempfile, which is used by Rack
-          ENV['TMPDIR'] = dir
-        else
-          puts "Bad 'tmpdir' in config json [#{dir}]. Exiting"
-          exit! 1
-        end
+    def self.load_config(conffile = 'config/config.json')
+      ENV["RQ_VER"] = VERSION_NUMBER
+      ENV["RQ_SEMVER"] = SEMANTIC_VERSION_NUMBER
+
+      begin
+        config = JSON.parse(File.read(conffile))
+        ENV['RQ_ENV'] = 'development' || config['env']
+        config = config.merge('host' => config['host'], 'port' => config['port'])
+        set_tmp_dir(config['tmpdir'])
+      rescue Exception => e
+        puts "Couldn't read config/config.json file properly. Exiting"
+        puts e.message.inspect
+        puts e.backtrace.join('\n')
+        exit! 1
       end
       config
-    rescue
-      puts "Couldn't read config/config.json file properly. Exiting"
-      exit! 1
+    end
+
+    def self.set_tmp_dir(location)
+      dir = File.expand_path(location)
+      if File.directory?(dir) && File.writable?(dir)
+        ENV['TMPDIR'] = dir
+      else
+        puts "Bad 'tmpdir' in config json [#{dir}]. Exiting"
+        exit! 1
+      end
     end
   end
 end
