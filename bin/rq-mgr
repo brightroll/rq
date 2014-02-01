@@ -20,7 +20,7 @@ exec /usr/bin/env ruby -C "$RQ_DIR" -I . -e "
     :multiple   => false,
     :mode       => :exec,
     :backtrace  => true,
-    :monitor    => true,
+    :monitor    => false,
     :log_dir    => '$RQ_DIR/log',
     :log_output => false,
   }
