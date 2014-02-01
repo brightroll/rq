@@ -48,7 +48,7 @@ module RQ
       config
     end
 
-    def set_tmp_dir(location)
+    def self.set_tmp_dir(location)
       dir = File.expand_path(location)
       if File.directory?(dir) && File.writable?(dir)
         ENV['TMPDIR'] = dir
