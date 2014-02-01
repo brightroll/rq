@@ -39,18 +39,30 @@ module RQ
       ENV["RQ_VER"] = VERSION_NUMBER
       ENV["RQ_SEMVER"] = SEMANTIC_VERSION_NUMBER
       ENV["RQ_ENV"] = "development"
+
       begin
         data = File.read('config/config.json')
-        options = JSON.parse(data)
-        ENV["RQ_ENV"] = options['env']
-        @host = options['host']
-        @port = options['port']
+        @config = JSON.parse(data)
+        ENV["RQ_ENV"] = @config['env']
+        @host = @config['host']
+        @port = @config['port']
       rescue
-        puts ""
-        puts "Bad config file. Exiting"
-        puts ""
+        log("Bad config file. Exiting")
         exit! 1
       end
+
+      if @config['tmpdir']
+        dir = File.expand_path(@config['tmpdir'])
+        if File.directory?(dir) and File.writable?(dir)
+          # This will affect the class Tempfile, which is used by Rack
+          ENV['TMPDIR'] = dir
+        else
+          log("Bad 'tmpdir' in config json [#{dir}]. Exiting")
+          exit! 1
+        end
+      end
+
+      @config
     end
 
     def init
@@ -304,8 +316,7 @@ module RQ
         Signal.trap('CHLD', 'DEFAULT')
 
         $0 = '[rq-web]'
-        config = RQ::WebServer.conf_rq_web
-        RQ::WebServer.start_rq_web(config)
+        RQ::WebServer.new(@config).run!
       end
     end
 
@@ -336,7 +347,6 @@ module RQ
         log("received HUP signal")
         reload
       end
-
 
       load_queues
 
