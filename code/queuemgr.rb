@@ -20,8 +20,6 @@ module RQ
     attr_accessor :scheduler
     attr_accessor :web_server
     attr_accessor :status
-    attr_accessor :host
-    attr_accessor :port
     attr_accessor :environment
 
     def initialize
@@ -30,22 +28,16 @@ module RQ
       @web_server = nil
       @start_time = Time.now
       @status = "RUNNING"
-      # Read config
-      @host = ""
-      @port = ""
     end
 
     def load_config
       ENV["RQ_VER"] = VERSION_NUMBER
       ENV["RQ_SEMVER"] = SEMANTIC_VERSION_NUMBER
-      ENV["RQ_ENV"] = "development"
 
       begin
         data = File.read('config/config.json')
         @config = JSON.parse(data)
         ENV["RQ_ENV"] = @config['env']
-        @host = @config['host']
-        @port = @config['port']
       rescue
         log("Bad config file. Exiting")
         exit! 1
