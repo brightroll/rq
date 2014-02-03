@@ -6,27 +6,32 @@ require 'code/router'
 
 module RQ
   class WebServer
+
     def initialize(config)
-      @config = config
+      @basic_auth  = config['basic_auth']
+      @port        = config['port']
+      @addr        = config['addr']
+      @host        = config['host']
+      @allowed_ips = config['allowed_ips']
     end
 
     def run!
       minirouter = MiniRouter.new
       router = minirouter
 
-      if @config['basic_auth']
+      if @basic_auth
         protected_router = Rack::Auth::Basic.new(minirouter) do |username, password|
-          @config['basic_auth']['users'][username] == password
+          @basic_auth['users'][username] == password
         end
-        protected_router.realm = @config['basic_auth']['realm']
+        protected_router.realm = @basic_auth['realm']
         router = protected_router
       end
 
       Rack::Handler::UnixRack.run(router, {
-        :Port        => @config['port'],
-        :Hostname    => @config['host'],
-        :allowed_ips => @config['allowed_ips'],
-        :Host        => @config['addr'],
+        :Port        => @port,
+        :Host        => @addr,
+        :Hostname    => @host,
+        :allowed_ips => @allowed_ips,
       })
     end
   end
