@@ -118,19 +118,14 @@ Table Of Contents
 <a name='section_Quick_Setup'></a>
 ## Quick Setup
 
-You will need:
+1. Clone this git repository
+1. Run `./bin/rq-install` to create a config and a set of default queues.
+1. Run `./bin/rq-mgr start` to start the rq-mgr process, one rq process per queue, and the web interface.
+1. Run `./test/run_tests.sh` to exercise the test suite.
 
-1. Source to RQ
-1. A unique FQDN for the system (if running in production).
+An init style startup script is provided in `bin/rc.rq`, you may copy or symlink it to your system init directory.
 
-Clone the github repo.
-
-1. Run `./bin/rq-install`. You probably want to add `--tmpdir`, since it defaults to `/rq/tmp`. Other useful options include `--host` and `--env`.
-1. Run `./bin/rq-mgr start`.
-
-This will set up the RQ directory system and a few default queues. It will also start 1 rq-mgr process, one rq process per queue, and the web interface.
-
-For production use, copy `bin/rc.rq` to your init scripts directory.
+RQ returns a complete HTTP URL for each enqueued message, therefore you must configure RQ with the canonical hostname for real-world use.
 
 <a name='section_Features'></a>
 ## Features
