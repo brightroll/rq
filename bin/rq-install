@@ -7,9 +7,9 @@ require 'fileutils'
 require 'json'
 require 'code/queue'
 
-# {"env":"stage","port":"3333","host":"mhe-v02-03b.stage.btrll.com","addr":"0.0.0.0","tmpdir":"/rq/tmp"}
 def write_config(data, conffile='config/config.json')
-  FileUtils.mkdir_p('config')
+  confdir = File.dirname(conffile)
+  FileUtils.mkdir_p(confdir) if confdir
   File.open(conffile, 'w') do |f|
     f.write(data.to_json)
   end
@@ -20,7 +20,6 @@ def create_queues
   # http://support.apple.com/kb/TA24975?viewlocale=en_US
   FileUtils.mkdir_p('queue.noindex')
   FileUtils.ln_sf('queue.noindex', 'queue') unless File.symlink?('queue')
-  # TODO implement the scheduler FileUtils.mkdir_p('scheduler')
 
   queue = {
     'name'        => 'relay',
@@ -62,7 +61,7 @@ options = {
   :host   => Socket.gethostbyname(Socket.gethostname).first,
   :port   => 3333,
   :addr   => '0.0.0.0',
-  :tmpdir => '/rq/tmp',
+  :tmpdir => '/tmp',
 }
 
 OptionParser.new do |opts|
@@ -80,7 +79,7 @@ OptionParser.new do |opts|
   opts.on('--addr ADDR', 'Listen (default: 0.0.0.0)') do |v|
     options[:addr] = v
   end
-  opts.on('--tmpdir DIR', 'Temporary directory (default: /rq/tmp)') do |v|
+  opts.on('--tmpdir DIR', 'Temporary directory (default: /tmp)') do |v|
     options[:tmpdir] = v
   end
   opts.on('--force', 'Force install') do |v|
