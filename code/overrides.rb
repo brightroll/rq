@@ -1,6 +1,5 @@
 module RQ
   class Overrides
-
     attr_accessor :data
 
     def initialize(name, read_file = true)
@@ -14,13 +13,13 @@ module RQ
         begin
           @data = JSON.parse(File.read(path))
         rescue
-          throw :halt, [500, "500 - Bad overrides file"]
+          throw :halt, [500, '500 - Bad overrides file']
         end
       end
     end
 
     def show_field(name)
-      if @data['default'] == "hidden" && @data[name] == nil
+      if @data['default'] == 'hidden' && @data[name] == nil
         false
       else
         true
