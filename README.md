@@ -1,24 +1,23 @@
 # RQ
 
-RQ is a **simple** queueing/messaging system for *any* Unix system and can process
-messages in **any language**.
-It is designed to run on every machine in your distributed system.
-Think of it as another one of those small, but
-important services (like crond). It uses directories and json text files on the Unix filesystem
-as its database. It does not use a specialized database. As a result, it is easy to
-understand and debug.
+RQ is a **simple** queueing/messaging system for *any* Unix system and can
+process messages in **any language**. It is designed to run on every machine
+in your distributed system. Think of it as another one of those small, but
+important services (like crond). It uses directories and json text files on the
+Unix filesystem as its database. It does not use a specialized database. As a
+result, it is easy to understand and debug.
 
-Each item in the queue is a **Message**. Messages can be small, but RQ was designed for a medium to large granularity.
-For example, messages could have attachments with 100s to 1000s of megabytes.
-Each message can be processed by the local machine or relayed reliably to another
-machine for processing. These machines don't have to be in the same data center and in fact can be on another continent. When a message is received in a queue, a worker process is started to process the message. The worker process is one-to-one with a unix process. (some call
-this a 'forking' model). The code required to implement a worker is very small. Also, API is compatible with any language that runs on Unix. While a worker is processing a message, you can
-view a real-time display of logs (with ANSI colors) via the browser.
-
-It has been used in production since 2009 and processed billions of messages at brightroll.
-It has a full test suite that verifies the system.
-
-In the future, there is a goal of building a version that uses a single consistent store (something like MongoDB).
+Each item in the queue is a **Message**. Messages can be small, but RQ was
+designed for a medium to large granularity. For example, messages could have
+attachments with 100s to 1000s of megabytes. Each message can be processed by
+the local machine or relayed reliably to another machine for processing. These
+machines don't have to be in the same data center and in fact can be on another
+continent. When a message is received in a queue, a worker process is started
+to process the message. The worker process is one-to-one with a unix process.
+(some call this a 'forking' model). The code required to implement a worker is
+very small. Also, API is compatible with any language that runs on Unix. While
+a worker is processing a message, you can view a real-time display of logs
+(with ANSI colors) via the browser.
 
 Here is a sample screenshot of a single queue:
 
@@ -28,23 +27,23 @@ Here is a sample screenshot of a single queue:
 Once RQ is installed, the user creates a queue. The queue requires only a few
 parameters, but the most important one is the 'queue script'. This is a program
 written in *any* language that will process each message. The API for the queue
-script is easy to
-implement and described below. Whenever a message is received on that queue,
-this program runs. The program will either succeed, fail, or ask to retry *x* seconds in
-the future. If the script takes a long time to run, it can send periodic updates
-to RQ to indicate progress. The script can also provide a lot of logging
-and produces large files as output.
+script is easy to implement and described below. Whenever a message is received
+on that queue, this program runs. The program will either succeed, fail, or ask
+to retry *x* seconds in the future. If the script takes a long time to run, it
+can send periodic updates to RQ to indicate progress. The script can also
+provide a lot of logging and produces large files as output.
 
-The RQ system provides a REST, HTML, cmd-line, or low-level socket
-API to work with messages and queues. That is all there is to it.
+The RQ system provides a REST, HTML, cmd-line, or low-level socket API to work
+with messages and queues. That is all there is to it.
 
 When would you use RQ?
-In a typical web application, you should always respond to the browser within a small
-time frame (say under 1 seconds). You should also avoid using a lot of memory in this section
-of your application stack as well. If you know a particular computation will exceed
-those requirements, you should hand off the task to a queueing system.
+In a typical web application, you should always respond to the browser within a
+small time frame. You should also avoid using a lot of memory in this section
+of your application stack as well. If you know a particular computation will
+exceed those requirements, you should hand off the task to a queueing system.
 
-If you have scripts that run via cron, you should probably run that under RQ. In this scenario, RQ will monitor that the script properly executed.
+If you have scripts that run via cron, you should probably run that under RQ.
+In this scenario, RQ will monitor that the script properly executed.
 
 Here are some examples:
 
@@ -57,20 +56,22 @@ Here are some examples:
   * reduce
   * sftp to partner
 * Deploy an update to systems all over the world for user-facing web app (high latency)
-* Periodically rotate and send HTTP logs to a NOSQL database for search and analysis
+* Periodically rotate and send HTTP logs to a NoSQL database for search and analysis
 * Verify URLs with Internet Explorer (and take screenshots) on a box controllable via a simple web api
-* Spin up EC2 instances via AWS api
+* Spin up EC2 instances via AWS API
 
 
 ## Small Dose of Philosophy
 The people behind RQ have been working on Unix since the late 1980's. The focus
 of RQ has been on reliability and the ease of understanding. The author prefers
 systems that allow him to sleep soundly at night, and he thinks the design of
-RQ allows him to achieve this. There is a lot to talk about here and why the existing
-systems didn't solve the problem. If you are interested in that, read the full
-philosphy section below.
+RQ allows him to achieve this. There is a lot to talk about here and why the
+existing systems didn't solve the problem. If you are interested in that, read
+the full philosphy section below.
 
-Also, if you were on the internet in the 80s or 90s, you will see that this system bears some resemblance to the UUCP system deployed back then. It was definitely an inspiration for the design of this system.
+Also, if you were on the internet in the 80s or 90s, you will see that this
+system bears some resemblance to the UUCP system deployed back then. It was
+definitely an inspiration for the design of this system.
 
 
 
@@ -85,8 +86,7 @@ Table Of Contents
 * [Your First Queue Script](#section_Your_First_Queue_Script)
   * [Ruby](#section_Ruby)
   * [Bash](#section_Bash)
-* [Debugging In Production](#section_Debugging_In_Production)
-* [Queue Script Api](#section_Queue_Script_Api)
+* [Queue Script API](#section_Queue_Script_API)
   * [Environment](#section_Environment)
   * [Logs and Attachments](#section_Logs_and_Attachments)
   * [Pipe Protocol](#section_Pipe_Protocol)
@@ -95,16 +95,6 @@ Table Of Contents
   * [cli](#section_cli)
   * [Unix Domain Sockets](#section_Unix_Domain_Sockets)
 * [Special Queues](#section_Special_Queues)
-* [Patterns](#section_Patterns)
-  * [Ruby on Rails](#section_Ruby_on_Rails)
-  * [Master Script](#section_Master_Script)
-  * [Deploying Code](#section_Deploying_Code)
-  * [Webhooks](#section_Webhooks)
-* [For The Ops People](#section_For_The_Ops_People)
-  * [Monitoring](#section_Monitoring)
-  * [Queue States](#section_Queue_States)
-  * [Deploying Code](#section_Deploying_Code)
-* [For The QA People](#section_For_The_QA_People)
 * [Internals](#section_Internals)
   * [Persistence](#section_Persistence)
   * [Relay](#section_Relay)
@@ -402,18 +392,8 @@ echo "done"
 write_status 'done' "done sleeping"
 ```
 
-<a name='section_Debugging_In_Production'></a>
-### Debugging In Production
-
-Errors do happen in production in ways we cannot anticipate.
-
-For example, you may
-Here is a BASH script sample. Yes, even a bash script can handle RQ messages (which was surprising to me!)
-The main drawback with BASH as an RQ script is how it deals with functions. I would only use it for
-fairly simple scripts.
-
-<a name='section_Queue_Script_Api'></a>
-## Queue Script Api
+<a name='section_Queue_Script_API'></a>
+## Queue Script API
 
 <a name='section_Environment'></a>
 ### Environment
@@ -476,7 +456,6 @@ ENV["RQ_VER"]        = version of rq
 
 RQ traditionally runs on port 3333.
 
-
 <a name='section_cli'></a>
 ### cli
 
@@ -484,89 +463,39 @@ RQ traditionally runs on port 3333.
 ### Unix Domain Sockets
 
 <a name='section_Special_Queues'></a>
-## SpecialQueues
+## Special Queues
 
-`cleaner` - this queue removes old messages
-`relay` - this queue sends messages to a separate system
-Whenever RQ is given a message that is destined for a separate host, the message actually
-goes into this queue.
-
-`rq_router` - this queue handles the 'RQ Router' mode described in the
-[For The Ops People](#section_For_The_Ops_People) below.
-
-`webhook` - this queue does webhook notifications for any message that requests it
-
-<a name='section_Patterns'></a>
-## Patterns
-
-<a name='section_Ruby_on_Rails'></a>
-### Ruby on Rails
-
-Typically, what we have done to run Rails code is to just have the `queue script`
-setup the environment and run the `./script/runner` facility that rails provides.
-
-<a name='section_Master_Script'></a>
-### Master Script
-
-<a name='section_Webhooks'></a>
-### Webhooks
-
-<a name='section_Deploying_Code'></a>
-### Deploying Code
-
-<a name='section_For_The_Ops_People'></a>
-## For The Ops People
-
-RQ can do a few things that aren't obvious above.
-
-One important topic to cover is the 'RQ Router' mode. In this mode, you basically have
-a system or pair of systems set up to process.
-
-<a name='section_Monitoring'></a>
-### Monitoring
-
-<a name='section_Queue_States'></a>
-### Queue States
-
-<a name='section_Deploying_Code'></a>
-### Deploying Code
-
-<a name='section_For_The_QA_People'></a>
-## For The QA People
-
-A question that comes up occassionaly is, how do I test an RQ script?
-
-Right now, the best answer is to create a test environment with the RQ server and queue set up.
-
-Then inject messages into the queue and verify that the messages are consumed and processed correctly.
+* `cleaner` - this queue's script periodically removes old messages.
+* `relay` - this queue's script sends messages to a separate system. Whenever RQ
+  locally is given a message that is destined for a separate host, the message
+  actually goes into this queue.
+* `webhook` - this queue's script does webhook notifications for any message
+  that requests it.
 
 <a name='section_Internals'></a>
 ## Internals
 
-Currently RQ is written in Ruby.
-Ruby definitely has its problems, but overall was an excellent choice.
-For more on that decision, see the [History](#section_History) below.
+We use Unix Domain Sockets for the primary RPC mechanism. They work just like
+TCP sockets, except we don't have to worry about network security. You
+rendezvous with the listening process via a special file on the filessystem.
+They are better than pipes since they provide 2 way communication.
 
-RQ depends heavily on the Unix API.
+There are 3 primary systems that make up RQ. The rq-mgr process, the individual
+rq queue processes, and the web server process.
 
-We use Unix Domain Sockets for the primary RPC mechanism. They work just like TCP sockets, except
-we don't have to worry about network security. You rendezvous with the listening process via a
-special file on the filessystem. They are better than pipes since they provide 2 way communication.
-
-There are 3 primary systems that make up RQ. The rq-mgr process, the individual rq queue processes, and the
-web server process.
-
-The primary process is the rq-mgr process. It sets up a Unix Domain socket and communicates via that for
-its primary API. Its
-primary function is to watch over and restart the individual rq *queue* processes. It maintains a standard
+The primary process is the rq-mgr process. It sets up a Unix Domain socket and
+communicates via that for its primary API. Its primary function is to watch
+over and restart the individual rq *queue* processes. It maintains a standard
 Unix pipe to the child rq process to detect child death.
 
-Each queue gets its own process. They also communicate . These monitor their queue directories and worker processes. They have
-the state of the 'que' queue in memory. It also uses a standard unix pipe to communicate with the rq-mgr.
+Each queue gets its own process. They also communicate. These monitor their
+queue directories and worker processes. They have the state of the 'que' queue
+in memory. It also uses a standard unix pipe to communicate with the rq-mgr.
 For queue scripts it maintains.
 
-The web server exists to give RQ a human (HTML) and non-human (REST) interface using the HTTP standard. This makes
-it easy to use via a browser, cURL, or with just about any HTTP lib that comes with any language.
+The web server exists to give RQ a human (HTML) and non-human (REST) interface
+using the HTTP standard. This makes it easy to use via a browser, cURL, or with
+just about any HTTP lib that comes with any language.
 
 <a name='section_Persistence'></a>
 ### Persistence
@@ -667,7 +596,7 @@ Of all of those, only the first occurred.
 
 Again, Ruby was a good choice.
 It was pretty easy to get certain features implemented and into production. The three biggest
-drawbacks to ruby were
+drawbacks to ruby were:
 
 1. Poor IO support for async IO
 2. GEMS. GEM conflicts are a huge problem.
@@ -712,7 +641,7 @@ Aaron Stone
 http://github.com/sodabrew
 @sodabrew
 
-The overall concepts are very similar to the original UUCP systems that use to span the internet.
+The overall concepts are very similar to the original UUCP systems that used to span the internet.
 
 The idea for the directory storage was copied from the Qmail architecture by Dan J. Bernstein.
 
@@ -722,8 +651,8 @@ Thanks to the BrightRoll engineers who used the system to help work the bugs out
 
 http://github.com/TJeezy is largely responsible for making RQ look a lot better.
 
-I looked to resque for inspiration for this documentation. I treat it as a goal that I still
-want to achieve.
+I looked to resque for inspiration for this documentation.
+I treat it as a goal that I still want to achieve.
 
 Good links on Unix Process stuff:
 
