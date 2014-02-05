@@ -33,7 +33,14 @@
       <% if qc.name != 'relay' %>
         <th class="done"><h4>DONE</h4><%= num_msgs['done'] %></th>
       <% end %>
-      <th class="err"><h4>ERR</h4><%= num_msgs['err'] %></th>
+      <th class="err">
+        <h4>ERR</h4><%= num_msgs['err'] %>
+        <form action="<%= request.path_info %>" method="post" class="float-right">
+          <input type="hidden" value="<%= qc.name %>" name="name" />
+          <input type="hidden" value="err" name="state" />
+          <input type="submit" value="Delete All" />
+        </form>
+      </th>
     </tr>
   </thead>
   <tbody>
