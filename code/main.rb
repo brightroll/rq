@@ -14,7 +14,7 @@ module RQ
     disable :protection
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
-    set :erb, trim: '-'
+    set :erb, :trim => '-'
 
     def self.views
       './code/views'
@@ -140,8 +140,8 @@ module RQ
     end
 
     get '/q.txt' do
-      content_type 'text/plain', charset: 'utf-8'
-      erb :queue_list, layout: false, locals: { queues: RQ::QueueMgrClient.queues }
+      content_type 'text/plain', :charset => 'utf-8'
+      erb :queue_list, :layout => false, :locals => { :queues => RQ::QueueMgrClient.queues }
     end
 
     get '/q.json' do
@@ -149,22 +149,22 @@ module RQ
     end
 
     get '/proc.txt' do
-      content_type 'text/plain', charset: 'utf-8'
+      content_type 'text/plain', :charset => 'utf-8'
       ps = RQ::PortaProc.new
       ok, procs = ps.get_list
       if not ok
         throw :halt, [503, '503 - Could not get process list']
       end
-      erb :proc_list, layout: false, locals: { queues: RQ::QueueMgrClient.queues, procs: procs }
+      erb :proc_list, :layout => false, :locals => { :queues => RQ::QueueMgrClient.queues, :procs => procs }
     end
 
     get '/q/:name' do
       if params[:name].index('.txt')
-        content_type 'text/plain', charset: 'utf-8'
-        return erb :queue_txt, layout: false, locals: { qc: RQ::QueueClient.new(params[:name].split('.txt').first) }
+        content_type 'text/plain', :charset => 'utf-8'
+        return erb :queue_txt, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split('.txt').first) }
       elsif params[:name].index('.json')
         if '.json' == params[:name][-5..-1]
-          return erb :queue_json, layout: false, locals: { qc: RQ::QueueClient.new(params[:name].split('.json').first) }
+          return erb :queue_json, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split('.json').first) }
         end
       end
 
@@ -179,7 +179,7 @@ module RQ
       end
 
       ok, config = qc.get_config
-      erb :queue, locals: { qc: qc, config: config }
+      erb :queue, :locals => { :qc => qc, :config => config }
     end
 
     get '/q/:name/done.json' do
@@ -209,7 +209,7 @@ module RQ
       end
 
       overrides = RQ::Overrides.new(params['name'])
-      erb :new_message, layout: true, locals: { q_name: qc.name, overrides: overrides }
+      erb :new_message, :layout => true, :locals => { :q_name => qc.name, :overrides => overrides }
     end
 
     post '/q/:name/new_message' do
@@ -281,7 +281,7 @@ module RQ
       if api_call == 'json'
         "#{result.to_json}"
       else
-        erb :new_message_post, layout: true, locals: { result: result, q_name: q_name }
+        erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => q_name }
       end
     end
 
@@ -344,9 +344,9 @@ module RQ
 
       if fmt == :html
         if msg['state'] == 'prep'
-          erb :prep_message, locals: { q_name: qc.name, msg_id: msg_id, msg: msg }
+          erb :prep_message, :locals => { :q_name => qc.name, :msg_id => msg_id, :msg => msg }
         else
-          erb :message, locals: { q_name: qc.name,  msg_id: msg_id, msg: msg }
+          erb :message, :locals => { :q_name => qc.name,  :msg_id => msg_id, :msg => msg }
         end
       else
         # content_type 'application/json'
@@ -591,12 +591,12 @@ module RQ
 
       in_iframe = params['in_iframe'] == '1'
 
-      erb :tailview, layout: false,
-                     locals: {
-                       msg_id: msg_id,
-                       msg: msg,
-                       attach_name: params['attach_name'],
-                       in_iframe: in_iframe,
+      erb :tailview, :layout => false,
+                     :locals => {
+                       :msg_id      => msg_id,
+                       :msg         => msg,
+                       :attach_name => params['attach_name'],
+                       :in_iframe   => in_iframe,
                      }
     end
 
@@ -614,10 +614,10 @@ module RQ
         throw :halt, [404, '404 - Message ID not found']
       end
 
-      erb :tailview, layout: false,
-                     locals: {
-                       path: "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                       msg_path: "/q/#{params[:name]}/#{msg_id}",
+      erb :tailview, :layout => false,
+                     :locals => {
+                       :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                       :msg_path => "/q/#{params[:name]}/#{msg_id}",
                      }
     end
 

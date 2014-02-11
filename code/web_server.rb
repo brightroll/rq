@@ -27,10 +27,10 @@ module RQ
       end
 
       Rack::Handler::UnixRack.run(router,
-                                  Port: @port,
-                                  Host: @addr,
-                                  Hostname: @host,
-                                  allowed_ips: @allowed_ips
+                                  :Port        => @port,
+                                  :Host        => @addr,
+                                  :Hostname    => @host,
+                                  :allowed_ips => @allowed_ips
       )
     end
   end

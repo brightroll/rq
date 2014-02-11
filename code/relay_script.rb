@@ -182,7 +182,7 @@ if remote_delivery
     # Connect to that site for that queue and submit the message
     uri = remote_q_uri + '/new_message'
     begin
-      res = Net::HTTP.post_form(URI.parse(uri),  x_format: 'json', mesg: mesg.to_json)
+      res = Net::HTTP.post_form(URI.parse(uri),  :x_format => 'json', :mesg => mesg.to_json)
     rescue Exception
       log('Net::HTTP exception: ' + $ERROR_INFO.to_s)
       # THIS IS SO BAD, BUT HEY SUCH IS LIFE UNTIL 1.9

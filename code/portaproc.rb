@@ -15,7 +15,7 @@ module RQ
 
       items = lines.map do |i|
         f = i.split(' ', 5)
-        h = { uid: f[0], pid: f[1], ppid: f[2], sess: f[3], cmd: f[4] }
+        h = { :uid => f[0], :pid => f[1], :ppid => f[2], :sess => f[3], :cmd => f[4] }
       end
 
       [true, items]

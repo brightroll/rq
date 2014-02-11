@@ -404,11 +404,11 @@ module RQ
           if exec_prefix.empty?
             # RQ::Queue.log(job_path, "exec path: #{script_path}")
             exec(script_path, '') if RUBY_VERSION < '2.0'
-            exec(script_path, '', close_others: false)
+            exec(script_path, '', :close_others => false)
           else
             # RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
             exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
-            exec(exec_prefix + script_path, close_others: false)
+            exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
           RQ::Queue.log(job_path, $ERROR_INFO)
@@ -696,7 +696,7 @@ module RQ
       run_queue_script!(msg)
     end
 
-    def lookup_msg(msg, state = 'prep', options = { consistency: true })
+    def lookup_msg(msg, state = 'prep', options = { :consistency => true })
       msg_id = msg['msg_id']
       basename = nil
       if state == 'prep'
@@ -822,8 +822,8 @@ module RQ
     end
 
     def get_message(params, state,
-                    options = { read_message: true,
-                              check_attachments: true })
+                    options = { :read_message => true,
+                              :check_attachments => true })
       if %w(done relayed).include? state
         basename = RQ::HashDir.path_for("#{@queue_path}/#{state}", params['msg_id'])
       else
@@ -1874,7 +1874,7 @@ module RQ
         resp = ['fail', 'unknown reason'].to_json
 
         # turn off consistency for a little more speed
-        state = lookup_msg(options, '*',  consistency: false )
+        state = lookup_msg(options, '*',  :consistency => false)
         if state
           resp = ['ok', state].to_json
         else
@@ -1898,11 +1898,11 @@ module RQ
         resp = ['fail', 'unknown reason'].to_json
 
         # turn off consistency for a little more speed
-        state = lookup_msg(options, '*',  consistency: false )
+        state = lookup_msg(options, '*',  :consistency => false)
         if state
           msg, msg_path = get_message(options,
                                       state,
-                                      read_message: false)
+                                       :read_message => false)
           if msg
             resp = ['ok', msg].to_json
           else
