@@ -6,14 +6,13 @@ require 'code/errors'
 
 module RQ
   class QueueClient
-
     attr_accessor :name
     attr_accessor :pid
 
-    def initialize(name, path=".")
+    def initialize(name, path = '.')
       @name = name
 
-      path = File.join(File.dirname(__FILE__), "..")
+      path = File.join(File.dirname(__FILE__), '..')
 
       @queue_path = File.join(path, 'queue', @name)
       @queue_sock_path = File.join(@queue_path, 'queue.sock')
@@ -21,14 +20,14 @@ module RQ
       raise RQ::RqQueueNotFound unless File.directory?(@queue_path)
     end
 
-    def running?(pid=read_pid)
+    def running?(pid = read_pid)
       Process.kill(0, pid)
     rescue
     end
 
     def stop!
       pid = read_pid
-      Process.kill("TERM", pid) if running?(pid)
+      Process.kill('TERM', pid) if running?(pid)
     rescue
     end
 
@@ -41,28 +40,28 @@ module RQ
       File.read(@queue_path + '/queue.pid').to_i
     end
 
-    def do_read(client, numr = 32768)
+    def do_read(client, numr = 32_768)
       begin
         dat = client.sysread(numr)
       rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
         sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       rescue EOFError
-        #TODO: add debug mode
-        #puts "Got an EOF from socket read"
+        # TODO: add debug mode
+        # puts "Got an EOF from socket read"
         return nil
-      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-        raise "Got an #{$!} from socket read"
+      rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
+        raise "Got an #{$ERROR_INFO} from socket read"
       end
       dat
     end
 
     # msg is single word, data is assumbed to be content as json
-    def send_recv(msg, data="")
+    def send_recv(msg, data = '')
       client = UNIXSocket.open(@queue_sock_path)
 
       contents = "#{msg} #{data}"
-      sock_msg = sprintf("rq1 %08d %s", contents.length, contents)
+      sock_msg = sprintf('rq1 %08d %s', contents.length, contents)
 
       UnixRack::Socket.write_buff(client, sock_msg)
 
@@ -74,16 +73,16 @@ module RQ
 
       size_str = do_read(client, 9)
 
-      if size_str[-1..-1] != " "
-        raise "Invalid Protocol"
+      if size_str[-1..-1] != ' '
+        raise 'Invalid Protocol'
       end
 
       size = size_str.to_i
 
-      result = UnixRack::Socket.read_sock_num_bytes(client, size, lambda {|s| puts s})
+      result = UnixRack::Socket.read_sock_num_bytes(client, size, lambda { |s| puts s })
 
       if result[0] == false
-        return ["fail", result[1]]
+        return ['fail', result[1]]
       end
 
       client.close
@@ -166,6 +165,5 @@ module RQ
     def get_message_status(params)
       send_recv('get_message_status', params.to_json)
     end
-
   end
 end
