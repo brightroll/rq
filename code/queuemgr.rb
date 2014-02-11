@@ -8,13 +8,14 @@ require 'code/web_server'
 require 'version'
 
 def log(mesg)
-  File.open('log/queuemgr.log', 'a') do |f|
+  File.open('log/queuemgr.log', "a") do |f|
     f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
   end
 end
 
 module RQ
   class QueueMgr
+
     attr_accessor :queues
     attr_accessor :scheduler
     attr_accessor :web_server
@@ -26,19 +27,19 @@ module RQ
       @scheduler = nil
       @web_server = nil
       @start_time = Time.now
-      @status = 'RUNNING'
+      @status = "RUNNING"
     end
 
     def load_config
-      ENV['RQ_VER'] = VERSION_NUMBER
-      ENV['RQ_SEMVER'] = SEMANTIC_VERSION_NUMBER
+      ENV["RQ_VER"] = VERSION_NUMBER
+      ENV["RQ_SEMVER"] = SEMANTIC_VERSION_NUMBER
 
       begin
         data = File.read('config/config.json')
         @config = JSON.parse(data)
-        ENV['RQ_ENV'] = @config['env']
+        ENV["RQ_ENV"] = @config['env']
       rescue
-        log('Bad config file. Exiting')
+        log("Bad config file. Exiting")
         exit! 1
       end
 
@@ -59,7 +60,7 @@ module RQ
     def init
       # Show pid
       File.unlink('config/queuemgr.pid') rescue nil
-      File.open('config/queuemgr.pid', 'w') do |f|
+      File.open('config/queuemgr.pid', "w") do |f|
         f.write("#{Process.pid}\n")
       end
 
@@ -89,9 +90,9 @@ module RQ
 
       case cmd
       when 'ping'
-        sock.send('pong', 0)
+        sock.send("pong", 0)
         sock.close
-        log('RESP [ pong ]');
+        log("RESP [ pong ]");
 
       when 'environment'
         sock.send(ENV['RQ_ENV'], 0)
@@ -99,7 +100,7 @@ module RQ
         log("RESP [ environment - #{ENV['RQ_ENV']} ]")
 
       when 'version'
-        data = [ENV['RQ_VER'], ENV['RQ_SEMVER']].to_json
+        data = [ ENV['RQ_VER'], ENV['RQ_SEMVER'] ].to_json
         sock.send(data, 0)
         sock.close
         log("RESP [ version - #{data} ]")
@@ -111,7 +112,7 @@ module RQ
         sock.close
 
       when 'uptime'
-        data = [(Time.now - @start_time).to_i,].to_json # ['local','brserv_push'].to_json
+        data = [(Time.now - @start_time).to_i, ].to_json #['local','brserv_push'].to_json
         log("RESP [ uptime - #{data} ]")
         sock.send(data, 0)
         sock.close
@@ -120,8 +121,8 @@ module RQ
         log("RESP [ restart_queue - #{arg} ]")
         worker = @queues.find { |i| i.name == arg }
         status = 'fail'
-        if worker.status == 'RUNNING'
-          Process.kill('TERM', worker.pid) rescue nil
+        if worker.status == "RUNNING"
+          Process.kill("TERM", worker.pid) rescue nil
           status = 'ok'
         else
           # TODO
@@ -134,7 +135,7 @@ module RQ
             status = 'ok'
           end
         end
-        resp = [status, arg].to_json # ['ok','brserv_push'].to_json
+        resp = [status, arg].to_json #['ok','brserv_push'].to_json
         sock.send(resp, 0)
         sock.close
 
@@ -167,7 +168,7 @@ module RQ
         begin
           options = JSON.parse(File.read(arg))
         rescue
-          reason = "could not read queue config [ #{arg} ]: #{$ERROR_INFO}"
+          reason = "could not read queue config [ #{arg} ]: #{$!}"
           err = true
         end
 
@@ -202,7 +203,7 @@ module RQ
           end
         end
 
-        resp = [(err ? 'fail' : 'success'), reason].to_json
+        resp = [ (err ? 'fail' : 'success'), reason ].to_json
 
         log("RESP [ #{resp} ]")
         sock.send(resp, 0)
@@ -213,20 +214,20 @@ module RQ
         status = 'fail'
         msg = 'no such queue'
         if worker
-          worker.status = 'DELETE'
-          Process.kill('TERM', worker.pid) rescue nil
+          worker.status = "DELETE"
+          Process.kill("TERM", worker.pid) rescue nil
           status = 'ok'
           msg = 'started deleting queue'
         end
-        resp = [status, msg].to_json # ['ok','brserv_push'].to_json
+        resp = [ status, msg ].to_json #['ok','brserv_push'].to_json
         sock.send(resp, 0)
         sock.close
         log("RESP [ #{resp} ]")
 
       else
-        sock.send('ERROR', 0)
+        sock.send("ERROR", 0)
         sock.close
-        log('RESP [ ERROR ] - Unhandled message')
+        log("RESP [ ERROR ] - Unhandled message")
       end
     end
 
@@ -236,13 +237,13 @@ module RQ
 
       # Notify running queues to reload configs
       @queues.each do |worker|
-        if dirs.key? worker.name
+        if dirs.has_key? worker.name
           log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING HUP")
-          Process.kill('HUP', worker.pid) if worker.pid rescue nil
+          Process.kill("HUP", worker.pid) if worker.pid rescue nil
         else
           log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING TERM")
-          worker.status = 'SHUTDOWN'
-          Process.kill('TERM', worker.pid) if worker.pid rescue nil
+          worker.status = "SHUTDOWN"
+          Process.kill("TERM", worker.pid) if worker.pid rescue nil
         end
       end
 
@@ -257,12 +258,12 @@ module RQ
       @queues.delete_if { |q| !q.pid }
 
       @queues.each do |q|
-        q.status = 'SHUTDOWN'
+        q.status = "SHUTDOWN"
       end
 
       @queues.each do |q|
         begin
-          Process.kill('TERM', q.pid) if q.pid
+          Process.kill("TERM", q.pid) if q.pid
         rescue StandardError => e
           puts "#{q.pid} #{e.inspect}"
         end
@@ -274,18 +275,18 @@ module RQ
       # Process.kill("TERM", @scheduler.pid) if @scheduler.pid
 
       # Once all the queues are down, take the web server down
-      Process.kill('TERM', @web_server) if @web_server
+      Process.kill("TERM", @web_server) if @web_server
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
       $sock.close
       File.unlink('config/queuemgr.sock') rescue nil
-      log('FINAL SHUTDOWN - EXITING')
+      log("FINAL SHUTDOWN - EXITING")
       Process.exit! 0
     end
 
     def start_queue(name)
-      worker = RQ::Queue.start_process( 'name' => name )
+      worker = RQ::Queue.start_process({'name' => name})
       if worker
         @queues << worker
         log("STARTED [ #{worker.name} - #{worker.pid} ]")
@@ -325,17 +326,17 @@ module RQ
       init
       load_config
 
-      Signal.trap('TERM') do
-        log('received TERM signal')
+      Signal.trap("TERM") do
+        log("received TERM signal")
         shutdown
       end
 
-      Signal.trap('CHLD') do
-        log('received CHLD signal')
+      Signal.trap("CHLD") do
+        log("received CHLD signal")
       end
 
-      Signal.trap('HUP') do
-        log('received HUP signal')
+      Signal.trap("HUP") do
+        log("received HUP signal")
         reload
       end
 
@@ -354,16 +355,16 @@ module RQ
 
       # Ye old event loop
       while true
-        # log(queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
-        io_list = queues.select { |i| i.status != 'ERROR' }.map { |i| i.child_write_pipe }
+        #log(queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
+        io_list = queues.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
         io_list << $sock
-        # log(io_list.inspect)
+        #log(io_list.inspect)
         log('sleeping')
         begin
           ready, _, _ = IO.select(io_list, nil, nil, 60)
         rescue SystemCallError, StandardError # SystemCallError is the parent for all Errno::EFOO exceptions
           sleep 0.001 # A tiny pause to prevent consuming all CPU
-          log("error on SELECT #{$ERROR_INFO}")
+          log("error on SELECT #{$!}")
           closed_sockets = io_list.delete_if { |i| i.closed? }
           log("removing closed sockets #{closed_sockets.inspect} from io_list")
           retry
@@ -383,7 +384,7 @@ module RQ
             if defined?(Fcntl::F_GETFL)
               flag &= client_socket.fcntl(Fcntl::F_GETFL)
             end
-            # log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
+            #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
             client_socket.fcntl(Fcntl::F_SETFL, flag)
             handle_request(client_socket)
           else
@@ -403,7 +404,7 @@ module RQ
               if res
                 log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]} - #{worker.status}")
                 worker.child_write_pipe.close
-                if worker.status == 'RUNNING'
+                if worker.status == "RUNNING"
                   worker.num_restarts += 1
                   # TODO
                   # would really like a timer on the event loop so I can sleep a sec, but
@@ -411,7 +412,7 @@ module RQ
                   #
                   # If queue.rb code fails/exits
                   if worker.num_restarts >= 11
-                    worker.status = 'ERROR'
+                    worker.status = "ERROR"
                     worker.pid = nil
                     worker.child_write_pipe = nil
                     log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
@@ -421,11 +422,11 @@ module RQ
                     worker.pid = results[0]
                     worker.child_write_pipe = results[1]
                   end
-                elsif worker.status == 'DELETE'
+                elsif worker.status == "DELETE"
                   RQ::Queue.delete(worker.name)
                   queues.delete(worker)
                   log("DELETED [ #{worker.name} ]")
-                elsif worker.status == 'SHUTDOWN'
+                elsif worker.status == "SHUTDOWN"
                   queues.delete(worker)
                   if queues.empty?
                     final_shutdown!
@@ -445,5 +446,6 @@ module RQ
 
       end
     end
+
   end
 end

@@ -12,6 +12,7 @@ require 'code/jsonconfigfile'
 require 'pathname'
 
 module RQ
+
   class Worker < Struct.new(
     :qc,
     :name,
@@ -35,12 +36,13 @@ module RQ
   end
 
   class Queue
+
     def initialize(options, parent_pipe)
       @start_time = Time.now
       # Read config
       @name = options['name']
       @queue_path = "queue/#{@name}"
-      @rq_config_path = './config/'
+      @rq_config_path = "./config/"
       @parent_pipe = parent_pipe
       init_socket
 
@@ -58,25 +60,25 @@ module RQ
 
       @signal_hup_rd, @signal_hup_wr = IO.pipe
 
-      Signal.trap('TERM') do
-        log('received TERM signal')
+      Signal.trap("TERM") do
+        log("received TERM signal")
         shutdown!
       end
 
-      Signal.trap('HUP') do
+      Signal.trap("HUP") do
         # Ye Ole DJB self_pipe trick again
         @signal_hup_wr.syswrite('.')
       end
 
       unless load_rq_config
         sleep 5
-        log("Invalid main rq config for #{@name}. Exiting.")
+        log("Invalid main rq config for #{@name}. Exiting." )
         exit! 1
       end
 
       unless load_config
         sleep 5
-        log("Invalid config for #{@name}. Exiting.")
+        log("Invalid config for #{@name}. Exiting." )
         exit! 1
       end
 
@@ -96,7 +98,7 @@ module RQ
       FileUtils.mv(queue_path, new_queue_path)
     end
 
-    def self.create(options, config_path = nil)
+    def self.create(options,config_path=nil)
       # Create a directories and config
       queue_path = "queue/#{options['name']}"
       FileUtils.mkdir_p(queue_path)
@@ -113,7 +115,7 @@ module RQ
         File.symlink(old_path, queue_path + '/config.json')
       else
         # Write config to dir
-        File.open(queue_path + '/config.json', 'w') do |f|
+        File.open(queue_path + '/config.json', "w") do |f|
           f.write(options.to_json)
         end
       end
@@ -121,7 +123,7 @@ module RQ
     end
 
     def self.log(path, mesg)
-      File.open(path + '/queue.log', 'a') do |f|
+      File.open(path + '/queue.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     rescue Exception
@@ -143,11 +145,11 @@ module RQ
         $0 = "[rq-que] [#{options['name']}]"
         begin
           parent_wr.close
-          # child only code block
+          #child only code block
           RQ::Queue.log(queue_path, 'post fork')
 
           # Unix house keeping
-          close_all_fds([child_rd.fileno])
+          self.close_all_fds([child_rd.fileno])
           # TODO: probly some other signal, session, proc grp, etc. crap
 
           RQ::Queue.log(queue_path, 'post close_all')
@@ -157,14 +159,14 @@ module RQ
           RQ::Queue.log(queue_path, 'post new')
           q.run_loop
         rescue Exception
-          log(queue_path, 'Exception!')
-          log(queue_path, $ERROR_INFO)
-          log(queue_path, $ERROR_INFO.backtrace)
+          self.log(queue_path, "Exception!")
+          self.log(queue_path, $!)
+          self.log(queue_path, $!.backtrace)
           raise
         end
       end
 
-      # parent only code block
+      #parent only code block
       child_rd.close
 
       if child_pid == nil
@@ -184,7 +186,7 @@ module RQ
 
     # If anything went wrong at all log it and return nil.
     rescue Exception
-      log('startup', "Failed to start worker #{options.inspect}: #{$ERROR_INFO}")
+      self.log("startup", "Failed to start worker #{options.inspect}: #{$!}")
       nil
     end
 
@@ -205,11 +207,11 @@ module RQ
         if options.include?('name')
           if (1..128).include?(options['name'].size)
             if options['name'].class != String
-              resp = 'json config has invalid name (not String)'
+              resp = "json config has invalid name (not String)"
               err = true
             end
           else
-            resp = 'json config has invalid name (size)'
+            resp = "json config has invalid name (size)"
             err = true
           end
         else
@@ -220,8 +222,8 @@ module RQ
 
       if not err
         if options.include?('num_workers')
-          if not ( (1..128).include?(options['num_workers'].to_i))
-            resp = 'json config has invalid num_workers field (out of range 1..128)'
+          if not ( (1..128).include?(options['num_workers'].to_i) )
+            resp = "json config has invalid num_workers field (out of range 1..128)"
             err = true
           end
         else
@@ -234,11 +236,11 @@ module RQ
         if options.include?('script')
           if (1..1024).include?(options['script'].size)
             if options['script'].class != String
-              resp = 'json config has invalid script (not String)'
+              resp = "json config has invalid script (not String)"
               err = true
             end
           else
-            resp = 'json config has invalid script (size)'
+            resp = "json config has invalid script (size)"
             err = true
           end
         else
@@ -253,7 +255,7 @@ module RQ
     def run_queue_script!(msg)
       msg_id = msg['msg_id']
 
-      basename = @queue_path + '/run/' + msg_id
+      basename = @queue_path + "/run/" + msg_id
       job_path = File.expand_path(basename + '/job/')
       Dir.mkdir(job_path) unless File.exists?(job_path)
 
@@ -262,11 +264,11 @@ module RQ
       # This meant that a script would see a new directory on a code deploy if that
       # script lived under a symlinked path
       script_path = Pathname.new(@config.script).realpath.to_s rescue @config.script
-      if !File.executable?(script_path)
+      if (!File.executable?(script_path) rescue false)
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
         if @status.oper_status != 'SCRIPTERROR'
           @status.set_daemon_status('SCRIPTERROR')
-          log('SCRIPTERROR - DAEMON STATUS is set to SCRIPTERROR')
+          log("SCRIPTERROR - DAEMON STATUS is set to SCRIPTERROR")
           log("OPER STATUS is now: #{@status.oper_status}")
         end
         return
@@ -274,52 +276,52 @@ module RQ
 
       if @status.oper_status == 'SCRIPTERROR'
         @status.set_daemon_status('UP')
-        log('SCRIPTERROR FIXED - DAEMON STATUS is set to UP')
+        log("SCRIPTERROR FIXED - DAEMON STATUS is set to UP")
         log("OPER STATUS is now: #{@status.oper_status}")
       end
 
-      # log("0 child process prep step for runnable #{script_path}")
+      #log("0 child process prep step for runnable #{script_path}")
       # 0 = stdin, 1 = stdout, 2 = stderr, 4 = pipe
       #
       parent_rd, child_wr = IO.pipe
       child_rd, parent_wr = IO.pipe
 
       log("1 child process prep step for runnable #{script_path}")
-      # log("1 child process prep step for runnable #{job_path}")
+      #log("1 child process prep step for runnable #{job_path}")
 
       child_pid = fork do
         # Setup env
         $0 = "[rq-msg] [#{@name}] [#{msg_id}]"
         begin
 
-          # child only code block
+          #child only code block
 
           Dir.chdir(job_path)   # Chdir to child path
 
           # TODO: log level
-          # RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
+          #RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
 
-          # RQ::Queue.log(job_path, "post fork - parent rd pipe fd: #{parent_rd.fileno}")
-          # RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
+          #RQ::Queue.log(job_path, "post fork - parent rd pipe fd: #{parent_rd.fileno}")
+          #RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
 
-          # RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
-          # RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
+          #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
+          #RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
 
           # WE MUST DO THIS BECAUSE WE MAY GET PIPE FDs IN THE 3-4 RANGE
           # THIS GIVES US HIGHER # FDs SO WE CAN SAFELY CLOSE
           child_wr_fd = child_wr.fcntl(Fcntl::F_DUPFD)
           child_rd_fd = child_rd.fcntl(Fcntl::F_DUPFD)
 
-          # RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
-          # RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
+          #RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
+          #RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
 
           parent_rd.close
           parent_wr.close
 
           # Unix house keeping
-          # self.close_all_fds([child_wr.fileno])
+          #self.close_all_fds([child_wr.fileno])
 
-          # ... the pipe fd will get closed on exec
+          #... the pipe fd will get closed on exec
 
           # child_wr
           IO.for_fd(3).close rescue nil
@@ -333,7 +335,7 @@ module RQ
           RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
           IO.for_fd(child_rd_fd).close rescue nil
 
-          f = File.open(job_path + '/stdio.log', 'a')
+          f = File.open(job_path + "/stdio.log", "a")
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
           f.flush
@@ -354,41 +356,41 @@ module RQ
             next unless io
             io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
           end
-          # RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
+          #RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
 
-          # RQ::Queue.log(job_path, "running #{script_path}")
+          #RQ::Queue.log(job_path, "running #{script_path}")
 
-          load_aliases_config
+          load_aliases_config()
 
-          ENV['RQ_SCRIPT'] = @config.script
-          ENV['RQ_REALSCRIPT'] = script_path
-          ENV['RQ_HOST'] = "http://#{@host}:#{@port}/"
-          ENV['RQ_HOSTNAMES'] = @hostnames.join(' ')
-          ENV['RQ_DEST'] = gen_full_dest(msg)['dest']
-          ENV['RQ_DEST_QUEUE'] = gen_full_dest(msg)['queue']
-          ENV['RQ_MSG_ID'] = msg_id
-          ENV['RQ_FULL_MSG_ID'] = gen_full_msg_id(msg)
-          ENV['RQ_MSG_DIR'] = job_path
-          ENV['RQ_PIPE'] = '3'  # DEPRECATED
-          ENV['RQ_WRITE'] = '3' # USE THESE INSTEAD
-          ENV['RQ_READ'] = '4'
-          ENV['RQ_COUNT'] = msg['count'].to_s
-          ENV['RQ_PARAM1'] = msg['param1']
-          ENV['RQ_PARAM2'] = msg['param2']
-          ENV['RQ_PARAM3'] = msg['param3']
-          ENV['RQ_PARAM4'] = msg['param4']
-          ENV['RQ_ORIG_MSG_ID'] = msg['orig_msg_id']
-          ENV['RQ_FORCE_REMOTE'] = '1' if msg['force_remote']
+          ENV["RQ_SCRIPT"] = @config.script
+          ENV["RQ_REALSCRIPT"] = script_path
+          ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
+          ENV["RQ_HOSTNAMES"] = @hostnames.join(" ")
+          ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
+          ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
+          ENV["RQ_MSG_ID"] = msg_id
+          ENV["RQ_FULL_MSG_ID"] = gen_full_msg_id(msg)
+          ENV["RQ_MSG_DIR"] = job_path
+          ENV["RQ_PIPE"] = "3"  # DEPRECATED
+          ENV["RQ_WRITE"] = "3" # USE THESE INSTEAD
+          ENV["RQ_READ"] = "4"
+          ENV["RQ_COUNT"] = msg['count'].to_s
+          ENV["RQ_PARAM1"] = msg['param1']
+          ENV["RQ_PARAM2"] = msg['param2']
+          ENV["RQ_PARAM3"] = msg['param3']
+          ENV["RQ_PARAM4"] = msg['param4']
+          ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id']
+          ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
           # Set env vars specified in queue config file
           if @config.env_vars
-            @config.env_vars.each do |varname, value|
+            @config.env_vars.each do |varname,value|
               ENV[varname] = value unless varname.match(/^RQ_/) # Don't let the config override RQ-specific env vars though
             end
           end
 
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
-          ENV.delete('RUBYOPT')
+          ENV.delete("RUBYOPT")
 
           # TODO
 #          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
@@ -397,33 +399,33 @@ module RQ
           Process.setpriority(Process::PRIO_PROCESS, 0, 19)
 
           # TODO
-          # RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
+          #RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
-          exec_prefix = @config.exec_prefix || 'bash -lc '
+          exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
-            # RQ::Queue.log(job_path, "exec path: #{script_path}")
-            exec(script_path, '') if RUBY_VERSION < '2.0'
-            exec(script_path, '', :close_others => false)
+            #RQ::Queue.log(job_path, "exec path: #{script_path}")
+            exec(script_path, "") if RUBY_VERSION < '2.0'
+            exec(script_path, "", :close_others => false)
           else
-            # RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
+            #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
             exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
             exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
-          RQ::Queue.log(job_path, $ERROR_INFO)
-          RQ::Queue.log(job_path, $ERROR_INFO.backtrace)
+          RQ::Queue.log(job_path, $!)
+          RQ::Queue.log(job_path, $!.backtrace)
           raise
         end
       end
 
-      # parent only code block
+      #parent only code block
       child_wr.close
       child_rd.close
 
       if child_pid == nil
         parent_rd.close
-        log('ERROR failed to run child script: queue_path, $!')
+        log("ERROR failed to run child script: queue_path, $!")
         return nil
       end
 
@@ -433,10 +435,11 @@ module RQ
       write_msg_process_id(msg_id, child_pid)
     end
 
+
     def init_socket
       # Show pid
       File.unlink(@queue_path + '/queue.pid') rescue nil
-      File.open(@queue_path + '/queue.pid', 'w') do |f|
+      File.open(@queue_path + '/queue.pid', "w") do |f|
         f.write("#{Process.pid}\n")
       end
 
@@ -458,19 +461,19 @@ module RQ
     end
 
     def load_aliases_config
-      @hostnames = ["http://#{@host}:#{@port}/"]
+      @hostnames = [ "http://#{@host}:#{@port}/" ]
       if File.exists?(@rq_config_path + 'aliases.json')
         begin
           data = File.read(@rq_config_path + 'aliases.json')
           js_data = JSON.parse(data)
-          @hostnames.concat(js_data['hostnames'] || [])
+          @hostnames.concat( js_data['hostnames'] || [] )
         rescue
-          log($ERROR_INFO)
-          log('Invalid aliases.json. Could not parse.')
+          log($!)
+          log("Invalid aliases.json. Could not parse.")
           return false
         end
       end
-      true
+      return true
     end
 
     def load_config
@@ -488,7 +491,7 @@ module RQ
       new_config.exec_prefix     = conf['exec_prefix']
       new_config.env_vars        = conf['env_vars']
       new_config.coalesce        = !!(%w{true yes 1}.include? conf['coalesce'])
-      new_config.coalesce_params = Hash[ (1..4).map { |x| [x, !!(conf["coalesce_param#{x}"].to_i == 1)] }]
+      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, !!(conf["coalesce_param#{x}"].to_i == 1)]} ]
       new_config
     end
 
@@ -498,19 +501,19 @@ module RQ
       times = 0
       begin
         z = Time.now.getutc
-        name = z.strftime('_%Y%m%d.%H%M.%S.') + sprintf('%03d', (z.tv_usec / 1000))
-        Dir.mkdir(@queue_path + '/prep/' + name)
-        stat = File.stat(@queue_path + '/prep/' + name)
-        new_name = z.strftime('%Y%m%d.%H%M.%S.') + sprintf('%03d.%d', (z.tv_usec / 1000), stat.ino)
-        File.rename(@queue_path + '/prep/' + name, @queue_path + '/prep/' + new_name)
+        name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
+        Dir.mkdir(@queue_path + "/prep/" + name)
+        stat = File.stat(@queue_path + "/prep/" + name)
+        new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
+        File.rename(@queue_path + "/prep/" + name, @queue_path + "/prep/" + new_name)
         @prep << new_name
-        msg['msg_id'] = new_name
+        msg["msg_id"] = new_name
         return msg
       rescue Exception
         times += 1
-        log("FATAL - couldn't ALLOC ID times: #{times} #{$ERROR_INFO}")
+        log("FATAL - couldn't ALLOC ID times: #{times} #{$!}")
         if times > 10
-          log('FAILED TO ALLOC ID')
+          log("FAILED TO ALLOC ID")
           return nil
         end
         sleep 0.001 # A tiny pause to prevent consuming all CPU
@@ -524,7 +527,7 @@ module RQ
     # It is called right after alloc_id
     def check_msg(msg, input)
       # Required parameter
-      return false unless input.key?('dest')
+      return false unless input.has_key?('dest')
       msg['dest'] = input['dest']
 
       # If orig_msg_id is set already, then use it
@@ -536,20 +539,20 @@ module RQ
       # Copy only these keys from input message
       keys = %w(src param1 param2 param3 param4 post_run_webhook due force_remote)
       keys.each do |key|
-        next unless input.key?(key)
+        next unless input.has_key?(key)
         msg[key] = input[key]
       end
 
-      true
+      return true
     end
 
     def store_msg(msg, que = 'prep')
       # Write message to disk
       begin
-        if not msg.key?('due')
+        if not msg.has_key?('due')
           msg['due'] = Time.now.to_i
         end
-        clean = msg.reject { |k, v| k == 'child_read_pipe' || k == 'child_pid' || k == 'child_write_pipe' }
+        clean = msg.reject { |k,v| k == 'child_read_pipe' || k == 'child_pid' || k == 'child_write_pipe' }
         data = clean.to_json
         # Need a sysopen style system here TODO
         basename = @queue_path + "/#{que}/" + msg['msg_id']
@@ -560,7 +563,7 @@ module RQ
         return false
       end
 
-      true
+      return true
     end
 
     def que(msg, from_state = 'prep')
@@ -569,13 +572,13 @@ module RQ
         # Read in full message
         msg, basename = get_message(msg, from_state)
         return false unless File.exists? basename
-        newname = @queue_path + '/que/' + msg_id
+        newname = @queue_path + "/que/" + msg_id
         File.rename(basename, newname)
         msg['state']  = 'que'
         msg['status'] = 'que'
       rescue
         log("FATAL - couldn't commit message #{msg_id}")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
         return false
       end
 
@@ -585,7 +588,7 @@ module RQ
 
       run_scheduler!
 
-      true
+      return true
     end
 
     def is_duplicate?(msg1, msg2)
@@ -605,14 +608,14 @@ module RQ
           h = @temp_que_dups.delete(i)
           new_status = "duplicate #{gen_full_msg_id(msg)}"
           write_msg_status(i, new_status, 'que')
-          h['status'] = new_state + ' - ' + new_status
+          h['status'] = new_state + " - " + new_status
           h['state'] = new_state
           store_msg(h, 'que')
           # TODO: refactor this
           basename = "#{@queue_path}/que/#{i}"
           RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", i)
         end
-        msg['dups'] = msg['dups'].map { |i| gen_full_msg_id( 'msg_id' =>  i) }
+        msg['dups'] = msg['dups'].map { |i| gen_full_msg_id({'msg_id' => i}) }
       end
     end
 
@@ -639,13 +642,13 @@ module RQ
       # Collect all the dups into the msg and remove from the @que
       # also show parent in each dup
       msg['dups'] = []
-      duplicates.each do |i|
+      duplicates.each { |i|
         msg['dups'] << i['msg_id']
         @temp_que_dups[i['msg_id']] = i
         r = @que.delete(i)               # ordering here is important
         log("#{r['msg_id']} - removed from @que as dup")
         i['dup'] = gen_full_msg_id(msg)
-      end
+      }
     end
 
     # This is similar to check_msg, but it works with a message that is already
@@ -663,11 +666,11 @@ module RQ
       # Copy only these keys from input message
       keys = %w(src param1 param2 param3 param4 post_run_webhook due)
       keys.each do |key|
-        next unless input.key?(key)
+        next unless input.has_key?(key)
         msg[key] = input[key]
       end
 
-      msg
+      return msg
     end
 
     def run_job(msg, from_state = 'que')
@@ -678,7 +681,7 @@ module RQ
         File.rename(basename, newname)
       rescue
         log("FATAL - couldn't run message #{msg_id}")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
 
         # Remove the job from the queue. This may leave things in que state that
         # will be attempted again after a restart, but avoids the job jamming
@@ -696,7 +699,7 @@ module RQ
       run_queue_script!(msg)
     end
 
-    def lookup_msg(msg, state = 'prep', options = { :consistency => true })
+    def lookup_msg(msg, state = 'prep', options={:consistency => true})
       msg_id = msg['msg_id']
       basename = nil
       if state == 'prep'
@@ -751,7 +754,7 @@ module RQ
           return false
         end
       end
-      state
+      return state
     end
 
     def delete_msg!(msg)
@@ -761,12 +764,12 @@ module RQ
       basename = @queue_path + "/#{state}/" + msg['msg_id']
 
       if state == 'prep'
-        # FileUtils.remove_entry_secure(basename)
+        #FileUtils.remove_entry_secure(basename)
         FileUtils.rm_rf(basename)
         @prep.delete(msg['msg_id'])
       end
       if state == 'que'
-        # FileUtils.remove_entry_secure(basename)
+        #FileUtils.remove_entry_secure(basename)
         FileUtils.rm_rf(basename)
         @que.delete_if { |o| o['msg_id'] == msg['msg_id'] }
       end
@@ -781,11 +784,12 @@ module RQ
 
       state = lookup_msg(msg, '*')
       return resp unless state
-      return resp unless %w(err relayed done).include? state
+      return resp unless ['err', 'relayed', 'done'].include? state
+
 
       old_msg, old_basename = get_message(msg, state)
 
-      new_msg = {}
+      new_msg = { }
       if alloc_id(new_msg) and check_msg(new_msg, old_msg)
         # check_msg copies only required fields, but still copies count
         # so we delete that as well
@@ -794,10 +798,10 @@ module RQ
 
         # Now check for, and copy attachments
         # Assumes that original message guaranteed attachment integrity
-        new_basename = @queue_path + '/prep/' + new_msg['msg_id']
+        new_basename = @queue_path + "/prep/" + new_msg['msg_id']
 
-        if File.directory?(old_basename + '/attach/')
-          ents = Dir.entries(old_basename + '/attach/').reject { |i| i.index('.') == 0 }
+        if File.directory?(old_basename + "/attach/")
+          ents = Dir.entries(old_basename + "/attach/").reject {|i| i.index('.') == 0 }
           if not ents.empty?
             # simple check for attachment dir
             old_attach_path = old_basename + '/attach/'
@@ -822,9 +826,9 @@ module RQ
     end
 
     def get_message(params, state,
-                    options = { :read_message => true,
-                              :check_attachments => true })
-      if %w(done relayed).include? state
+                    options={ :read_message => true,
+                              :check_attachments => true})
+      if ['done', 'relayed'].include? state
         basename = RQ::HashDir.path_for("#{@queue_path}/#{state}", params['msg_id'])
       else
         basename = @queue_path + "/#{state}/" + params['msg_id']
@@ -833,27 +837,27 @@ module RQ
       msg = nil
       begin
         if options[:read_message]
-          data = File.read(basename + '/msg')
+          data = File.read(basename + "/msg")
           msg = JSON.parse(data)
         else
           msg = {}
         end
         msg['status'] = state
         msg['state'] = state
-        if File.exists?(basename + '/status')
-          xtra_data = File.read(basename + '/status')
+        if File.exists?(basename + "/status")
+          xtra_data = File.read(basename + "/status")
           xtra_status = JSON.parse(xtra_data)
           msg['status'] += " - #{xtra_status['job_status']}"
         end
 
         # Now check for attachments
-        if options[:read_message] && options[:check_attachments] && File.directory?(basename + '/attach/')
+        if options[:read_message] && options[:check_attachments] && File.directory?(basename + "/attach/")
           cwd = Dir.pwd
-          ents = Dir.entries(basename + '/attach/').reject { |i| i.index('.') == 0 }
+          ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
           if not ents.empty?
-            msg['_attachments'] = {}
+            msg['_attachments'] = { }
             ents.each do |ent|
-              msg['_attachments'][ent] = {}
+              msg['_attachments'][ent] = { }
               path = "#{basename}/attach/#{ent}"
               md5, size = file_md5(path)
               msg['_attachments'][ent]['md5'] = md5
@@ -866,15 +870,15 @@ module RQ
       rescue
         msg = nil
         log("Bad message in queue: #{basename}")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
       end
 
-      [msg, basename]
+      return [msg, basename]
     end
 
     def gen_full_msg_id(msg)
       full_name = "http://#{@host}:#{@port}/q/#{@name}/#{msg['msg_id']}"
-      full_name
+      return full_name
     end
 
     def gen_full_dest(msg)
@@ -888,7 +892,7 @@ module RQ
         res['dest'] = msg['dest']
         q_name = msg['dest'][/\/q\/([^\/]+)/, 1]
         res['queue'] = q_name;
-        # msg_id = msg['dest'][/\/q\/[^\/]+\/([^\/]+)/, 1]
+        #msg_id = msg['dest'][/\/q\/[^\/]+\/([^\/]+)/, 1]
       end
 
       res
@@ -899,16 +903,17 @@ module RQ
       # validate attachment
       result = [false, 'Unknown error']
       begin
-        basename = @queue_path + '/prep/' + msg_id
-        return [false, 'No message on disk'] unless File.exists? basename
+        basename = @queue_path + "/prep/" + msg_id
+        return [false, "No message on disk"] unless File.exists? basename
 
-        # TODO: deal with symlinks
+        #TODO: deal with symlinks
         # simple early check, ok, now check for pathname
-        return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].index('/') == 0
+        return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].index("/") == 0
         return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
         return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
         return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
         return [false, "Attachment currently not of supported type: #{msg['pathname']}"] unless File.file?(msg['pathname'])
+
 
         # simple check for attachment dir
         attach_path = basename + '/attach/'
@@ -919,12 +924,12 @@ module RQ
         name = msg['name'] || File.basename(msg['pathname'])
 
         # Validate - that it does not have any '/' chars or a '.' prefix
-        if name.index('.') == 0
+        if (name.index(".") == 0)
           return [false, "Attachment name as a dot-file not allowed: #{name}"]
         end
         # Unsafe char removal
         name_test = name.tr('~?[]%|$&<>', '*')
-        if name_test.index('*')
+        if name_test.index("*")
           return [false, "Attachment name has invalid character. not allowed: #{name}"]
         end
         #  TODO: support directory moves
@@ -958,11 +963,11 @@ module RQ
         result = [true, "#{md5}-Attached successfully"]
       rescue
         log("FATAL - couldn't add attachment to message #{msg_id}")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
         return false
       end
 
-      result
+      return result
     end
 
     def del_attach_msg(msg)
@@ -971,25 +976,25 @@ module RQ
       # validate attachment
       result = [false, 'Unknown error']
       begin
-        basename = @queue_path + '/prep/' + msg_id
-        return [false, 'No message on disk'] unless File.exists? basename
+        basename = @queue_path + "/prep/" + msg_id
+        return [false, "No message on disk"] unless File.exists? basename
 
         # simple check for attachment dir
         attach_path = basename + '/attach/'
-        return [false, 'No attach directory for msg'] unless File.exists?(attach_path)
+        return [false, "No attach directory for msg"] unless File.exists?(attach_path)
 
         new_path = attach_path + attach_name
-        return [false, 'No attachment with that named for msg'] unless File.exists?(new_path)
+        return [false, "No attachment with that named for msg"] unless File.exists?(new_path)
 
         File.unlink(new_path)
 
-        result = ['ok', 'Attachment deleted successfully']
+        result = ["ok", "Attachment deleted successfully"]
       rescue
         log("FATAL - couldn't delete attachment #{attach_name} from message #{msg_id}")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
       end
 
-      result
+      return result
     end
 
     def file_md5(path)
@@ -998,7 +1003,7 @@ module RQ
       size = nil
       File.open(path, 'r') do |file|
         size = file.stat.size
-        hasher.update(file.read(32_768)) until file.eof
+        hasher.update(file.read(32768)) until file.eof
       end
 
       result = hasher.hexdigest
@@ -1007,7 +1012,7 @@ module RQ
 
     def fixup_msg(msg, que)
       needs_fixing = false
-      if not msg.key?('due')
+      if not msg.has_key?('due')
         needs_fixing = true
       end
 
@@ -1017,14 +1022,15 @@ module RQ
     end
 
     def load_messages
+
       # prep just has message ids
       basename = @queue_path + '/prep/'
-      @prep = Dir.entries(basename).reject { |i| i.index('.') == 0 }
+      @prep = Dir.entries(basename).reject {|i| i.index('.') == 0 }
       @prep.sort!.reverse!
 
       # run msgs just put back into que
       basename = @queue_path + '/run/'
-      messages = Dir.entries(basename).reject { |i| i.index('.') == 0 }
+      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
       messages.each do |mname|
         begin
           File.rename(basename + mname, @queue_path + '/que/' + mname)
@@ -1036,13 +1042,13 @@ module RQ
 
       # que has actual messages copied
       basename = @queue_path + '/que/'
-      messages = Dir.entries(basename).reject { |i| i.index('.') == 0 }
+      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
 
       messages.sort!.reverse!
 
       messages.each do |mname|
         begin
-          data = File.read(basename + mname + '/msg')
+          data = File.read(basename + mname + "/msg")
           msg = JSON.parse(data)
           fixup_msg(msg, 'que')
         rescue
@@ -1051,6 +1057,7 @@ module RQ
         end
         @que << msg
       end
+
     end
 
     def handle_status_read(msg)
@@ -1063,35 +1070,35 @@ module RQ
       # the ruby IO model removes power from those who know
       # with wrappers written by those who do not know
       # update... using sysread
-      data = ''
+      data = ""
       loop do
         begin
-          # child_io.sysread(4096)
-          # data += child_io.readpartial(4096)
+          #child_io.sysread(4096)
+          #data += child_io.readpartial(4096)
           data += child_io.sysread(4096)
           break
         rescue Errno::EAGAIN, Errno::EINTR
-          # log("Error: #{$!}")
+          #log("Error: #{$!}")
           sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         rescue EOFError
-          # log("EOFError - #{$!}")
+          #log("EOFError - #{$!}")
           break
         end
       end
 
-      # if data
+      #if data
       #  log("Done Reading status from child len: #{data.length}")
-      # else
+      #else
       #  log("Done Reading status from child (nil)")
-      # end
+      #end
 
       return false if data.empty?
 
       child_msgs = data.split("\n")
 
       child_msgs.each do |child_msg|
-        parts = child_msg.split(' ', 2)
+        parts = child_msg.split(" ", 2)
 
         # Always write message status
         write_msg_status(msg['msg_id'], parts[1])
@@ -1106,7 +1113,7 @@ module RQ
         # and then kill them down the road.
 
         log("#{child_pid}: child msg came in: #{child_msg}")
-        if parts[0] != 'run'
+        if (parts[0] != "run")
           if parts[0] == 'done'
             @completed << [msg, :done, Time.now.to_i]
           end
@@ -1124,7 +1131,7 @@ module RQ
           end
           if parts[0] == 'resend'
             @completed << [msg, :resend, parts[1].to_i]
-            due, reason = parts[1].split('-', 2)
+            due,reason = parts[1].split('-',2)
             msg['due'] = Time.now.to_i + due.to_i
             msg['count'] = msg.fetch('count', 0) + 1
             store_msg(msg, 'run')
@@ -1139,7 +1146,7 @@ module RQ
           # We need to take an action instead of expecting an exit
           # that will arrive soon.
           if parts[0] == 'dup'
-            due, future, new_dest = parts[1].split('-', 3)
+            due,future,new_dest = parts[1].split('-',3)
             new_due = Time.now.to_i + due.to_i
 
             if new_dest.index('http') == 0
@@ -1160,16 +1167,16 @@ module RQ
             msg_copy = copy_and_clean_msg(msg, new_dest)
             msg_copy['due'] = new_due
 
-            basename = @queue_path + '/run/' + msg['msg_id']
+            basename = @queue_path + "/run/" + msg['msg_id']
 
             # Now see if there are any attachments
             attachments = []
 
-            if File.directory?(basename + '/attach/')
-              ents = Dir.entries(basename + '/attach/').reject { |i| i.index('.') == 0 }
+            if File.directory?(basename + "/attach/")
+              ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
               if not ents.empty?
                 # Cool, lets normalize the paths
-                full_path = File.expand_path(basename + '/attach/')
+                full_path = File.expand_path(basename + "/attach/")
 
                 attachments = ents.map { |e| "#{full_path}/#{e}" }
               end
@@ -1196,7 +1203,7 @@ module RQ
               que_msg_id = result[1][/\/q\/[^\/]+\/([^\/]+)/, 1]
 
               attachments.each do |path|
-                r2 = qc.attach_message( 'msg_id' => que_msg_id, 'pathname' => path )
+                r2 = qc.attach_message({'msg_id' => que_msg_id, 'pathname' => path})
                 if r2[0] != 'ok'
                   log("#{@name}:#{Process.pid} couldn't DUP message - #{r2[1]}")
                   msg['child_write_pipe'].syswrite("fail dup failed - attach fail #{r2[1]}\n")
@@ -1204,7 +1211,7 @@ module RQ
                 end
               end
 
-              r3 = qc.commit_message( 'msg_id' => que_msg_id )
+              r3 = qc.commit_message({'msg_id' => que_msg_id})
               if r3[0] != 'ok'
                 log("#{@name}:#{Process.pid} couldn't DUP message - #{r3[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - commit fail #{r3[1]}\n")
@@ -1219,23 +1226,23 @@ module RQ
         end
       end
 
-      true
+      return true
     end
 
     def write_msg_status(msg_id, mesg, state = 'run')
       # Write message to disk
       begin
         data = { 'job_status' => mesg }.to_json
-        basename = @queue_path + "/#{state}/" + msg_id + '/status'
+        basename = @queue_path + "/#{state}/" + msg_id + "/status"
         File.open(basename + '.tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '.tmp', basename)
       rescue
         log("FATAL - couldn't write status message")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
         return false
       end
 
-      true
+      return true
     end
 
     def write_msg_process_id(msg_id, pid)
@@ -1246,11 +1253,11 @@ module RQ
         File.rename(basename + '.tmp', basename)
       rescue
         log("FATAL - couldn't write message pid file")
-        log("        [ #{$ERROR_INFO} ]")
+        log("        [ #{$!} ]")
         return false
       end
 
-      true
+      return true
     end
 
     def remove_msg_process_id(msg_id, state = 'run')
@@ -1259,13 +1266,13 @@ module RQ
     end
 
     def log(mesg)
-      File.open(@queue_path + '/queue.log', 'a') do |f|
+      File.open(@queue_path + '/queue.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
 
     def shutdown!
-      log('Received shutdown')
+      log("Received shutdown")
       Process.exit! 0
     end
 
@@ -1278,22 +1285,22 @@ module RQ
       return unless @status.oper_status == 'UP'
 
       # Are we arleady running max workers
-      active_count = @run.reduce(0) do |acc, o|
-        if o.key?('child_pid')
+      active_count = @run.inject(0) do |acc, o|
+        if o.has_key?('child_pid')
           acc = acc + 1
         end
         acc
       end
 
       if active_count >= @config.num_workers
-        # log("Already running #{active_count} config is max: #{@config['num_workers']}")
+        #log("Already running #{active_count} config is max: #{@config['num_workers']}")
         return
       end
 
       # If we got started, and there are jobs in run que, but
       # without any workers
       if @run.length != active_count
-        job = @run.find { |o| not o.key?('child_pid') }
+        job = @run.find { |o| not o.has_key?('child_pid') }
         run_queue_script!(job)
         return
       end
@@ -1303,7 +1310,7 @@ module RQ
       end
 
       # Ok, locate the next job
-      ready_msg = @que.min { |a, b| a['due'].to_f <=> b['due'].to_f }
+      ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
 
       delta = ready_msg['due'].to_f - Time.now.to_f
 
@@ -1339,11 +1346,11 @@ module RQ
         io_list << @sock
         io_list << @parent_pipe
         io_list << @signal_hup_rd
-        # log('sleeping') if @wait_time == 60
+        #log('sleeping') if @wait_time == 60
         begin
           ready = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-          log("error on SELECT #{$ERROR_INFO}")
+          log("error on SELECT #{$!}")
           sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         end
@@ -1366,7 +1373,7 @@ module RQ
               if defined?(Fcntl::F_GETFL)
                 flag &= client_socket.fcntl(Fcntl::F_GETFL)
               end
-              # log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
+              #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
               client_socket.fcntl(Fcntl::F_SETFL, flag)
               handle_request(client_socket)
               next
@@ -1387,14 +1394,14 @@ module RQ
               end
               @signal_hup_rd.fcntl(Fcntl::F_SETFL, flag)
               dat = do_read(@signal_hup_rd, 1)
-              log('Strange Result from HUP signal pipe.') if dat.size != 1
+              log("Strange Result from HUP signal pipe.") if dat.size != 1
               next
             end
 
             msg = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
             if msg
-              # log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{msg['child_pid']}")
-              # log("QUEUE #{@name} of PID #{Process.pid} #{msg['child_read_pipe'].object_id} <=> #{io.object_id}")
+              #log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{msg['child_pid']}")
+              #log("QUEUE #{@name} of PID #{Process.pid} #{msg['child_read_pipe'].object_id} <=> #{io.object_id}")
 
               # TODO: make this stateful for incomplete reads
               next if handle_status_read(msg)
@@ -1437,15 +1444,15 @@ module RQ
                   new_state = 'err'
                 end
 
-                # if completion[1] == :pause
+                #if completion[1] == :pause
                 #  new_state = 'err'
-                # end
+                #end
 
                 if completion[1] == :resend && res[1] == 0
                   if msg['count'] >= msg['max_count']
                     new_state = 'err'
                     log("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
-                    write_msg_status(msg_id, 'HIT MAX RESEND COUNT - MOVING TO ERR')
+                    write_msg_status(msg_id, "HIT MAX RESEND COUNT - MOVING TO ERR" )
                   else
                     new_state = 'que'
                   end
@@ -1453,8 +1460,8 @@ module RQ
 
                 if new_state == nil
                   # log a message
-                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}")
-                  write_msg_status(msg_id, 'PROCESS EXITED IMPROPERLY')
+                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}" )
+                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY" )
                   new_state = 'err'
                 end
 
@@ -1462,9 +1469,9 @@ module RQ
                 # Move to relay dir and update in-memory data structure
                 begin
                   basename = "#{@queue_path}/run/#{msg_id}"
-                  fail unless File.exists? basename
+                  raise unless File.exists? basename
                   remove_msg_process_id(msg_id)
-                  if %w(done relayed).include? new_state
+                  if ['done', 'relayed'].include? new_state
                     handle_dups_done(msg, new_state)
                     store_msg(msg, 'run') # store message since it made it to done and we want the 'dups' field to live
                     RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
@@ -1477,11 +1484,11 @@ module RQ
                   end
                 rescue
                   log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")
-                  log("        [ #{$ERROR_INFO} ]")
+                  log("        [ #{$!} ]")
                   next
                 end
 
-                if %w(err done relayed).include? new_state
+                if ['err', 'done', 'relayed'].include? new_state
                   # Send a webhook if there is a web hook
                   if msg.include? 'post_run_webhook'
                     msg['post_run_webhook'].each do |wh|
@@ -1560,18 +1567,18 @@ module RQ
       end
     end
 
-    def do_read(client, numr = 32_768)
+    def do_read(client, numr = 32768)
       begin
         dat = client.sysread(numr)
       rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
         sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       rescue EOFError
-        # TODO: add debug mode
-        # puts "Got an EOF from socket read"
+        #TODO: add debug mode
+        #puts "Got an EOF from socket read"
         return nil
-      rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EINVAL, Errno::EBADF
-        puts "Got an #{$ERROR_INFO} from socket read"
+      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+        puts "Got an #{$!} from socket read"
         exit! 0
       end
       dat
@@ -1581,13 +1588,13 @@ module RQ
       protocol = do_read(sock, 4)
 
       if protocol != 'rq1 '
-        log('REQ - Invalid protocol - bad ver')
+        log("REQ - Invalid protocol - bad ver")
         return nil
       end
 
       size_str = do_read(sock, 9)
 
-      if size_str[-1..-1] != ' '
+      if size_str[-1..-1] != " "
         log("REQ - Invalid protocol - bad size #{size_str}")
         return nil
       end
@@ -1608,12 +1615,13 @@ module RQ
     def send_packet(sock, resp)
       log_msg = resp.length > 80 ? "#{resp[0...80]}..." : resp
       log("RESP [ #{resp.length}  #{log_msg} ]")
-      sock_msg = sprintf('rq1 %08d %s', resp.length, resp)
+      sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
       UnixRack::Socket.write_buff(sock, sock_msg)
       sock.close
     end
 
     def handle_request(sock)
+
       packet = read_packet(sock)
 
       return if packet == nil
@@ -1621,33 +1629,33 @@ module RQ
       log("REQ [ #{packet} ]")
 
       if packet.index('ping ') == 0
-        resp = ['pong'].to_json
+        resp = [ "pong" ].to_json
         send_packet(sock, resp)
         return
       end
 
       if packet.index('uptime ') == 0
-        resp = [(Time.now - @start_time).to_i,].to_json
+        resp = [(Time.now - @start_time).to_i, ].to_json
         send_packet(sock, resp)
         return
       end
 
       if packet.index('config ') == 0
         # Sadly there's no struct-to-hash method until Ruby 2.0
-        resp = ['ok', Hash[@config.each_pair.to_a]].to_json
+        resp = [ 'ok', Hash[@config.each_pair.to_a]].to_json
         send_packet(sock, resp)
         return
       end
 
       if packet.index('status') == 0
         @status.update!
-        resp = [@status.admin_status, @status.oper_status].to_json
+        resp = [ @status.admin_status, @status.oper_status ].to_json
         send_packet(sock, resp)
         return
       end
 
       if packet.index('shutdown') == 0
-        resp = ['ok'].to_json
+        resp = [ 'ok' ].to_json
         send_packet(sock, resp)
         shutdown!
         return
@@ -1656,7 +1664,7 @@ module RQ
       # IF queue is admin_status DOWN, no need to respond to any of the
       # following messages (Note: there are other states, this is a hard DOWN)
       if @status.admin_status == 'DOWN'
-        resp = ['fail', 'oper_status: DOWN'].to_json
+        resp = [ "fail", "oper_status: DOWN"].to_json
         send_packet(sock, resp)
         return
       end
@@ -1665,14 +1673,14 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        msg = {}
+        msg = { }
         if alloc_id(msg) and check_msg(msg, options)
           store_msg(msg)
           que(msg)
           msg_id = gen_full_msg_id(msg)
-          resp = ['ok', msg_id].to_json
+          resp = [ "ok", msg_id ].to_json
         else
-          resp = ['fail', 'unknown reason'].to_json
+          resp = [ "fail", "unknown reason"].to_json
         end
         send_packet(sock, resp)
         return
@@ -1682,32 +1690,32 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        msg = {}
+        msg = { }
 
         if not @que.empty?
           msg_id = gen_full_msg_id(@que[0])
-          resp = ['ok', msg_id].to_json
+          resp = [ "ok", msg_id ].to_json
         elsif alloc_id(msg) and check_msg(msg, options)
           store_msg(msg)
           que(msg)
           msg_id = gen_full_msg_id(msg)
-          resp = ['ok', msg_id].to_json
+          resp = [ "ok", msg_id ].to_json
         else
-          resp = ['fail', 'unknown reason'].to_json
+          resp = [ "fail", "unknown reason"].to_json
         end
         send_packet(sock, resp)
         return
       end
 
       if packet.index('num_messages') == 0
-        status = {}
+        status = { }
         status['prep']     = @prep.length
         status['que']      = @que.length
         status['run']      = @run.length
         status['pause']    = []
-        status['done']     = RQ::HashDir.num_entries(@queue_path + '/done')
-        status['relayed']  = RQ::HashDir.num_entries(@queue_path + '/relayed/')
-        status['err']      = Dir.entries(@queue_path + '/err/').reject { |i| i.index('.') == 0 }.length
+        status['done']     = RQ::HashDir.num_entries(@queue_path + "/done")
+        status['relayed']  = RQ::HashDir.num_entries(@queue_path + "/relayed/")
+        status['err']      = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }.length
 
         resp = status.to_json
         send_packet(sock, resp)
@@ -1717,8 +1725,8 @@ module RQ
       if packet.index('messages') == 0
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
-        if not options.key?('state')
-          resp = ['fail', "lacking 'state' field"].to_json
+        if not options.has_key?('state')
+          resp = [ "fail", "lacking 'state' field"].to_json
           send_packet(sock, resp)
           return
         end
@@ -1729,13 +1737,13 @@ module RQ
         elsif options['state'] == 'run'
           status = @run.map { |m| [m['msg_id'], m['status']] }
         elsif options['state'] == 'done'
-          status = RQ::HashDir.entries(@queue_path + '/done', options['limit'])
+          status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
         elsif options['state'] == 'relayed'
-          status = RQ::HashDir.entries(@queue_path + '/relayed/', options['limit'])
+          status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
         elsif options['state'] == 'err'
-          status = Dir.entries(@queue_path + '/err/').reject { |i| i.index('.') == 0 }
+          status = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
         else
-          status = ['fail', "invalid 'state' field (#{options['state']})"]
+          status = [ "fail", "invalid 'state' field (#{options['state']})"]
         end
 
         resp = status.to_json
@@ -1747,13 +1755,13 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        msg = {}
+        msg = { }
         if alloc_id(msg) and check_msg(msg, options)
           store_msg(msg)
           msg_id = gen_full_msg_id(msg)
-          resp = ['ok', msg_id].to_json
+          resp = [ "ok", msg_id ].to_json
         else
-          resp = ['fail', 'unknown reason'].to_json
+          resp = [ "fail", "unknown reason"].to_json
         end
         send_packet(sock, resp)
         return
@@ -1763,8 +1771,8 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
@@ -1772,12 +1780,12 @@ module RQ
         if lookup_msg(options)
           success, attach_message = attach_msg(options)
           if success
-            resp = ['ok', attach_message].to_json
+            resp = [ "ok", attach_message ].to_json
           else
-            resp = ['fail', attach_message].to_json
+            resp = [ "fail", attach_message ].to_json
           end
         else
-          resp = ['fail', 'cannot find message'].to_json
+          resp = [ "fail", "cannot find message"].to_json
         end
         send_packet(sock, resp)
         return
@@ -1788,8 +1796,8 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
@@ -1797,13 +1805,13 @@ module RQ
         state = lookup_msg(options, '*')
         if state
           if state != 'prep'
-            resp = ['fail', 'msg not in prep'].to_json
+            resp = [ "fail", "msg not in prep" ].to_json
           else
             success, del_attach_result = del_attach_msg(options)
-            resp = [success, del_attach_result].to_json
+            resp = [ success, del_attach_result ].to_json
           end
         else
-          resp = ['fail', 'msg not found'].to_json
+          resp = [ "fail", "msg not found" ].to_json
         end
         send_packet(sock, resp)
         return
@@ -1813,20 +1821,20 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         if lookup_msg(options)
           if que(options)
-            resp = ['ok', 'msg commited'].to_json
+            resp = [ "ok", "msg commited" ].to_json
           end
         else
-          resp = ['fail', 'cannot find message'].to_json
+          resp = [ "fail", "cannot find message"].to_json
         end
 
         send_packet(sock, resp)
@@ -1837,24 +1845,24 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         state = lookup_msg(options, '*')
         if state
           msg, msg_path = get_message(options, state)
           if msg
-            resp = ['ok', msg].to_json
+            resp = [ "ok", msg ].to_json
           else
-            resp = ['fail', "msg couldn't be read"].to_json
+            resp = [ "fail", "msg couldn't be read" ].to_json
           end
         else
-          resp = ['fail', 'msg not found'].to_json
+          resp = [ "fail", "msg not found" ].to_json
         end
 
         send_packet(sock, resp)
@@ -1865,20 +1873,20 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         # turn off consistency for a little more speed
-        state = lookup_msg(options, '*',  :consistency => false)
+        state = lookup_msg(options, '*', {:consistency => false})
         if state
-          resp = ['ok', state].to_json
+          resp = [ "ok", state ].to_json
         else
-          resp = ['fail', 'msg not found'].to_json
+          resp = [ "fail", "msg not found" ].to_json
         end
 
         send_packet(sock, resp)
@@ -1889,27 +1897,27 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         # turn off consistency for a little more speed
-        state = lookup_msg(options, '*',  :consistency => false)
+        state = lookup_msg(options, '*', {:consistency => false})
         if state
           msg, msg_path = get_message(options,
                                       state,
-                                       :read_message => false)
+                                      {:read_message => false})
           if msg
-            resp = ['ok', msg].to_json
+            resp = [ "ok", msg ].to_json
           else
-            resp = ['fail', "msg couldn't be read"].to_json
+            resp = [ "fail", "msg couldn't be read" ].to_json
           end
         else
-          resp = ['fail', 'msg not found'].to_json
+          resp = [ "fail", "msg not found" ].to_json
         end
 
         send_packet(sock, resp)
@@ -1920,19 +1928,19 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         if lookup_msg(options, '*')
           delete_msg!(options)
-          resp = ['ok', 'msg deleted'].to_json
+          resp = [ "ok", "msg deleted" ].to_json
         else
-          resp = ['fail', 'msg not found'].to_json
+          resp = [ "fail", "msg not found" ].to_json
         end
 
         send_packet(sock, resp)
@@ -1943,24 +1951,24 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         state = lookup_msg(options, '*')
         if state == 'que'
           # Jump to the front of the queue
-          ready_msg = @que.min { |a, b| a['due'].to_f <=> b['due'].to_f }
+          ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
           m = @que.find { |e| e['msg_id'] == options['msg_id'] }
           if (not m.nil?) and (not ready_msg.nil?)
             m['due'] = ready_msg['due'] - 1.0
-            resp = ['ok', 'msg sent to front of run queue'].to_json
+            resp = [ "ok", "msg sent to front of run queue" ].to_json
           else
-            resp = ['fail', 'cannot send message to run state'].to_json
+            resp = [ "fail", "cannot send message to run state" ].to_json
           end
         end
 
@@ -1972,28 +1980,28 @@ module RQ
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
-        if not options.key?('msg_id')
-          resp = ['fail', "lacking 'msg_id' field"].to_json
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
           return
         end
 
-        resp = ['fail', 'unknown reason'].to_json
+        resp = [ "fail", "unknown reason"].to_json
 
         state = lookup_msg(options, '*')
         if state
-          if %w(err relayed done).include? state
+          if ['err', 'relayed', 'done'].include? state
             msg_id = clone_msg(options)
             if msg_id
-              resp = ['ok', msg_id].to_json
+              resp = [ "ok", msg_id ].to_json
             else
-              resp = ['fail', "msg couldn't be cloned"].to_json
+              resp = [ "fail", "msg couldn't be cloned" ].to_json
             end
           else
-            resp = ['fail', "cannot clone message in #{state} state"].to_json
+            resp = [ "fail", "cannot clone message in #{state} state" ].to_json
           end
         else
-          resp = ['fail', 'msg not found'].to_json
+          resp = [ "fail", "msg not found" ].to_json
         end
 
         send_packet(sock, resp)
@@ -2001,7 +2009,8 @@ module RQ
       end
 
       send_packet(sock, '[ "ERROR" ]')
-      log('RESP [ ERROR ] - Unhandled message')
+      log("RESP [ ERROR ] - Unhandled message")
     end
+
   end
 end

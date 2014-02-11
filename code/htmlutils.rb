@@ -5,15 +5,16 @@
 
 module RQ
   class HtmlUtils
+
     ESCAPE_HTML = {
-      '&' => '&amp;',
-      '<' => '&lt;',
-      '>' => '&gt;',
+      "&" => "&amp;",
+      "<" => "&lt;",
+      ">" => "&gt;",
     }
     ESCAPE_HTML_PATTERN = Regexp.union(*ESCAPE_HTML.keys)
 
     def self.escape_html(text)
-      text.gsub(ESCAPE_HTML_PATTERN) { |c| ESCAPE_HTML[c] }
+      text.gsub(ESCAPE_HTML_PATTERN){|c| ESCAPE_HTML[c] }
     end
 
     def self.linkify_text(text)
@@ -24,13 +25,15 @@ module RQ
       terminal = AnsiUtils.new
       terminal.process_text(text)
     end
+
   end
 
   class AnsiUtils
+
     # Normal and then Bright
     ANSI_COLORS = [
-      ['0,0,0', '187, 0, 0', '0, 187, 0', '187, 187, 0', '0, 0, 187', '187, 0, 187', '0, 187, 187', '255,255,255'],
-      ['85,85,85', '255, 85, 85', '0, 255, 0', '255, 255, 85', '85, 85, 255', '255, 85, 255', '85, 255, 255', '255,255,255'],
+      ["0,0,0", "187, 0, 0", "0, 187, 0", "187, 187, 0", "0, 0, 187", "187, 0, 187", "0, 187, 187", "255,255,255" ],
+      ["85,85,85", "255, 85, 85", "0, 255, 0", "255, 255, 85", "85, 85, 255", "255, 85, 255", "85, 255, 255", "255,255,255" ],
     ]
 
     attr_accessor :fore
@@ -55,7 +58,7 @@ module RQ
 
     def process_chunk(text)
       # Do proper handling of sequences (aka - injest vi split(';') into state machine
-      match, codes, txt = *text.match(/([\d;]+)m(.*)/m)
+      match,codes,txt = *text.match(/([\d;]+)m(.*)/m)
 
       if not match
         return txt
@@ -84,8 +87,9 @@ module RQ
         style = []
         style << "color:#{@fore}" if @fore
         style << "background-color:#{@back}" if @back
-        ["<span style='#{style.join(';')}'>", txt, '</span>']
+        ["<span style='#{style.join(';')}'>", txt, "</span>"]
       end
     end
+
   end
 end

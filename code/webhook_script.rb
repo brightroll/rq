@@ -18,8 +18,8 @@ def handle_fail(mesg = 'soft fail')
   count = ENV['RQ_COUNT'].to_i
 
   if count > 15
-    write_status('run', 'RQ_COUNT > 15 - failing')
-    write_status('fail', 'RQ_COUNT > 15 - failing')
+    write_status('run', "RQ_COUNT > 15 - failing")
+    write_status('fail', "RQ_COUNT > 15 - failing")
     exit(0)
   end
 
@@ -51,4 +51,4 @@ def send_post
   end
 end
 
-send_post
+send_post()

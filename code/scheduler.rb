@@ -7,12 +7,13 @@ require 'code/hashdir'
 
 module RQ
   class Scheduler
+
     def initialize(options, parent_pipe)
       @start_time = Time.now
       # Read config
-      @name = 'scheduler'
-      @sched_path = 'scheduler/'
-      @rq_config_path = './config/'
+      @name = "scheduler"
+      @sched_path = "scheduler/"
+      @rq_config_path = "./config/"
       @parent_pipe = parent_pipe
       init_socket
 
@@ -20,12 +21,12 @@ module RQ
     end
 
     def self.log(path, mesg)
-      File.open(path + '/sched.log', 'a') do |f|
+      File.open(path + '/sched.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
 
-    def self.start_process(options = {})
+    def self.start_process(options={})
       # nice pipes writeup
       # http://www.cim.mcgill.ca/~franco/OpSys-304-427/lecture-notes/node28.html
       child_rd, parent_wr = IO.pipe
@@ -36,11 +37,11 @@ module RQ
         Signal.trap('CHLD', 'DEFAULT')
         Signal.trap('HUP', 'DEFAULT')
 
-        sched_path = 'scheduler/'
-        $0 = '[rq-scheduler]'
+        sched_path = "scheduler/"
+        $0 = "[rq-scheduler]"
         begin
           parent_wr.close
-          # child only code block
+          #child only code block
           RQ::Scheduler.log(sched_path, 'post fork')
 
           q = RQ::Scheduler.new(options, child_rd)
@@ -51,14 +52,14 @@ module RQ
             sleep 60
           end
         rescue Exception
-          log(sched_path, 'Exception!')
-          log(sched_path, $ERROR_INFO)
-          log(sched_path, $ERROR_INFO.backtrace)
+          self.log(sched_path, "Exception!")
+          self.log(sched_path, $!)
+          self.log(sched_path, $!.backtrace)
           raise
         end
       end
 
-      # parent only code block
+      #parent only code block
       child_rd.close
 
       if child_pid == nil
@@ -90,7 +91,7 @@ module RQ
     def init_socket
       # Show pid
       File.unlink(@sched_path + '/sched.pid') rescue nil
-      File.open(@sched_path + '/sched.pid', 'w') do |f|
+      File.open(@sched_path + '/sched.pid', "w") do |f|
         f.write("#{Process.pid}\n")
       end
 
@@ -100,23 +101,24 @@ module RQ
     end
 
     def log(mesg)
-      File.open(@sched_path + '/sched.log', 'a') do |f|
+      File.open(@sched_path + '/sched.log', "a") do |f|
         f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
       end
     end
 
     def shutdown!
-      log('Received shutdown')
+      log("Received shutdown")
       Process.exit! 0
     end
 
     def run_loop
       Signal.trap('TERM') do
-        log('received TERM signal')
+        log("received TERM signal")
         shutdown!
       end
 
       sleep while true
     end
+
   end
 end

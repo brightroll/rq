@@ -142,13 +142,8 @@ RQ Queue Config JSON
 
 A typical config:
 
-config.json
 ``` json
 {"name":"relay","script":"./code/relay_script.rb","num_workers":1,"exec_prefix":""}
-```
-form.json
-``` json
-{"default":"hidden","mesg_param1":{"label":"Something Here","help":"foobar"}}
 ```
 
 

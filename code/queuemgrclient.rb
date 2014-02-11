@@ -3,8 +3,9 @@ require 'json'
 
 module RQ
   class QueueMgrClient
+
     def self.running?
-      pid = read_pid
+      pid = self.read_pid
 
       return false unless pid
 
@@ -14,20 +15,20 @@ module RQ
         return false
       end
 
-      true
+      return true
     end
 
     def self.stop!
       if self.running?
-        pid = read_pid
+        pid = self.read_pid
         begin
-          Process.kill('TERM', pid)
+          Process.kill("TERM", pid)
           return true
         rescue
           return false
         end
       end
-      false
+      return false
     end
 
     def self.read_pid
@@ -36,7 +37,7 @@ module RQ
 
     def self.ping
       client = UNIXSocket.open('config/queuemgr.sock')
-      client.send('ping', 0)
+      client.send("ping", 0)
       result = client.recvfrom(1024)
       client.close
       result ? result[0] : nil
@@ -44,7 +45,7 @@ module RQ
 
     def self.environment
       client = UNIXSocket.open('config/queuemgr.sock')
-      client.send('environment', 0)
+      client.send("environment", 0)
       result = client.recvfrom(1024)
       client.close
       result ? result[0] : nil
@@ -52,7 +53,7 @@ module RQ
 
     def self.version
       client = UNIXSocket.open('config/queuemgr.sock')
-      client.send('version', 0)
+      client.send("version", 0)
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil
@@ -60,7 +61,7 @@ module RQ
 
     def self.queues
       client = UNIXSocket.open('config/queuemgr.sock')
-      client.send('queues', 0)
+      client.send("queues", 0)
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil
@@ -68,7 +69,7 @@ module RQ
 
     def self.uptime
       client = UNIXSocket.open('config/queuemgr.sock')
-      client.send('uptime', 0)
+      client.send("uptime", 0)
       result = client.recvfrom(1024)
       client.close
       result ? JSON.parse(result[0]) : nil
@@ -106,5 +107,6 @@ module RQ
       client.close
       result ? JSON.parse(result[0]) : nil
     end
+
   end
 end

@@ -1,63 +1,65 @@
 module RQ
+
   class DSLArgumentError < StandardError; end
   class DSLRuleError < StandardError; end
 
   class Rule
+
     attr_accessor :data
 
     @@fields = [:desc, :action, :src, :dest, :route, :delay, :log, :num]
 
-    @@rand_proc = lambda { |x| rand(x) }
+    @@rand_proc = lambda {|x| rand(x) }
 
     def self.rand_func=(f)
       @@rand_proc = f
     end
 
-    def initialize
+    def initialize()
       @data = {}
     end
 
     def rule(dsc)
-      fail DSLArgumentError, "Wrong desc type: #{dsc.class}" unless [String, Symbol].include? dsc.class
+      raise DSLArgumentError, "Wrong desc type: #{dsc.class}" unless [String, Symbol].include? dsc.class
       @data[:desc] = dsc
     end
 
     def action(act)
-      fail DSLArgumentError.new("Action not a symbol #{act}") if act.class != Symbol
+      raise DSLArgumentError.new("Action not a symbol #{act}") if act.class != Symbol
       if not [:relay, :balance, :done, :err].include? act
-        fail DSLArgumentError, "Action not a valid action '#{act}'"
+        raise DSLArgumentError, "Action not a valid action '#{act}'"
       end
       @data[:action] = act
     end
 
     def src(rgx)
-      fail DSLArgumentError if rgx.class != Regexp
+      raise DSLArgumentError if rgx.class != Regexp
       @data[:src] = rgx
     end
 
     def dest(dst)
-      fail DSLArgumentError, 'Dest not a regexp'  if dst.class != Regexp
+      raise DSLArgumentError, "Dest not a regexp"  if dst.class != Regexp
       @data[:dest] = dst
     end
 
     def route(*rt)
-      fail DSLArgumentError, "Wrong route type: #{rt.class}" unless [String, Array].include? rt.class
+      raise DSLArgumentError, "Wrong route type: #{rt.class}" unless [String, Array].include? rt.class
       @data[:route] = rt
     end
 
     def log(tf)
-      fail DSLArgumentError, "delay must be an boolean: #{tf}" unless tf.class == TrueClass || tf.class == FalseClass
+      raise DSLArgumentError, "delay must be an boolean: #{tf}" unless (tf.class == TrueClass || tf.class == FalseClass)
       @data[:log] = tf
     end
 
     def delay(dly)
-      fail DSLArgumentError, "delay must be an integer: #{dly}" if dly.class != Fixnum
+      raise DSLArgumentError, "delay must be an integer: #{dly}" if dly.class != Fixnum
       @data[:delay] = dly
     end
 
     def end_rule
       # Validate rule - raise ArgumentError if act.class != Symbol
-      # $rules << self
+      #$rules << self
       if [:blackhole, :err].include? @data[:action]
         @data[:log] = true
       end
@@ -66,7 +68,7 @@ module RQ
       @data[:delay] ||= 0
 
       if @data[:desc] != 'default'
-        fail DSLRuleError, 'rule must have a src or dest pattern match' unless @data[:src] || @data[:dest]
+        raise DSLRuleError, "rule must have a src or dest pattern match" unless (@data[:src] || @data[:dest])
       end
 
       @data[:route] ||= []
@@ -112,11 +114,11 @@ module RQ
         end
       else
         # pick a random element
-        [rts[@@rand_proc.call(rts.length)]]
+        [ rts[@@rand_proc.call(rts.length)] ]
       end
     end
 
-    def process(str, num, verbose = false)
+    def process(str, num, verbose=false)
       begin
         instance_eval(str)
       rescue DSLArgumentError => ex
@@ -128,12 +130,13 @@ module RQ
         if verbose
           puts "Problem with line #{num}: [#{str.chop.to_s}]"
         end
-        fail
+        raise
       end
     end
   end
 
   class RuleProcessor
+
     attr_accessor :rules
 
     def initialize(rls)
@@ -150,7 +153,7 @@ module RQ
 
     def txform_host(old, new)
       # if new has full address, we just use that
-      if new.index('http') == 0
+      if new.index("http") == 0
         return new
       end
 
@@ -159,7 +162,7 @@ module RQ
         new += ':3333'
       end
 
-      if old.index('http') == 0    # if a standard full msg_id
+      if old.index("http") == 0    # if a standard full msg_id
         # just swap out the host
         parts = old.split('/q/', 2)
         "http://#{new}/q/#{parts[1]}"
@@ -169,7 +172,7 @@ module RQ
       end
     end
 
-    def self.process_pathname(path, verbose = false)
+    def self.process_pathname(path, verbose=false)
       rules = []
       begin
         lines = []
@@ -182,7 +185,7 @@ module RQ
         lines.each_with_index do |line, i|
           i = i + 1   # i is offset by 0, so we bump it up for human readable line #s
 
-          next if line[0..1] == '#'
+          next if line[0..1] == "#"
 
           if in_rule
             if line[0..1] == "\n"
@@ -192,10 +195,10 @@ module RQ
             end
             rule.process(line, i, verbose)
           end
-          if line[0..4] == 'rule '
+          if line[0..4] == "rule "
             rule.end_rule if in_rule
             in_rule = true
-            rule = Rule.new
+            rule = Rule.new()
             rule.data[:num] = rules.length + 1
             rules << rule
             rule.process(line, i, verbose)
@@ -214,12 +217,12 @@ module RQ
         return nil
       end
 
-      any_defaults, rules = rules.partition { |o| o.data[:desc] == 'default' }
+      any_defaults,rules = rules.partition {|o| o.data[:desc] == 'default'}
 
       default_rule = Rule.new
       default_rule.rule('default')
       default_rule.action(:err)
-      default_rule.end_rule
+      default_rule.end_rule()
 
       any_defaults.unshift(default_rule)
 
@@ -227,5 +230,7 @@ module RQ
 
       RuleProcessor.new(rules)
     end
+
   end
+
 end
