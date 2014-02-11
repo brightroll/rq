@@ -6,10 +6,7 @@ module RQ
       @list = []
 
       # Cross-Platform ps command
-      out = `/bin/ps -A -o uid,pid,ppid,sess,command 2>&1`
-      if $CHILD_STATUS.exitstatus != 0
-        return false, out
-      end
+      out = %x[/bin/ps -A -o uid,pid,ppid,sess,command 2>&1] or fail false, out
 
       lines = out.split("\n")
 
