@@ -3,11 +3,10 @@ require 'json'
 
 module RQ
   class JSONConfigFile
-
     # A class to keep an eye on a config file and determine
     # if it was reloaded in order to cause any observers to adjust
 
-    #stat = File.stat(@queue_path + "/prep/" + name)
+    # stat = File.stat(@queue_path + "/prep/" + name)
 
     attr_accessor :path
     attr_accessor :conf
@@ -44,6 +43,5 @@ module RQ
     rescue
       ERROR_IGNORED
     end
-
   end
 end
