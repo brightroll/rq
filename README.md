@@ -403,50 +403,37 @@ write_status 'done' "done sleeping"
 <a name='section_Environment'></a>
 ### Environment
 
-When a queue has a message to process, and a slot is available to run, the queue script
-will be executed in a particular environment. This environment passes information about the message
-to the script via two ancient forms of Interprocess Communication: Environment variables and the filesystem.
+When a queue has a message to process, and a slot is available to run, the
+queue script will be executed in a particular environment. This environment
+passes information about the message to the script via two ancient forms of
+Interprocess Communication: Environment variables and the filesystem.
 
-Current Dir = <que>/<state>/<short msg id>/job/
+Current Dir = [que]/[state]/[short msg id]/job/
 
 Full Msg ID = host + q_name + msg_id
 
-ENV["RQ_SCRIPT"]     = The script as is defined in config file
-ENV["RQ_REALSCRIPT"] = The fully realized path (symbolic links followed, etc)
-                       Should be equivalent to ARGV[0]
-
-ENV["RQ_HOST"]       = Base URL of host (Ex. "http://localhost:3333/")
-ENV["RQ_HOSTNAMES"]  = Base URLs of host (aliases) (Ex. "http://localhost:3333/ http://butter:1234/")
-                       Split by space
-
-ENV["RQ_DEST"]       = Msg Dest Queue (Ex. http://localhost:3333/q/test/)
-
-ENV["RQ_DEST_QUEUE"] = Just Queue Name (Ex. 'test')
-
-ENV["RQ_MSG_ID"]     = Short msg id (Ex. "20091109.0558.57.780")
-
-ENV["RQ_FULL_MSG_ID"] = Full msg id of message being processed
-                       (Ex. http://vidxcode27.vbtrll.com:3333/q/test/20091109.0558.57.780)
-
-ENV["RQ_MSG_DIR"]    = Dir for msg (Should be Current Dir unless dir is changed
-                       by script)
-
-ENV["RQ_READ"]       = Read side pipe FD to the Queue management process
-ENV["RQ_WRITE"]      = Write side pipe FD to the Queue management process
-
-ENV["RQ_COUNT"]      = Number of times message has been relayed or processed
-
-ENV["RQ_PARAM1"]     = param1 for message
-ENV["RQ_PARAM2"]     = param2 for message
-ENV["RQ_PARAM3"]     = param3 for message
-ENV["RQ_PARAM4"]     = param4 for message
-
-ENV["RQ_FORCE_REMOTE"] = Force remote flag
-
-ENV["RQ_PORT"]       = port number for RQ web server, default = 3333
-
-ENV["RQ_ENV"]        = 'production', 'development', 'test', 'stage'
-ENV["RQ_VER"]        = version of rq
+Variable        | Description
+:-------        | :----------
+RQ_SCRIPT       | The script as is defined in config file
+RQ_REALSCRIPT   | The fully realized path (symbolic links followed, etc)
+RQ_HOST         | Base URL of host (Ex. "http://localhost:3333/")
+RQ_HOSTNAMES    | Space separate list of host Base URL aliases (Ex. "http://localhost:3333/ http://butter:1234/")
+RQ_DEST         | Msg Dest Queue (Ex. http://localhost:3333/q/test/)
+RQ_DEST_QUEUE   | Just Queue Name (Ex. 'test')
+RQ_MSG_ID       | Short msg id (Ex. "20091109.0558.57.780")
+RQ_FULL_MSG_ID  | Full msg id of message being processed (Ex. http://vidxcode27.vbtrll.com:3333/q/test/20091109.0558.57.780)
+RQ_MSG_DIR      | Dir for msg (Should be Current Dir unless dir is changed by script)
+RQ_READ         | Read side pipe FD to the Queue management process
+RQ_WRITE        | Write side pipe FD to the Queue management process
+RQ_COUNT        | Number of times message has been relayed or processed
+RQ_PARAM1       | param1 for message
+RQ_PARAM2       | param2 for message
+RQ_PARAM3       | param3 for message
+RQ_PARAM4       | param4 for message
+RQ_FORCE_REMOTE | Force remote flag
+RQ_PORT         | port number for RQ web server, default = 3333
+RQ_ENV          | Typically one of 'production', 'development', or 'test'
+RQ_VER          | RQ version
 
 <a name='section_Logs_and_Attachments'></a>
 ### Logs and Attachments
