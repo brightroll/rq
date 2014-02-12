@@ -6,7 +6,6 @@ require 'code/router'
 
 module RQ
   class WebServer
-
     def initialize(config)
       @basic_auth  = config['basic_auth']
       @port        = config['port']
@@ -27,12 +26,12 @@ module RQ
         router = protected_router
       end
 
-      Rack::Handler::UnixRack.run(router, {
-        :Port        => @port,
-        :Host        => @addr,
-        :Hostname    => @host,
-        :allowed_ips => @allowed_ips,
-      })
+      Rack::Handler::UnixRack.run(router,
+                                  :Port        => @port,
+                                  :Host        => @addr,
+                                  :Hostname    => @host,
+                                  :allowed_ips => @allowed_ips
+      )
     end
   end
 end
