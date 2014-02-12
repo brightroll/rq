@@ -230,7 +230,7 @@ Essentially, this turns into a
 end
 
 def write_status(state, mesg = '')
-  io = IO.for_fd(ENV['RQ_PIPE'].to_i)
+  io = IO.for_fd(ENV['RQ_WRITE'].to_i)
   msg = "#{state} #{mesg}\n"
   io.syswrite(msg)
 end
@@ -431,7 +431,8 @@ ENV["RQ_FULL_MSG_ID"] = Full msg id of message being processed
 ENV["RQ_MSG_DIR"]    = Dir for msg (Should be Current Dir unless dir is changed
                        by script)
 
-ENV["RQ_PIPE"]       = Pipe FD to Queue management process
+ENV["RQ_READ"]       = Read side pipe FD to the Queue management process
+ENV["RQ_WRITE"]      = Write side pipe FD to the Queue management process
 
 ENV["RQ_COUNT"]      = Number of times message has been relayed or processed
 
