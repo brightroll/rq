@@ -90,10 +90,6 @@ Table Of Contents
   * [Environment](#section_Environment)
   * [Logs and Attachments](#section_Logs_and_Attachments)
   * [Pipe Protocol](#section_Pipe_Protocol)
-* [RQ Server API](#section_RQ_Server_API)
-  * [REST](#section_REST)
-  * [cli](#section_cli)
-  * [Unix Domain Sockets](#section_Unix_Domain_Sockets)
 * [Special Queues](#section_Special_Queues)
 * [Internals](#section_Internals)
   * [Persistence](#section_Persistence)
@@ -440,20 +436,6 @@ RQ_VER          | RQ version
 
 <a name='section_Pipe_Protocol'></a>
 ### Pipe Protocol
-
-<a name='section_RQ_Server_API'></a>
-## RQ Server API
-
-<a name='section_REST'></a>
-### REST
-
-RQ traditionally runs on port 3333.
-
-<a name='section_cli'></a>
-### cli
-
-<a name='section_Unix_Domain_Sockets'></a>
-### Unix Domain Sockets
 
 <a name='section_Special_Queues'></a>
 ## Special Queues
