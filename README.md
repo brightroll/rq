@@ -81,7 +81,7 @@ Table Of Contents
 * [Quick Setup](#section_Quick_Setup)
 * [Features](#section_Features)
 * [Hip Tips](#section_Hip_Tips)
-* [Queue Config Vars](#section_Queue_Config_Vars)
+* [Queue Config Files](#section_Queue_Config_Files)
 * [Guarantees](#section_Guarantees)
 * [Your First Queue Script](#section_Your_First_Queue_Script)
   * [Ruby](#section_Ruby)
@@ -131,10 +131,8 @@ RQ returns a complete HTTP URL for each enqueued message, therefore you must con
 * Master passing.Do not access other message directories unless the message is `done`
 * Don't take too long via the Web UI, there is a X second timeout
 
-<a name='section_Queue_Config_Vars'></a>
-## Queue Config Vars
-
-RQ Queue Config JSON
+<a name='section_Queue_Config_Files'></a>
+## Queue Config Files
 
 A typical config:
 
@@ -147,26 +145,17 @@ form.json
 {"default":"hidden","mesg_param1":{"label":"Something Here","help":"foobar"}}
 ```
 
+Key             | Description
+:--             | :----------
+**name**        | Name of the queue
+**script**      | Path to the script to execute for each message
+num_workers     | Maximum number of messages to process at a time, default `1`
+exec_prefix     | This is prepended to the script path before calling `exec()`, default `bash -lc`
+env_vars        | Hash of environment variables and values set before calling `exec()`, default empty
+coalesce        | Boolean, whether to coalesce messages with identical paramters, default `false`
+coalesce_paramN | Boolean, if coalesce is true, whether to coalesce on a particular parameter
 
-** Mandatory Fields **
-
-name:
-Name of the queue.
-
-script:
-The path to the script that will process messages in that queue
-
-num_workers:
-The number of processes that can run to handle incoming messages. This
-is equivalent to the max number of messages that can be in the run state.
-Default: 1
-
-Optional Fields
-exec_prefix:
-This is what is prefixed to the script before the 'exec' system call is made to run the "script". As a default, it is set to 'bash -lc ' if not set. Note the space on the end.
-
-env_vars
-This is a map of key value pairs that will be established in the environment per script run.
+_Fields in **bold** are mandatory, all others are optional._
 
 <a name='section_Guarantees'></a>
 ## Guarantees
