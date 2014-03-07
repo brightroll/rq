@@ -106,7 +106,7 @@ Table Of Contents
 
 1. Clone this git repository
 1. Run `./bin/rq-install` to create a config and a set of default queues.
-1. Run `./bin/rq-mgr start` to start the rq-mgr process, one rq process per queue, and the web interface.
+1. Run `./bin/rq-mgr start` to start the rq-mgr process, one RQ process per queue, and the web interface.
 1. Run `./test/run_tests.sh` to exercise the test suite.
 
 An init style startup script is provided in `bin/rc.rq`, you may copy or symlink it to your system init directory.
@@ -426,6 +426,51 @@ RQ_VER          | RQ version
 <a name='section_Pipe_Protocol'></a>
 ### Pipe Protocol
 
+A queue script communicates with its parent RQ process over a pair of pipes.
+The pipe file descriptor numbers are provided in the RQ_READ and RQ_WRITE
+environment variables, named from the perspective of the queue script.
+
+The queue script's stdin is closed, and its stdout and stderr are redirected to a file.
+
+The queue script protocol follows this grammar:
+
+```
+CMD Space Text Newline
+CMD = run | done | err | relayed | RESEND | DUP
+
+resend detail:
+  RESEND     = resend DUE Dash Text
+  DUE        = Integer
+
+dup detail:
+  DUP        = due Dash FUTUREFLAG Dash NEWDEST
+  DUE        = Integer
+  FUTUREFLAG = X
+  NEWDEST    = An RQ queue path
+
+dup response:
+  STATUS Space CONTENT
+  STATUS     = ok | fail
+  CONTENT    = for ok: <new message id> | for fail: <failure reason text>
+```
+
+For obvious reasons, the Text cannot have any newline characters. There is no
+limit to Text length, but in practice it should not exceed a few hundred bytes.
+
+Command | Description
+:------ | :----------
+run     | When the script is running, it is in 'run'. To send an updated status to the operator about the operation of the script, just send a 'run' with TEXT as the status.
+        | example: `run Processed 5 of 15 log files.<nl>`
+done    | When the script is finished, and has successfully performed its processing. It sends this response. It *must* also exit with a 0 status or it will go to 'err'.
+        | example: `done Script is done.<nl>`
+err     | When the script has failed, and we want to message to go to 'err' (probably to notify someone that something has gone wrong and needs operator attention). Any exit status at this point will take the message to 'err'.
+        | example: `err Database dump script failed.<nl>`
+relayed | This is used by the relay queue and should not be used by a user queue script.
+resend  | When the script has failed, but we want to just retry running it again, we respond with a 'resend'. This will cause a message to go back into 'que' with a due time of X seconds into the future.
+        | example: `resend 300-Memcached at foo.example.com not responding.<nl>`
+dup     | Create a clone of the existing message (including attachments) to the new destination. NOTE: This is the first status response that is a 2 way conversation with the queue process. If the queue does match /^https?:/, then it goes to 'relay' to be sent on. Otherwise it is considered a local. If relay or the local queue doesn't exist or is admin DOWN/PAUSE, then the the response will indicate failure. This resets the current count for the newly generated message.
+        | example: `dup 0-X-http://rq.example.com/q/queuename<nl>`
+
 <a name='section_Special_Queues'></a>
 ## Special Queues
 
@@ -449,8 +494,8 @@ rq queue processes, and the web server process.
 
 The primary process is the rq-mgr process. It sets up a Unix Domain socket and
 communicates via that for its primary API. Its primary function is to watch
-over and restart the individual rq *queue* processes. It maintains a standard
-Unix pipe to the child rq process to detect child death.
+over and restart the individual RQ *queue* processes. It maintains a standard
+Unix pipe to the child RQ process to detect child death.
 
 Each queue gets its own process. They also communicate. These monitor their
 queue directories and worker processes. They have the state of the 'que' queue
