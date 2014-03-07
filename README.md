@@ -509,7 +509,50 @@ just about any HTTP lib that comes with any language.
 <a name='section_Persistence'></a>
 ### Persistence
 
-The system
+The queue states
+
+```
+prep
+que
+run
+  - starting
+  - running
+  - finishing
+done
+  - relay
+err
+```
+
+Two-Phase Commit for Protocol
+
+```
+Sender         Receiver
+------         --------
+if no id,
+         -----> alloc_id
+   id    <-----
+
+else
+ use stored
+ id
+         -----> prep, id
+ ok |        <-----
+  -> continue
+ fail/unknown |    <-----
+  -> fail job
+ ok/already commited |    <-----
+  -> mark job done
+
+continue:
+  modify or make
+  attachments
+         <----->  attach/etc
+
+ok, commit
+          ----->  commit
+ ok |        <-----
+  -> mark job done
+```
 
 <a name='section_Relay'></a>
 ### Relay
