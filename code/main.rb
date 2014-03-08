@@ -6,7 +6,6 @@ require 'code/queuemgrclient'
 require 'code/queueclient'
 require 'code/errors'
 require 'code/hashdir'
-require 'code/portaproc'
 require 'code/overrides'
 
 module RQ
@@ -147,16 +146,6 @@ module RQ
 
     get '/q.json' do
       RQ::QueueMgrClient.queues.to_json
-    end
-
-    get '/proc.txt' do
-      content_type 'text/plain', :charset => 'utf-8'
-      ps = RQ::PortaProc.new
-      ok, procs = ps.get_list
-      if not ok
-        throw :halt, [503, "503 - Could not get process list"]
-      end
-      erb :proc_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues, :procs => procs}
     end
 
     get '/q/:name' do
