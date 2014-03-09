@@ -27,7 +27,7 @@ def create_queues
     'num_workers' => '1',
     'exec_prefix' => '',
   }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
 
   queue = {
     'name'        => 'webhook',
@@ -35,7 +35,7 @@ def create_queues
     'num_workers' => '1',
     'exec_prefix' => '',
   }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
 
   queue = {
     'name'        => 'cleaner',
@@ -43,7 +43,7 @@ def create_queues
     'num_workers' => '1',
     'exec_prefix' => '',
   }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
 
   queue = {
     'name'        => 'rq_router',
@@ -51,7 +51,7 @@ def create_queues
     'num_workers' => '1',
     'exec_prefix' => '',
   }
-  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or die "Failed to create queue: #{queue}"
+  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
 
   true
 end
