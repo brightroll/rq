@@ -43,7 +43,6 @@ for test in \
    test_htmlutils.rb \
    test_jsonconfigfile.rb \
    test_overrides.rb \
-   test_portaproc.rb \
    test_rule_processor.rb \
    \
    test_rq.sh \
