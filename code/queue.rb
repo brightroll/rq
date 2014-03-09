@@ -182,8 +182,14 @@ module RQ
       worker.pid = child_pid
       worker.num_restarts = 0
       worker.options = options
-      worker
 
+      # Wait up to a second for the worker to start up
+      20.times do
+        break if worker.qc.ping == 'pong' rescue false
+        sleep 0.05
+      end
+
+      worker
     # If anything went wrong at all log it and return nil.
     rescue Exception
       self.log("startup", "Failed to start worker #{options.inspect}: #{$!}")
