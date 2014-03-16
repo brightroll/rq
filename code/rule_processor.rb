@@ -153,7 +153,7 @@ module RQ
 
     def txform_host(old, new)
       # if new has full address, we just use that
-      if new.index("http") == 0
+      if new.start_with?("http")
         return new
       end
 
@@ -162,7 +162,7 @@ module RQ
         new += ':3333'
       end
 
-      if old.index("http") == 0    # if a standard full msg_id
+      if old.start_with?("http")   # if a standard full msg_id
         # just swap out the host
         parts = old.split('/q/', 2)
         "http://#{new}/q/#{parts[1]}"

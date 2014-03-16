@@ -238,7 +238,7 @@ module RQ
         end
       end
 
-      if hostnames.any? {|h| prms['dest'].index(h) == 0}
+      if hostnames.any? { |h| prms['dest'].start_with?(h) }
         q_name = params[:name]
       else
         if (prms['relay_ok'] == 'yes') && (the_method != 'single_que')

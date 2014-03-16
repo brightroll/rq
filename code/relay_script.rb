@@ -108,7 +108,7 @@ remote_delivery = force
 
 # If none of the hostnames on this system are in the dest,
 # this is a remote queue delivery
-if not hostnames.any? {|h| dest.index(h) == 0}
+if not hostnames.any? { |h| dest.start_with?(h) }
   remote_delivery = true
 end
 
@@ -216,7 +216,7 @@ if remote_delivery
   # Idempotently attach any attachments
   if File.exists?('../attach')
     log("attempting sending attach")
-    entries = Dir.entries('../attach').reject { |e| e.index('.') == 0 }
+    entries = Dir.entries('../attach').reject { |e| e.start_with?('.') }
 
     fnames =  entries.select { |e| File.file?("../attach/#{e}") }
     fnames.each do
@@ -362,7 +362,7 @@ log("attempting local send attach")
 
 # Idempotently attach any attachments
 if File.exists?('../attach')
-  entries = Dir.entries('../attach').reject { |e| e.index('.') == 0 }
+  entries = Dir.entries('../attach').reject { |e| e.start_with?('.') }
 
   fnames =  entries.select { |e| File.file?("../attach/#{e}") }
   fnames.each do

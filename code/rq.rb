@@ -60,7 +60,7 @@ class Commands
     q_name = args['dest']
     raise RQ::RqMissingArgument if not q_name
 
-    if q_name.index('http:') == 0
+    if q_name.start_with?('http:')
       raise RQ::RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
       q_name = 'relay'
     end
@@ -83,7 +83,7 @@ class Commands
     q_name = args['dest']
     raise RQ::RqMissingArgument if not q_name
 
-    if q_name.index('http:') == 0
+    if q_name.start_with?('http:')
       raise RQ::RqCannotRelay if !args.has_key?('relay-ok') # throw :halt, [404, 'Sorry - cannot relay message']
       q_name = 'relay'
     end
@@ -217,7 +217,7 @@ class Commands
     q_name = args['dest']
     raise RQ::RqMissingArgument if not q_name
 
-    #if (q_name.index('http:') == 0) && args.has_key?('relay-ok')
+    #if q_name.start_with?('http:') && args.has_key?('relay-ok')
     #  q_name = 'relay'
     #else
     #  throw :halt, [404, 'Sorry - cannot relay message']

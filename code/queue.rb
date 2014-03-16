@@ -807,7 +807,7 @@ module RQ
         new_basename = @queue_path + "/prep/" + new_msg['msg_id']
 
         if File.directory?(old_basename + "/attach/")
-          ents = Dir.entries(old_basename + "/attach/").reject {|i| i.index('.') == 0 }
+          ents = Dir.entries(old_basename + "/attach/").reject { |i| i.start_with?('.') }
           if not ents.empty?
             # simple check for attachment dir
             old_attach_path = old_basename + '/attach/'
@@ -859,7 +859,7 @@ module RQ
         # Now check for attachments
         if options[:read_message] && options[:check_attachments] && File.directory?(basename + "/attach/")
           cwd = Dir.pwd
-          ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
+          ents = Dir.entries(basename + "/attach/").reject { |i| i.start_with?('.') }
           if not ents.empty?
             msg['_attachments'] = { }
             ents.each do |ent|
@@ -894,7 +894,7 @@ module RQ
       }
 
       # IF message already has full remote dest...
-      if msg['dest'].index('http:') == 0
+      if msg['dest'].start_with?('http:')
         res['dest'] = msg['dest']
         q_name = msg['dest'][/\/q\/([^\/]+)/, 1]
         res['queue'] = q_name;
@@ -914,7 +914,7 @@ module RQ
 
         #TODO: deal with symlinks
         # simple early check, ok, now check for pathname
-        return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].index("/") == 0
+        return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].start_with?("/")
         return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
         return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
         return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
@@ -930,7 +930,7 @@ module RQ
         name = msg['name'] || File.basename(msg['pathname'])
 
         # Validate - that it does not have any '/' chars or a '.' prefix
-        if (name.index(".") == 0)
+        if name.start_with?(".")
           return [false, "Attachment name as a dot-file not allowed: #{name}"]
         end
         # Unsafe char removal
@@ -1031,12 +1031,12 @@ module RQ
 
       # prep just has message ids
       basename = @queue_path + '/prep/'
-      @prep = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+      @prep = Dir.entries(basename).reject { |i| i.start_with?('.') }
       @prep.sort!.reverse!
 
       # run msgs just put back into que
       basename = @queue_path + '/run/'
-      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+      messages = Dir.entries(basename).reject { |i| i.start_with?('.') }
       messages.each do |mname|
         begin
           File.rename(basename + mname, @queue_path + '/que/' + mname)
@@ -1048,7 +1048,7 @@ module RQ
 
       # que has actual messages copied
       basename = @queue_path + '/que/'
-      messages = Dir.entries(basename).reject {|i| i.index('.') == 0 }
+      messages = Dir.entries(basename).reject { |i| i.start_with?('.') }
 
       messages.sort!.reverse!
 
@@ -1155,7 +1155,7 @@ module RQ
             due,future,new_dest = parts[1].split('-',3)
             new_due = Time.now.to_i + due.to_i
 
-            if new_dest.index('http') == 0
+            if new_dest.start_with?('http')
               que_name = 'relay'
             else
               que_name = new_dest
@@ -1179,7 +1179,7 @@ module RQ
             attachments = []
 
             if File.directory?(basename + "/attach/")
-              ents = Dir.entries(basename + "/attach/").reject {|i| i.index('.') == 0 }
+              ents = Dir.entries(basename + "/attach/").reject { |i| i.start_with?('.') }
               if not ents.empty?
                 # Cool, lets normalize the paths
                 full_path = File.expand_path(basename + "/attach/")
@@ -1634,33 +1634,33 @@ module RQ
 
       log("REQ [ #{packet} ]")
 
-      if packet.index('ping ') == 0
+      if packet.start_with?('ping ')
         resp = [ "pong" ].to_json
         send_packet(sock, resp)
         return
       end
 
-      if packet.index('uptime ') == 0
+      if packet.start_with?('uptime ')
         resp = [(Time.now - @start_time).to_i, ].to_json
         send_packet(sock, resp)
         return
       end
 
-      if packet.index('config ') == 0
+      if packet.start_with?('config ')
         # Sadly there's no struct-to-hash method until Ruby 2.0
         resp = [ 'ok', Hash[@config.each_pair.to_a]].to_json
         send_packet(sock, resp)
         return
       end
 
-      if packet.index('status') == 0
+      if packet.start_with?('status')
         @status.update!
         resp = [ @status.admin_status, @status.oper_status ].to_json
         send_packet(sock, resp)
         return
       end
 
-      if packet.index('shutdown') == 0
+      if packet.start_with?('shutdown')
         resp = [ 'ok' ].to_json
         send_packet(sock, resp)
         shutdown!
@@ -1675,7 +1675,7 @@ module RQ
         return
       end
 
-      if packet.index('create_message') == 0
+      if packet.start_with?('create_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1692,7 +1692,7 @@ module RQ
         return
       end
 
-      if packet.index('single_que') == 0
+      if packet.start_with?('single_que')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1713,7 +1713,7 @@ module RQ
         return
       end
 
-      if packet.index('num_messages') == 0
+      if packet.start_with?('num_messages')
         status = { }
         status['prep']     = @prep.length
         status['que']      = @que.length
@@ -1721,14 +1721,14 @@ module RQ
         status['pause']    = []
         status['done']     = RQ::HashDir.num_entries(@queue_path + "/done")
         status['relayed']  = RQ::HashDir.num_entries(@queue_path + "/relayed/")
-        status['err']      = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }.length
+        status['err']      = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.length
 
         resp = status.to_json
         send_packet(sock, resp)
         return
       end
 
-      if packet.index('messages') == 0
+      if packet.start_with?('messages')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
         if not options.has_key?('state')
@@ -1747,7 +1747,7 @@ module RQ
         elsif options['state'] == 'relayed'
           status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
         elsif options['state'] == 'err'
-          status = Dir.entries(@queue_path + "/err/").reject {|i| i.index('.') == 0 }
+          status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }
         else
           status = [ "fail", "invalid 'state' field (#{options['state']})"]
         end
@@ -1757,7 +1757,7 @@ module RQ
         return
       end
 
-      if packet.index('prep_message') == 0
+      if packet.start_with?('prep_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1773,7 +1773,7 @@ module RQ
         return
       end
 
-      if packet.index('attach_message') == 0
+      if packet.start_with?('attach_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1797,7 +1797,7 @@ module RQ
         return
       end
 
-      if packet.index('delete_attach_message') == 0
+      if packet.start_with?('delete_attach_message')
         # Params: msg_id, attachment_name
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
@@ -1823,7 +1823,7 @@ module RQ
         return
       end
 
-      if packet.index('commit_message') == 0
+      if packet.start_with?('commit_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1847,7 +1847,7 @@ module RQ
         return
       end
 
-      if packet.index('get_message ') == 0
+      if packet.start_with?('get_message ')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1875,7 +1875,7 @@ module RQ
         return
       end
 
-      if packet.index('get_message_state ') == 0
+      if packet.start_with?('get_message_state ')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1899,7 +1899,7 @@ module RQ
         return
       end
 
-      if packet.index('get_message_status ') == 0
+      if packet.start_with?('get_message_status ')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1930,7 +1930,7 @@ module RQ
         return
       end
 
-      if packet.index('delete_message') == 0
+      if packet.start_with?('delete_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1953,7 +1953,7 @@ module RQ
         return
       end
 
-      if packet.index('run_message') == 0
+      if packet.start_with?('run_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
@@ -1982,7 +1982,7 @@ module RQ
         return
       end
 
-      if packet.index('clone_message') == 0
+      if packet.start_with?('clone_message')
         json = packet.split(' ', 2)[1]
         options = JSON.parse(json)
 
