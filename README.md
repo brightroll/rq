@@ -173,20 +173,10 @@ so drop it.
 <a name='section_Your_First_Queue_Script'></a>
 ## Your First Queue Script
 
-When developing an RQ script, you should have a problem in mind that requires just a few parameters.
-
-Next you develop a script. You can skip down just a bit to see some examples.
-
-Typically, you will setup RQ on your development enviornment. Then you will setup a `queue` for your particular
-script. Then via the web UI, you will create a new message and submit it. In another tab, you can hit refresh
-to the state of the message. If it succeeds, you are done. If not, just edit the code, hit refresh on the tab
-that created the message (to resubmit the form and create a new test message), and check on the queue to see if it worked.
-
-Essentially, this turns into a
-
-
 <a name='section_Ruby'></a>
 ### Ruby
+
+Here's a simple example script in Ruby:
 
 ``` ruby
 #!/usr/bin/env ruby
@@ -230,13 +220,9 @@ exit(0)
 <a name='section_Bash'></a>
 ### Bash
 
-Here is a BASH script sample. Yes, even a bash script can handle RQ messages (which was surprising to me!)
-The main drawback with BASH as an RQ script is how it deals with functions. I would only use it for
-fairly simple scripts.
-
+Here's a simple example script in Bash:
 
 ``` bash
-
 #!/bin/bash
 
 # The variable RQ_WRITE is a pipe to the RQ queue
@@ -247,7 +233,6 @@ function write_status {
 # The variable RQ_READ is a pipe from the RQ queue
 function read_status {
   read -u $RQ_READ
-  return $REPLY
 }
 
 write_status "run"  "Looking for RQ environment variables"
@@ -275,7 +260,7 @@ if [ "$RQ_PARAM1" == "duplicate" ]; then
   echo "This script should create a duplicate to the test_nop queue"
   write_status "run" "start dup"
   write_status "dup" "0-X-test_nop"
-  $REPLY=read_status
+  read_status
 
   if [ "$REPLY" != "ok" ]; then
     echo "Sorry, system didn't dup test message properly : $REPLY"
