@@ -239,129 +239,56 @@ fairly simple scripts.
 
 #!/bin/bash
 
-# File Descriptor #3 is pipe back up to RQ parent watcher process
+# The variable RQ_WRITE is a pipe to the RQ queue
 function write_status {
-  echo $1 $2 >&3
+  echo $1 $2 >&$RQ_WRITE
 }
 
+# The variable RQ_READ is a pipe from the RQ queue
+function read_status {
+  read -u $RQ_READ
+  return $REPLY
+}
 
-write_status 'run'  "just started"
+write_status "run"  "Looking for RQ environment variables"
 
-echo "TEST TEST TEST"
-
-pwd
-
-if [ "$RQ_PARAM1" == "html" ]; then
-  echo "html unsafe chars test"
-  echo "<HTML "UNSAFE" 'CHARS' TEST & OTHER FRIENDS>"
-  echo ""
-fi
-
+echo "----------- RQ env ---------"
 env | grep RQ_
-
-echo "----------- all env ---------"
-env
 echo "-----------------------------"
 
-lsof -p $$
-
-write_status 'run' "post lsof"
+write_status "run" "Finished looking for RQ environment variables"
 
 if [ "$RQ_PARAM1" == "slow" ]; then
   echo "This script should execute slowly"
-  write_status 'run' "start sleeping for 30"
+  write_status "run" "start sleeping for 30"
   sleep 30
-  write_status 'run' "done sleeping for 30"
+  write_status "run" "done sleeping for 30"
 fi
 
-if [ "$RQ_PARAM1" == "slow1" ]; then
-  echo "This script should execute slowly"
-  write_status 'run' "start sleeping for 1"
-  sleep 1
-  write_status 'run' "done sleeping for 1"
-fi
-
-if [ "$RQ_PARAM1" == "slow3" ]; then
-  echo "This script should execute slowly"
-  write_status 'run' "start sleeping for 3"
-  sleep 3
-  write_status 'run' "done sleeping for 3"
-fi
-
-if [ "$RQ_PARAM2" == "err" ]; then
+if [ "$RQ_PARAM1" == "err" ]; then
   echo "This script should end up with err status"
-  write_status 'err' "by design"
+  write_status "err" "by design"
   exit 0
 fi
 
-if [ "$RQ_PARAM1" == "dup_direct" ]; then
-  # Todo: need something better than a free roaming rm
-  rm -f "$RQ_PARAM2"
+if [ "$RQ_PARAM1" == "duplicate" ]; then
   echo "This script should create a duplicate to the test_nop queue"
-  write_status 'run' "start dup"
-  write_status 'dup' "0-X-test_nop"
-  read_status
-  echo "Got: [${RETURN_VAR[@]}]"
+  write_status "run" "start dup"
+  write_status "dup" "0-X-test_nop"
+  $REPLY=read_status
 
-  if [ "${RETURN_VAR[0]}" != "ok" ]; then
-    echo "Sorry, system didn't dup test message properly : ${RETURN_VAR}"
-    echo "But we exit with an 'ok' the result file won't get generated"
+  if [ "$REPLY" != "ok" ]; then
+    echo "Sorry, system didn't dup test message properly : $REPLY"
+    write_status "err" "duplication failed"
+    exit 0
   fi
 
-  if [ "${RETURN_VAR[0]}" == "ok" ]; then
-    # Old school IPC
-    echo "${RETURN_VAR[1]}" > "$RQ_PARAM2"
+  if [ "$REPLY" == "ok" ]; then
+    write_status "run" "done dup"
   fi
-  write_status 'run' "done dup"
 fi
 
-if [ "$RQ_PARAM1" == "dup_fail" ]; then
-  # Todo: need something better than a free roaming rm
-  rm -f "$RQ_PARAM2"
-  echo "This script should create a duplicate to a non-existent queue"
-  write_status 'run' "start dup"
-  write_status 'dup' "0-X-nope_this_q_does_not_exist"
-  read_status
-  echo "Got: [${RETURN_VAR[@]}]"
-  # Old school IPC
-  echo "${RETURN_VAR[@]}" > "$RQ_PARAM2"
-  write_status 'run' "done dup"
-fi
-
-if [ "$RQ_PARAM1" == "resend1" ]; then
-    if [ "$RQ_COUNT" == "0" ]; then
-        echo "This script should resend the current job at a new time"
-        write_status 'resend' "2"
-        exit 0
-    fi
-fi
-
-if [ "$RQ_PARAM1" == "resend2" ]; then
-    if [ "$RQ_COUNT" -lt 6 ]; then
-        echo "This script should resend the current job at a new time"
-        echo "count: ${RQ_COUNT}"
-        write_status 'resend' "0"
-        exit 0
-    fi
-fi
-
-if [ "$RQ_PARAM2" == "resend1" ]; then
-    if [ "$RQ_COUNT" == "0" ]; then
-        echo "This script should resend the current job at a new time"
-        write_status 'resend' "8"
-        exit 0
-    fi
-fi
-
-if [ "$RQ_PARAM1" == "symlink" ]; then
-  echo "This script should end up with a done status"
-  echo $0
-  write_status 'done' "${0}"
-  exit 0
-fi
-
-echo "done"
-write_status 'done' "done sleeping"
+write_status "done" "script completed happily"
 ```
 
 <a name='section_Queue_Script_API'></a>
