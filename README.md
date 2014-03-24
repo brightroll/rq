@@ -78,8 +78,7 @@ Table Of Contents
   * [Pipe Protocol](#section_Pipe_Protocol)
 * [Special Queues](#section_Special_Queues)
 * [Internals](#section_Internals)
-  * [Persistence](#section_Persistence)
-  * [Relay](#section_Relay)
+  * [Queue States](#section_Queue_States)
 * [Contributors](#section_Contributors)
 
 
@@ -400,10 +399,8 @@ The web server exists to give RQ a human (HTML) and non-human (REST) interface
 using the HTTP standard. This makes it easy to use via a browser, cURL, or with
 just about any HTTP lib that comes with any language.
 
-<a name='section_Persistence'></a>
-### Persistence
-
-The queue states
+<a name='section_Queue_States'></a>
+### Queue States
 
 ```
 prep
@@ -447,9 +444,6 @@ ok, commit
  ok |        <-----
   -> mark job done
 ```
-
-<a name='section_Relay'></a>
-### Relay
 
 <a name='section_Contributors'></a>
 ## Contributors
