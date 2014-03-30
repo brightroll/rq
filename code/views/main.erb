@@ -39,17 +39,6 @@
 </table>
 <% end %>
 
-<div id="sub-header" style="margin-top: 20px">
-  <h4>Aliases</h4>
-  <% if File.exist?('./config/aliases.json') %>
-    <pre id="alias-json">
-      <%= File.open('./config/aliases.json').read %>
-    </pre>
-  <% else %>
-    <p>No aliases configured (missing <code>rq/config/aliases.json</code>).</p>
-  <% end %>
-</div>
-
 <div class="meta">
 <% if  RQ::QueueMgrClient.running? %>
   <span class="green">QUEUE MGR is OPERATIONAL</span>

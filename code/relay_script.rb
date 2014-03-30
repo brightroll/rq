@@ -83,15 +83,12 @@ if count > 15
 end
 
 # Get destination queue
-
-hostnames = ENV['RQ_HOSTNAMES'].split(" ")
 dest = ENV['RQ_DEST']
-
-log("this - #{hostnames[0]}")
 log("dest - #{dest}")
 
 force = false
 fake_fail = false
+remote_delivery = true
 
 if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') &&
   (ENV['RQ_PARAM2'] == 'the_mighty_rq_force')
@@ -102,14 +99,6 @@ if (ENV['RQ_DEST'] == 'http://127.0.0.1:3333/q/test') &&
     fake_fail = true
     log("TEST MODE fake_fail = true")
   end
-end
-
-remote_delivery = force
-
-# If none of the hostnames on this system are in the dest,
-# this is a remote queue delivery
-if not hostnames.any? { |h| dest.start_with?(h) }
-  remote_delivery = true
 end
 
 # If this was a force_remote

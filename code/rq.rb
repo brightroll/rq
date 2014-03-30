@@ -54,7 +54,6 @@ class Commands
   # Create a message
   #   - 'dest' queue
   #   - 'src' id
-  #   - relay_ok = default yes
   #   - param[1234]
   def cmd_sendmesg(args)
     q_name = args['dest']
@@ -216,12 +215,6 @@ class Commands
   def cmd_single_que(args)
     q_name = args['dest']
     raise RQ::RqMissingArgument if not q_name
-
-    #if q_name.start_with?('http:') && args.has_key?('relay-ok')
-    #  q_name = 'relay'
-    #else
-    #  throw :halt, [404, 'Sorry - cannot relay message']
-    #end
 
     qc = get_queue_client(q_name)
 
