@@ -223,37 +223,13 @@ module RQ
         prms['max_count'] = prms['max_count'].to_i
       end
 
-      the_method = prms.fetch("_method", 'commit')
-
-      # request.host and request.port are setup by the config file
-      hostnames = [ "http://#{request.host}:#{request.port}/" ]
-      if File.exists? "./config/aliases.json"
-        begin
-          js_data = JSON.parse(File.read("./config/aliases.json"))
-          hostnames.concat(js_data['hostnames'] || [])
-        rescue
-          p $!
-          p "BAD aliases.json - could not parse"
-          throw :halt, [404, "404 - Couldn't parse existing aliases.json file."]
-        end
-      end
-
-      if hostnames.any? { |h| prms['dest'].start_with?(h) }
-        q_name = params[:name]
-      else
-        if (prms['relay_ok'] == 'yes') && (the_method != 'single_que')
-          q_name = 'relay' # Relay is the special Q
-        else
-          throw :halt, [404, "404 - Not this Queue. Relaying not allowed"]
-        end
-      end
-
       begin
-        qc = get_queueclient(q_name)
+        qc = get_queueclient(params[:name])
       rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
+      the_method = prms.fetch("_method", 'commit')
       if the_method == 'prep'
         result = qc.prep_message(prms)
       elsif the_method == 'single_que'
@@ -271,7 +247,7 @@ module RQ
       if api_call == 'json'
         "#{result.to_json}"
       else
-        erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => q_name }
+        erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => qc.name }
       end
     end
 

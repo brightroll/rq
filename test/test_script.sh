@@ -99,7 +99,8 @@ if [ "$RQ_PARAM1" == "dup_relay" ]; then
   rm -f "$RQ_PARAM2"
   echo "This script should create a duplicate to the test_nop queue"
   write_status 'run' "start dup"
-  write_status 'dup' "0-X-${RQ_HOST}/q/test_nop"
+  # Bash syntax to remove a trailing slash if present: ${variable%/}
+  write_status 'dup' "0-X-${RQ_HOST%/}/q/test_nop"
   read_status
   echo "Got: [${RETURN_VAR[@]}]"
 
