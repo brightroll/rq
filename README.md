@@ -295,7 +295,6 @@ Variable        | Description
 RQ_SCRIPT       | The script as is defined in config file
 RQ_REALSCRIPT   | The fully realized path (symbolic links followed, etc)
 RQ_HOST         | Base URL of host (Ex. "http://localhost:3333/")
-RQ_HOSTNAMES    | Space separate list of host Base URL aliases (Ex. "http://localhost:3333/ http://butter:1234/")
 RQ_DEST         | Msg Dest Queue (Ex. http://localhost:3333/q/test/)
 RQ_DEST_QUEUE   | Just Queue Name (Ex. 'test')
 RQ_MSG_ID       | Short msg id (Ex. "20091109.0558.57.780")
