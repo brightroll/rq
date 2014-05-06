@@ -486,35 +486,33 @@ module RQ
     def alloc_id(msg)
       # Simple time insertion system - should work since single threaded
       times = 0
-      begin
-        z = Time.now.getutc
-        name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
-        Dir.mkdir(@queue_path + "/prep/" + name)
-        stat = File.stat(@queue_path + "/prep/" + name)
-        new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
-        File.rename(@queue_path + "/prep/" + name, @queue_path + "/prep/" + new_name)
-        @prep << new_name
-        msg["msg_id"] = new_name
-        return msg
-      rescue Exception
-        times += 1
-        log("FATAL - couldn't ALLOC ID times: #{times} #{$!}")
-        if times > 10
-          log("FAILED TO ALLOC ID")
-          return nil
-        end
-        sleep 0.001 # A tiny pause to prevent consuming all CPU
-        retry
+      z = Time.now.getutc
+      name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
+      Dir.mkdir(@queue_path + "/prep/" + name)
+      stat = File.stat(@queue_path + "/prep/" + name)
+      new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
+      File.rename(@queue_path + "/prep/" + name, @queue_path + "/prep/" + new_name)
+      @prep << new_name
+      msg["msg_id"] = new_name
+    rescue
+      times += 1
+      log("FATAL - couldn't ALLOC ID times: #{times} #{$!}")
+      if times > 10
+        log("FAILED TO ALLOC ID")
+        raise
       end
-      nil
+      sleep 0.001
+      retry
+    else
+      msg
     end
 
     # This copies certain fields over and insures consistency in a new
     # message
     # It is called right after alloc_id
     def check_msg(msg, input)
-      # Required parameter
-      return false unless input.has_key?('dest')
+      raise 'input missing required "dest" parameter' unless input.has_key?('dest')
+
       msg['dest'] = input['dest']
 
       # If orig_msg_id is set already, then use it
@@ -529,8 +527,6 @@ module RQ
         next unless input.has_key?(key)
         msg[key] = input[key]
       end
-
-      return true
     end
 
     def store_msg(msg, que = 'prep')
@@ -767,49 +763,49 @@ module RQ
     end
 
     def clone_msg(msg)
-      resp = nil
-
       state = lookup_msg(msg, '*')
-      return resp unless state
-      return resp unless ['err', 'relayed', 'done'].include? state
-
+      return nil unless state
+      return nil unless ['err', 'relayed', 'done'].include? state
 
       old_msg, old_basename = get_message(msg, state)
 
       new_msg = { }
-      if alloc_id(new_msg) and check_msg(new_msg, old_msg)
-        # check_msg copies only required fields, but still copies count
-        # so we delete that as well
-        new_msg['count'] = 0
-        new_msg['cloned_from'] = old_msg['msg_id']
+      alloc_id(new_msg)
+      check_msg(new_msg, old_msg)
 
-        # Now check for, and copy attachments
-        # Assumes that original message guaranteed attachment integrity
-        new_basename = @queue_path + "/prep/" + new_msg['msg_id']
+      # check_msg copies only required fields, but still copies count
+      # so we delete that as well
+      new_msg['count'] = 0
+      new_msg['cloned_from'] = old_msg['msg_id']
 
-        if File.directory?(old_basename + "/attach/")
-          ents = Dir.entries(old_basename + "/attach/").reject { |i| i.start_with?('.') }
-          if not ents.empty?
-            # simple check for attachment dir
-            old_attach_path = old_basename + '/attach/'
-            new_attach_path = new_basename + '/attach/'
-            Dir.mkdir(new_attach_path)
+      # Now check for, and copy attachments
+      # Assumes that original message guaranteed attachment integrity
+      new_basename = @queue_path + "/prep/" + new_msg['msg_id']
 
-            ents.each do |ent|
-              # Now clone attachments by hard_linking to them in new message
-              new_path = new_attach_path + ent
-              old_path = old_attach_path + ent
-              File.link(old_path, new_path)
-            end
+      if File.directory?(old_basename + "/attach/")
+        ents = Dir.entries(old_basename + "/attach/").reject {|i| i.start_with?('.') }
+        if not ents.empty?
+          # simple check for attachment dir
+          old_attach_path = old_basename + '/attach/'
+          new_attach_path = new_basename + '/attach/'
+          Dir.mkdir(new_attach_path)
+
+          ents.each do |ent|
+            # Now clone attachments by hard_linking to them in new message
+            new_path = new_attach_path + ent
+            old_path = old_attach_path + ent
+            File.link(old_path, new_path)
           end
         end
-
-        store_msg(new_msg)
-        que(new_msg)
-        msg_id = gen_full_msg_id(new_msg)
-        resp = msg_id
       end
-      resp
+
+      store_msg(new_msg)
+      que(new_msg)
+      msg_id = gen_full_msg_id(new_msg)
+    rescue Exception => e
+      [ "fail", e.message].to_json
+    else
+      msg_id
     end
 
     def get_message(params, state,
@@ -864,8 +860,7 @@ module RQ
     end
 
     def gen_full_msg_id(msg)
-      full_name = "http://#{@host}:#{@port}/q/#{@name}/#{msg['msg_id']}"
-      return full_name
+      "http://#{@host}:#{@port}/q/#{@name}/#{msg['msg_id']}"
     end
 
     def gen_full_dest(msg)
@@ -1661,14 +1656,17 @@ module RQ
         options = JSON.parse(json)
 
         msg = { }
-        if alloc_id(msg) and check_msg(msg, options)
+        begin
+          alloc_id(msg)
+          check_msg(msg, options)
           store_msg(msg)
           que(msg)
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
-        else
-          resp = [ "fail", "unknown reason"].to_json
+        rescue Exception => e
+          resp = [ "fail", e.message].to_json
         end
+
         send_packet(sock, resp)
         return
       end
@@ -1682,13 +1680,17 @@ module RQ
         if not @que.empty?
           msg_id = gen_full_msg_id(@que[0])
           resp = [ "ok", msg_id ].to_json
-        elsif alloc_id(msg) and check_msg(msg, options)
-          store_msg(msg)
-          que(msg)
-          msg_id = gen_full_msg_id(msg)
-          resp = [ "ok", msg_id ].to_json
         else
-          resp = [ "fail", "unknown reason"].to_json
+          begin
+            alloc_id(msg)
+            check_msg(msg, options)
+            store_msg(msg)
+            que(msg)
+            msg_id = gen_full_msg_id(msg)
+            resp = [ "ok", msg_id ].to_json
+          rescue Exception => e
+            resp = [ "fail", e.mssage].to_json
+          end
         end
         send_packet(sock, resp)
         return
@@ -1743,12 +1745,14 @@ module RQ
         options = JSON.parse(json)
 
         msg = { }
-        if alloc_id(msg) and check_msg(msg, options)
+        begin
+          alloc_id(msg)
+          check_msg(msg, options)
           store_msg(msg)
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
-        else
-          resp = [ "fail", "unknown reason"].to_json
+        rescue Exception => e
+          resp = [ "fail", e.message].to_json
         end
         send_packet(sock, resp)
         return
