@@ -803,7 +803,7 @@ module RQ
       que(new_msg)
       msg_id = gen_full_msg_id(new_msg)
     rescue Exception => e
-      [ "fail", e.message].to_json
+      ["fail", e.message].to_json
     else
       msg_id
     end
@@ -1664,7 +1664,7 @@ module RQ
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
         rescue Exception => e
-          resp = [ "fail", e.message].to_json
+          resp = ["fail", e.message].to_json
         end
 
         send_packet(sock, resp)
@@ -1689,7 +1689,7 @@ module RQ
             msg_id = gen_full_msg_id(msg)
             resp = [ "ok", msg_id ].to_json
           rescue Exception => e
-            resp = [ "fail", e.mssage].to_json
+            resp = ["fail", e.mssage].to_json
           end
         end
         send_packet(sock, resp)
@@ -1752,7 +1752,7 @@ module RQ
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
         rescue Exception => e
-          resp = [ "fail", e.message].to_json
+          resp = ["fail", e.message].to_json
         end
         send_packet(sock, resp)
         return
