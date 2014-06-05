@@ -417,10 +417,9 @@ module RQ
                     worker.child_write_pipe = nil
                     log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
                   else
-                    results = RQ::Queue.start_process(worker.options)
-                    log("STARTED [ #{worker.options['name']} - #{results[0]} ]")
-                    worker.pid = results[0]
-                    worker.child_write_pipe = results[1]
+                    new_worker = RQ::Queue.start_process(worker.options)
+                    log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
+                    worker = new_worker
                   end
                 elsif worker.status == "DELETE"
                   RQ::Queue.delete(worker.name)
