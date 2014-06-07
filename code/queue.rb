@@ -682,54 +682,45 @@ module RQ
       run_queue_script!(msg)
     end
 
-    def lookup_msg(msg, state = 'prep', options={:consistency => true})
+    def msg_state_prep?(msg)
       msg_id = msg['msg_id']
-      basename = nil
-      if state == 'prep'
-        basename = @queue_path + "/#{state}/" + msg_id
-        if @prep.include?(msg_id) == false
-          return false
-        end
-      end
-      if state == '*'
-        while true
-          if @prep.include?(msg_id)
-            state = 'prep'
-            break
-          end
-          if not Dir.glob("#{@queue_path}/que/#{msg_id}").empty?
-            state = 'que'
-            break
-          end
-          if @run.find { |o| o['msg_id'] == msg_id }
-            state = 'run'
-            break
-          end
-          if RQ::HashDir.exist("#{@queue_path}/done", msg_id)
-            state = 'done'
-            basename = RQ::HashDir.path_for("#{@queue_path}/done", msg_id)
-            break
-          end
-          if RQ::HashDir.exist("#{@queue_path}/relayed", msg_id)
-            state = 'relayed'
-            basename = RQ::HashDir.path_for("#{@queue_path}/relayed", msg_id)
-            break
-          end
-          if not Dir.glob("#{@queue_path}/err/#{msg_id}").empty?
-            state = 'err'
-            break
-          end
-          if not Dir.glob("#{@queue_path}/pause/#{msg_id}").empty?
-            state = 'pause'
-            break
-          end
+      basename = @queue_path + "/prep/" + msg_id
 
-          break
+      return false unless @prep.include?(msg_id)
+
+      if not File.exists?(basename)
+        log("WARNING - serious queue inconsistency #{msg_id}")
+        log("WARNING - #{msg_id} in memory but not on disk")
+        return false
+      end
+
+      true
+    end
+
+    def msg_state(msg, options={:consistency => true})
+      msg_id = msg['msg_id']
+      state = \
+        if @prep.include?(msg_id)
+          'prep'
+        elsif not Dir.glob("#{@queue_path}/que/#{msg_id}").empty?
+          'que'
+        elsif @run.find { |o| o['msg_id'] == msg_id }
+          'run'
+        elsif RQ::HashDir.exist("#{@queue_path}/done", msg_id)
+          basename = RQ::HashDir.path_for("#{@queue_path}/done", msg_id)
+          'done'
+        elsif RQ::HashDir.exist("#{@queue_path}/relayed", msg_id)
+          basename = RQ::HashDir.path_for("#{@queue_path}/relayed", msg_id)
+          'relayed'
+        elsif not Dir.glob("#{@queue_path}/err/#{msg_id}").empty?
+          'err'
+        elsif not Dir.glob("#{@queue_path}/pause/#{msg_id}").empty?
+          'pause'
         end
 
-        return false unless state != '*'
-        basename ||= @queue_path + "/#{state}/" + msg_id
-      end
+      return false unless state
+      basename ||= @queue_path + "/#{state}/" + msg_id
+
       if options[:consistency]
         if not File.exists?(basename)
           log("WARNING - serious queue inconsistency #{msg_id}")
@@ -737,11 +728,12 @@ module RQ
           return false
         end
       end
-      return state
+
+      state
     end
 
     def delete_msg!(msg)
-      state = lookup_msg(msg, '*')
+      state = msg_state(msg)
       return nil unless state
 
       basename = @queue_path + "/#{state}/" + msg['msg_id']
@@ -763,7 +755,7 @@ module RQ
     end
 
     def clone_msg(msg)
-      state = lookup_msg(msg, '*')
+      state = msg_state(msg)
       return nil unless state
       return nil unless ['err', 'relayed', 'done'].include? state
 
@@ -1752,7 +1744,7 @@ module RQ
           return
         end
 
-        if lookup_msg(options)
+        if msg_state_prep?(options)
           success, attach_message = attach_msg(options)
           if success
             resp = [ "ok", attach_message ].to_json
@@ -1772,7 +1764,7 @@ module RQ
           return
         end
 
-        state = lookup_msg(options, '*')
+        state = msg_state(options)
         if state
           if state != 'prep'
             resp = [ "fail", "msg not in prep" ].to_json
@@ -1795,7 +1787,7 @@ module RQ
 
         resp = [ "fail", "unknown reason"].to_json
 
-        if lookup_msg(options)
+        if msg_state_prep?(options)
           if que(options)
             resp = [ "ok", "msg commited" ].to_json
           end
@@ -1815,7 +1807,7 @@ module RQ
 
         resp = [ "fail", "unknown reason"].to_json
 
-        state = lookup_msg(options, '*')
+        state = msg_state(options)
         if state
           msg, msg_path = get_message(options, state)
           if msg
@@ -1840,7 +1832,7 @@ module RQ
         resp = [ "fail", "unknown reason"].to_json
 
         # turn off consistency for a little more speed
-        state = lookup_msg(options, '*', {:consistency => false})
+        state = msg_state(options, {:consistency => false})
         if state
           resp = [ "ok", state ].to_json
         else
@@ -1860,7 +1852,7 @@ module RQ
         resp = [ "fail", "unknown reason"].to_json
 
         # turn off consistency for a little more speed
-        state = lookup_msg(options, '*', {:consistency => false})
+        state = msg_state(options, {:consistency => false})
         if state
           msg, msg_path = get_message(options,
                                       state,
@@ -1886,7 +1878,7 @@ module RQ
 
         resp = [ "fail", "unknown reason"].to_json
 
-        if lookup_msg(options, '*')
+        if msg_state(options)
           delete_msg!(options)
           resp = [ "ok", "msg deleted" ].to_json
         else
@@ -1905,7 +1897,7 @@ module RQ
 
         resp = [ "fail", "unknown reason"].to_json
 
-        state = lookup_msg(options, '*')
+        state = msg_state(options)
         if state == 'que'
           # Jump to the front of the queue
           ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
@@ -1930,7 +1922,7 @@ module RQ
 
         resp = [ "fail", "unknown reason"].to_json
 
-        state = lookup_msg(options, '*')
+        state = msg_state(options)
         if state
           if ['err', 'relayed', 'done'].include? state
             msg_id = clone_msg(options)
