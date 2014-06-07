@@ -1603,40 +1603,37 @@ module RQ
     end
 
     def handle_request(sock)
-
       packet = read_packet(sock)
+      return unless packet
 
-      return if packet == nil
+      cmd, arg = packet.split(' ', 2)
+      log("REQ [ #{cmd} #{arg} ]")
 
-      log("REQ [ #{packet} ]")
-
-      if packet.start_with?('ping ')
-        resp = [ "pong" ].to_json
+      # These commands do not take an argument, and always respond
+      case cmd
+      when 'ping'
+        resp = [ 'pong' ].to_json
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('uptime ')
+      when 'uptime'
         resp = [(Time.now - @start_time).to_i, ].to_json
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('config ')
+      when 'config'
         # Sadly there's no struct-to-hash method until Ruby 2.0
         resp = [ 'ok', Hash[@config.each_pair.to_a]].to_json
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('status')
+      when 'status'
         @status.update!
         resp = [ @status.admin_status, @status.oper_status ].to_json
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('shutdown')
+      when 'shutdown'
         resp = [ 'ok' ].to_json
         send_packet(sock, resp)
         shutdown!
@@ -1651,10 +1648,11 @@ module RQ
         return
       end
 
-      if packet.start_with?('create_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
+      # These commands take arguments
+      options = JSON.parse(arg) rescue nil
 
+      case cmd
+      when 'create_message'
         msg = { }
         begin
           alloc_id(msg)
@@ -1669,12 +1667,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('single_que')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'single_que'
         msg = { }
 
         if not @que.empty?
@@ -1694,9 +1688,8 @@ module RQ
         end
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('num_messages')
+      when 'num_messages'
         status = { }
         status['prep']     = @prep.length
         status['que']      = @que.length
@@ -1709,27 +1702,26 @@ module RQ
         resp = status.to_json
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('messages')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
+      when 'messages'
         if not options.has_key?('state')
           resp = [ "fail", "lacking 'state' field"].to_json
           send_packet(sock, resp)
           return
         end
-        if options['state'] == 'prep'
+
+        case options['state']
+        when 'prep'
            status = @prep
-        elsif options['state'] == 'que'
+        when 'que'
           status = @que.map { |m| [m['msg_id'], m['due']] }
-        elsif options['state'] == 'run'
+        when 'run'
           status = @run.map { |m| [m['msg_id'], m['status']] }
-        elsif options['state'] == 'done'
+        when 'done'
           status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
-        elsif options['state'] == 'relayed'
+        when 'relayed'
           status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
-        elsif options['state'] == 'err'
+        when 'err'
           status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }
         else
           status = [ "fail", "invalid 'state' field (#{options['state']})"]
@@ -1738,12 +1730,8 @@ module RQ
         resp = status.to_json
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('prep_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'prep_message'
         msg = { }
         begin
           alloc_id(msg)
@@ -1756,12 +1744,8 @@ module RQ
         end
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('attach_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'attach_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1780,13 +1764,8 @@ module RQ
         end
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('delete_attach_message')
-        # Params: msg_id, attachment_name
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'delete_attach_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1806,12 +1785,8 @@ module RQ
         end
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('commit_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'commit_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1830,12 +1805,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('get_message ')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'get_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1858,12 +1829,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('get_message_state ')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'get_message_state'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1882,12 +1849,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('get_message_status ')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'get_message_status'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1913,12 +1876,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('delete_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'delete_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1936,12 +1895,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('run_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'run_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1965,12 +1920,8 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      if packet.start_with?('clone_message')
-        json = packet.split(' ', 2)[1]
-        options = JSON.parse(json)
-
+      when 'clone_message'
         if not options.has_key?('msg_id')
           resp = [ "fail", "lacking 'msg_id' field"].to_json
           send_packet(sock, resp)
@@ -1997,10 +1948,11 @@ module RQ
 
         send_packet(sock, resp)
         return
-      end
 
-      send_packet(sock, '[ "ERROR" ]')
-      log("RESP [ ERROR ] - Unhandled message")
+      else
+        send_packet(sock, '[ "ERROR" ]')
+        log("RESP [ ERROR ] - Unhandled message")
+      end
     end
 
   end
