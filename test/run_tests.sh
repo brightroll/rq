@@ -40,7 +40,6 @@ for test in \
    test_adminoper.rb \
    test_config_change.rb \
    test_hashdir.rb \
-   test_htmlutils.rb \
    test_jsonconfigfile.rb \
    test_overrides.rb \
    test_rule_processor.rb \
