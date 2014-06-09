@@ -366,6 +366,7 @@ module RQ
 
           #RQ::Queue.log(job_path, "running #{script_path}")
 
+          ENV["RQ_VER"] = RQ_VER
           ENV["RQ_SCRIPT"] = @config.script
           ENV["RQ_REALSCRIPT"] = script_path
           ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"

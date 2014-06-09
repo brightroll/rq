@@ -31,9 +31,6 @@ module RQ
     end
 
     def load_config
-      ENV["RQ_VER"] = VERSION_NUMBER
-      ENV["RQ_SEMVER"] = SEMANTIC_VERSION_NUMBER
-
       begin
         data = File.read('config/config.json')
         @config = JSON.parse(data)
@@ -100,7 +97,7 @@ module RQ
         log("RESP [ environment - #{ENV['RQ_ENV']} ]")
 
       when 'version'
-        data = [ ENV['RQ_VER'], ENV['RQ_SEMVER'] ].to_json
+        data = [ RQ_VER ].to_json
         sock.send(data, 0)
         sock.close
         log("RESP [ version - #{data} ]")
