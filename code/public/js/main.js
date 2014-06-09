@@ -9,11 +9,6 @@ $(function() {
   var last_file_start = 0;
   var last_file_end = BUFFER_SIZE;
 
-  function clone(obj) {
-    var p = Object.getPrototypeOf(obj);
-    return Object.create(p);
-  };
-
   function process(txt) {
 
     if (txt.length == 0) return;
@@ -42,7 +37,7 @@ $(function() {
 
     // Now preserve state of a2hObj for multi-line ansi
     // and do throw-away processing of fragment
-    var a2hObjFrag = clone(a2hObj);
+    var a2hObjFrag = $.extend({}, a2hObj);
     var f1 = a2hObjFrag.escape_for_html(new_fragment);
     var f2 = a2hObjFrag.linkify(f1);
     var f3 = a2hObjFrag.ansi_to_html(f2);
