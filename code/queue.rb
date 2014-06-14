@@ -866,7 +866,7 @@ module RQ
       if msg['dest'].start_with?('http:')
         res['dest'] = msg['dest']
         q_name = msg['dest'][/\/q\/([^\/]+)/, 1]
-        res['queue'] = q_name;
+        res['queue'] = q_name
         #msg_id = msg['dest'][/\/q\/[^\/]+\/([^\/]+)/, 1]
       end
 

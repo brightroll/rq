@@ -83,13 +83,13 @@ module RQ
     def handle_request(sock)
       data, = sock.recvfrom(1024)
       cmd, arg = data.split(' ', 2)
-      log("REQ [ #{cmd} #{arg} ]");
+      log("REQ [ #{cmd} #{arg} ]")
 
       case cmd
       when 'ping'
         sock.send("pong", 0)
         sock.close
-        log("RESP [ pong ]");
+        log("RESP [ pong ]")
 
       when 'environment'
         sock.send(ENV['RQ_ENV'], 0)
