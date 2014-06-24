@@ -111,24 +111,16 @@ module RQ
         send_packet(sock, resp)
 
       when 'restart_queue'
-        log("RESP [ restart_queue - #{arg} ]")
         worker = @queues.find { |i| i.name == arg }
-        status = 'fail'
         if worker.status == "RUNNING"
+          worker.status = "SHUTDOWN"
           Process.kill("TERM", worker.pid) rescue nil
-          status = 'ok'
-        else
-          # TODO
-          # when I have timers, do this as a message to main event loop
-          # to centralize this code
-          new_worker = RQ::Queue.start_process(worker.options)
-          if new_worker
-            log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
-            worker = new_worker
-            status = 'ok'
-          end
+          sleep(0.001)
         end
-        resp = [status, arg].to_json
+
+        start_queue(arg)
+
+        resp = ['ok', arg].to_json
         send_packet(sock, resp)
 
       when 'create_queue'
