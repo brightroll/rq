@@ -38,6 +38,10 @@ module RQ
         RQ::QueueClient.new(name)
       end
 
+      def queuemgr
+        @queuemgr ||= RQ::QueueMgrClient.new
+      end
+
       def msgs_labels
         %w[prep que run err done relayed]
       end
@@ -111,7 +115,7 @@ module RQ
       # TODO: validation
 
       # This creates and starts a queue
-      result = RQ::QueueMgrClient.create_queue(params['queue'])
+      result = queuemgr.create_queue(params['queue'])
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{params['queue']['name']}"
     end
@@ -126,7 +130,7 @@ module RQ
         p "BAD config.json - could not parse"
         throw :halt, [404, "404 - Couldn't parse json file (#{params['queue']['json_path']})."]
         end
-      result = RQ::QueueMgrClient.create_queue_link(params['queue']['json_path'])
+      result = queuemgr.create_queue_link(params['queue']['json_path'])
       #TODO - do the right thing with the result code
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/q/#{js_data['name']}"
@@ -134,18 +138,18 @@ module RQ
 
     post '/delete_queue' do
       # This creates and starts a queue
-      result = RQ::QueueMgrClient.delete_queue(params['queue_name'])
+      result = queuemgr.delete_queue(params['queue_name'])
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
       redirect "/"
     end
 
     get '/q.txt' do
       content_type 'text/plain', :charset => 'utf-8'
-      erb :queue_list, :layout => false, :locals => {:queues => RQ::QueueMgrClient.queues}
+      erb :queue_list, :layout => false, :locals => {:queues => queuemgr.queues}
     end
 
     get '/q.json' do
-      RQ::QueueMgrClient.queues.to_json
+      queuemgr.queues.to_json
     end
 
     get '/q/:name' do
@@ -158,7 +162,7 @@ module RQ
         end
       end
 
-      if not RQ::QueueMgrClient.running?
+      if not queuemgr.running?
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
@@ -173,7 +177,7 @@ module RQ
     end
 
     get '/q/:name/done.json' do
-      if not RQ::QueueMgrClient.running?
+      if not queuemgr.running?
         throw :halt, [503, "503 - QueueMgr not running"]
       end
 
@@ -252,7 +256,7 @@ module RQ
     end
 
     post '/q/:name/restart' do
-      res = RQ::QueueMgrClient.restart_queue(params[:name])
+      res = queuemgr.restart_queue(params[:name])
 
       if not res
         throw :halt, [500, "500 - Couldn't restart queue. Internal error."]

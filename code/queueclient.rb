@@ -1,11 +1,12 @@
 require 'vendor/environment'
-require 'socket'
 require 'json'
-require 'unixrack'
 require 'code/errors'
+require 'code/protocol'
 
 module RQ
   class QueueClient
+
+    include Protocol
 
     attr_accessor :name
     attr_accessor :pid
@@ -16,7 +17,7 @@ module RQ
       path = File.join(File.dirname(__FILE__), "..")
 
       @queue_path = File.join(path, 'queue', @name)
-      @queue_sock_path = File.join(@queue_path, 'queue.sock')
+      set_protocol_sock_path(File.join(@queue_path, 'queue.sock'))
 
       raise RQ::RqQueueNotFound unless File.directory?(@queue_path)
     end
@@ -41,56 +42,6 @@ module RQ
       File.read(@queue_path + '/queue.pid').to_i
     end
 
-    def do_read(client, numr = 32768)
-      begin
-        dat = client.sysread(numr)
-      rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
-        sleep 0.001 # A tiny pause to prevent consuming all CPU
-        retry
-      rescue EOFError
-        #TODO: add debug mode
-        #puts "Got an EOF from socket read"
-        return nil
-      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-        raise "Got an #{$!} from socket read"
-      end
-      dat
-    end
-
-    # msg is single word, data is assumbed to be content as json
-    def send_recv(msg, data="")
-      client = UNIXSocket.open(@queue_sock_path)
-
-      contents = "#{msg} #{data}"
-      sock_msg = sprintf("rq1 %08d %s", contents.length, contents)
-
-      UnixRack::Socket.write_buff(client, sock_msg)
-
-      protocol = do_read(client, 4)
-
-      if protocol != 'rq1 '
-        raise "Invalid Protocol - Expecting 'rq1 ' got: #{protocol}"
-      end
-
-      size_str = do_read(client, 9)
-
-      if size_str[-1..-1] != " "
-        raise "Invalid Protocol"
-      end
-
-      size = size_str.to_i
-
-      result = UnixRack::Socket.read_sock_num_bytes(client, size, lambda {|s| puts s})
-
-      if result[0] == false
-        return ["fail", result[1]]
-      end
-
-      client.close
-
-      JSON.parse(result[1])
-    end
-
     def ping
       send_recv('ping').first
     end
@@ -107,6 +58,14 @@ module RQ
       send_recv('shutdown')
     end
 
+    def num_messages
+      send_recv('num_messages')
+    end
+
+    def get_config
+      send_recv('config')
+    end
+
     def create_message(params)
       send_recv('create_message', params.to_json)
     end
@@ -117,10 +76,6 @@ module RQ
 
     def messages(params)
       send_recv('messages', params.to_json)
-    end
-
-    def num_messages
-      send_recv('num_messages')
     end
 
     def prep_message(params)
@@ -153,10 +108,6 @@ module RQ
 
     def clone_message(params)
       send_recv('clone_message', params.to_json)
-    end
-
-    def get_config
-      send_recv('config')
     end
 
     def get_message_state(params)
