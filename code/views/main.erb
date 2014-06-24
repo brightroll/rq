@@ -4,8 +4,8 @@
 </div>
 
 <h2>Queue List</h2>
-<% if RQ::QueueMgrClient.running? %>
-<%   queues = RQ::QueueMgrClient.queues.sort %>
+<% if queuemgr.running? %>
+<%   queues = queuemgr.queues.sort %>
 <%   builtin_queues, custom_queues = [], []  %>
 <%   queues.each do |q| %>
 <%     if q =~ /relay|cleaner|webhook|rq_router/ %>
@@ -40,16 +40,16 @@
 <% end %>
 
 <div class="meta">
-<% if  RQ::QueueMgrClient.running? %>
+<% if queuemgr.running? %>
   <span class="green">QUEUE MGR is OPERATIONAL</span>
-  <span class="green"><%= RQ::QueueMgrClient.ping %></span>
-  <span class="green"><%= RQ::QueueMgrClient.read_pid %></span>
-  <span>uptime <%= RQ::QueueMgrClient.uptime %> seconds</span> |
-  <% vver_array = RQ::QueueMgrClient.version %>
-  <% if vver_array[0] == RQ_VER %>
-    <span>server: <strong>v<%= vver_array[0] %></strong></span>
+  <span class="green"><%= queuemgr.ping %></span>
+  <span class="green"><%= queuemgr.read_pid %></span>
+  <span>uptime <%= queuemgr.uptime %> seconds</span> |
+  <% version = queuemgr.version %>
+  <% if version == RQ_VER %>
+    <span>server: <strong>v<%= version %></strong></span>
   <% else %>
-    <span class="red">server: <strong>v<%= vver_array[0] %></strong> != web: <strong>v<%= RQ_VER %></strong></span>
+    <span class="red">server: <strong>v<%= version %></strong> != web: <strong>v<%= RQ_VER %></strong></span>
   <% end %>
 <% else %>
   <span class="red">QUEUE MGR is DOWN</span>

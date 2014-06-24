@@ -5,6 +5,7 @@ require 'fcntl'
 require 'code/queue'
 require 'code/scheduler'
 require 'code/web_server'
+require 'code/protocol'
 require 'version'
 
 def log(mesg)
@@ -15,6 +16,7 @@ end
 
 module RQ
   class QueueMgr
+    include Protocol
 
     attr_accessor :queues
     attr_accessor :scheduler
@@ -81,38 +83,32 @@ module RQ
     end
 
     def handle_request(sock)
-      data, = sock.recvfrom(1024)
-      cmd, arg = data.split(' ', 2)
+      packet = read_packet(sock)
+      return unless packet
+
+      cmd, arg = packet.split(' ', 2)
       log("REQ [ #{cmd} #{arg} ]")
 
       case cmd
       when 'ping'
-        sock.send("pong", 0)
-        sock.close
-        log("RESP [ pong ]")
+        resp = [ 'pong' ].to_json
+        send_packet(sock, resp)
 
       when 'environment'
-        sock.send(ENV['RQ_ENV'], 0)
-        sock.close
-        log("RESP [ environment - #{ENV['RQ_ENV']} ]")
+        resp = [ ENV['RQ_ENV'] ].to_json
+        send_packet(sock, resp)
 
       when 'version'
-        data = [ RQ_VER ].to_json
-        sock.send(data, 0)
-        sock.close
-        log("RESP [ version - #{data} ]")
+        resp = [ RQ_VER ].to_json
+        send_packet(sock, resp)
 
       when 'queues'
-        data = @queues.map { |q| q.name }.to_json
-        log("RESP [ queues - #{data} ]")
-        sock.send(data, 0)
-        sock.close
+        resp = @queues.map { |q| q.name }.to_json
+        send_packet(sock, resp)
 
       when 'uptime'
-        data = [(Time.now - @start_time).to_i, ].to_json #['local','brserv_push'].to_json
-        log("RESP [ uptime - #{data} ]")
-        sock.send(data, 0)
-        sock.close
+        resp = [(Time.now - @start_time).to_i, ].to_json
+        send_packet(sock, resp)
 
       when 'restart_queue'
         log("RESP [ restart_queue - #{arg} ]")
@@ -132,9 +128,8 @@ module RQ
             status = 'ok'
           end
         end
-        resp = [status, arg].to_json #['ok','brserv_push'].to_json
-        sock.send(resp, 0)
-        sock.close
+        resp = [status, arg].to_json
+        send_packet(sock, resp)
 
       when 'create_queue'
         options = JSON.parse(arg)
@@ -155,9 +150,7 @@ module RQ
             end
           end
         end
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
 
       when 'create_queue_link'
         err = false
@@ -201,10 +194,7 @@ module RQ
         end
 
         resp = [ (err ? 'fail' : 'success'), reason ].to_json
-
-        log("RESP [ #{resp} ]")
-        sock.send(resp, 0)
-        sock.close
+        send_packet(sock, resp)
 
       when 'delete_queue'
         worker = @queues.find { |i| i.name == arg }
@@ -216,15 +206,12 @@ module RQ
           status = 'ok'
           msg = 'started deleting queue'
         end
-        resp = [ status, msg ].to_json #['ok','brserv_push'].to_json
-        sock.send(resp, 0)
-        sock.close
-        log("RESP [ #{resp} ]")
+        resp = [ status, msg ].to_json
+        send_packet(sock, resp)
 
       else
-        sock.send("ERROR", 0)
-        sock.close
-        log("RESP [ ERROR ] - Unhandled message")
+        resp = [ 'error' ].to_json
+        send_packet(sock, resp)
       end
     end
 

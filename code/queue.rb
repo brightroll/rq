@@ -9,6 +9,7 @@ require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
 require 'code/jsonconfigfile'
+require 'code/protocol'
 require 'pathname'
 
 module RQ
@@ -36,6 +37,7 @@ module RQ
   end
 
   class Queue
+    include Protocol
 
     def initialize(options, parent_pipe)
       @start_time = Time.now
@@ -261,8 +263,8 @@ module RQ
     def run_queue_script!(msg)
       msg_id = msg['msg_id']
 
-      basename = @queue_path + "/run/" + msg_id
-      job_path = File.expand_path(basename + '/job/')
+      basename = File.join(@queue_path, 'run', msg_id)
+      job_path = File.expand_path(File.join(basename, 'job'))
       Dir.mkdir(job_path) unless File.exists?(job_path)
 
       # Identify executable to run, if there is no script, go oper down
@@ -1557,42 +1559,6 @@ module RQ
         exit! 0
       end
       dat
-    end
-
-    def read_packet(sock)
-      protocol = do_read(sock, 4)
-
-      if protocol != 'rq1 '
-        log("REQ - Invalid protocol - bad ver")
-        return nil
-      end
-
-      size_str = do_read(sock, 9)
-
-      if size_str[-1..-1] != " "
-        log("REQ - Invalid protocol - bad size #{size_str}")
-        return nil
-      end
-
-      size = size_str.to_i
-      log("REQ - size #{size}")
-
-      result = UnixRack::Socket.read_sock_num_bytes(sock, size)
-
-      if result[0] == false
-        log("REQ - Invalid packet - didn't receive contents")
-        return nil
-      end
-
-      result[1]
-    end
-
-    def send_packet(sock, resp)
-      log_msg = resp.length > 80 ? "#{resp[0...80]}..." : resp
-      log("RESP [ #{resp.length}  #{log_msg} ]")
-      sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
-      UnixRack::Socket.write_buff(sock, sock_msg)
-      sock.close
     end
 
     def handle_request(sock)
