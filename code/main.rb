@@ -83,12 +83,6 @@ module RQ
         h[type] = msg
         session[:flash] = h
       end
-
-      def flash_now(type, msg)
-        h = @flash || {}
-        h[type] = msg
-        @flash = h
-      end
     end
 
     before do
@@ -99,8 +93,8 @@ module RQ
 
     # handle 404s
     not_found do
-      flash_now :error, "404 -- No route matches #{request.path_info}"
-      erb :main
+      status 404
+      erb :not_found
     end
 
     get '/' do
