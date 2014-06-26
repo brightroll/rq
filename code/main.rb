@@ -47,35 +47,39 @@ module RQ
       end
 
       def queue_row(name, options={})
-        html = options[:odd] ?
-             "<tr class=\"odd-row\">" :
-             "<tr>"
-        html += "<td class=\"left-aligned\"><a href=\"#{url}q/#{name}\">#{name}</a></td>"
+        html = <<-END
+    <tr class="#{'odd-row' if options[:odd]}">
+      <td class="left-aligned"><a href="#{url}q/#{name}">#{name}</a></td>
+        END
         begin
           qc = get_queueclient(name)
           raise unless qc.running?
           admin_stat, oper_stat = qc.status
           html += <<-END
-          <td><pre>#{msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join}</pre></td>
-          <td>#{qc.ping}</td>
-          <td>#{qc.read_pid}</td>
-          <td>#{qc.uptime}</td>
-          <td>
-          <span class="#{admin_stat == 'UP' ? 'green' : 'red'}">#{admin_stat}</span>:
-          <span class="#{oper_stat  == 'UP' ? 'green' : 'red'}">#{oper_stat}</span>
-          </td>
+      <td><pre>#{msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join}</pre></td>
+      <td>#{qc.ping}</td>
+      <td>#{qc.read_pid}</td>
+      <td>#{qc.uptime}</td>
+      <td>
+        <span class="#{admin_stat == 'UP' ? 'green' : 'red'}">#{admin_stat}</span>:
+        <span class="#{oper_stat  == 'UP' ? 'green' : 'red'}">#{oper_stat}</span>
+      </td>
           END
         rescue
-          html += "<td>-</td>"
-          html += "<td>-</td>"
-          html += "<td>-</td>"
-          html += "<td>-</td>"
-          html += "<td><span class=\"red\">DOWN #{$!}</span></td>"
+          html += <<-END
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td><span class="red">DOWN #{$!}</span></td>
+          END
         end
-        html += "<td><form method=\"post\" action=\"#{url}q/#{name}/restart\">"
-        html += "<button id=\"restart-queue\">Restart</button>"
-        html += "</form></td>"
-        html += "</tr>"
+        html += <<-END
+      <td><form method="post" action="#{url}q/#{name}/restart">
+      <button id="restart-queue">Restart</button>
+      </form></td>
+    </tr>
+        END
       end
 
       def flash(type, msg)

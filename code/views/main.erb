@@ -4,16 +4,18 @@
 </div>
 
 <h2>Queue List</h2>
-<% if queuemgr.running? %>
-<%   queues = queuemgr.queues.sort %>
-<%   builtin_queues, custom_queues = [], []  %>
-<%   queues.each do |q| %>
-<%     if q =~ /relay|cleaner|webhook|rq_router/ %>
-<%       builtin_queues << q %>
-<%     else %>
-<%       custom_queues << q %>
-<%     end %>
-<%   end %>
+<%
+if queuemgr.running?
+  queues = queuemgr.queues.sort
+  builtin_queues, custom_queues = [], []
+  queues.each do |q|
+    if %w{relay cleaner webhook rq_router}.include? q
+      builtin_queues << q
+    else
+      custom_queues << q
+    end
+  end
+-%>
 <table id="queue-list" cellspacing="0" cellpadding="5">
   <thead>
     <tr>
