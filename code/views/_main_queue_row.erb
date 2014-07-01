@@ -1,0 +1,26 @@
+    <tr class="<%= 'odd-row' if odd %>">
+      <td class="left-aligned"><a href="<%= "#{url}q/#{name}" %>"><%= name %></a></td>
+<% begin
+    qc = get_queueclient(name)
+    raise unless qc.running?
+    admin_stat, oper_stat = qc.status
+-%>
+      <td><pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre></td>
+      <td><%= qc.ping %></td>
+      <td><%= qc.read_pid %></td>
+      <td><%= qc.uptime %></td>
+      <td>
+        <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>"><%= admin_stat %></span>:
+        <span class="<%= oper_stat  == 'UP' ? 'green' : 'red' %>"><%= oper_stat %></span>
+      </td>
+<% rescue -%>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td>-</td>
+      <td><span class="red">DOWN <%= $! %></span></td>
+<% end -%>
+      <td><form method="post" action="<%= "#{url}q/#{name}/restart" %>">
+      <button id="restart-queue">Restart</button>
+      </form></td>
+    </tr>

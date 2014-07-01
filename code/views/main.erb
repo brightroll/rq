@@ -30,12 +30,12 @@ if queuemgr.running?
   </thead>
   <tbody id="custom-queues">
 <%  custom_queues.each_with_index do |q, i| %>
- <%=   queue_row(q, :odd => i % 2 != 0) %>
+<%=   erb :_main_queue_row, :locals => {:name => q, :odd => i % 2 != 0} %>
 <%  end %>
   </tbody>
   <tbody id="builtin-queues">
 <%  builtin_queues.each do |q| %>
- <%=   queue_row(q, :odd => false) %>
+<%=   erb :_main_queue_row, :locals => {:name => q, :odd => false} %>
 <%  end %>
   </tbody>
 </table>
