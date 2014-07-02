@@ -1,4 +1,3 @@
-require 'vendor/environment'
 require 'unixrack'
 require 'fileutils'
 require 'json'

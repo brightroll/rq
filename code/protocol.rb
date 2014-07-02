@@ -1,4 +1,3 @@
-require 'vendor/environment'
 require 'unixrack'
 
 # Mix the Protocol module into classes that communicate on internal sockets

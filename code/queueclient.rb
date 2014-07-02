@@ -1,4 +1,3 @@
-require 'vendor/environment'
 require 'json'
 require 'code/errors'
 require 'code/protocol'

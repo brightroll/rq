@@ -1,4 +1,9 @@
 #!/usr/bin/env ruby
+$:.unshift(File.join(File.dirname(__FILE__), ".."))
+
+require 'vendor/environment'
+require 'code/rule_processor'
+require 'json'
 
 module Alarm
   case RUBY_VERSION.to_f
@@ -24,11 +29,6 @@ end
 
 $rq_msg_dir = Dir.pwd
 Dir.chdir("#{File.dirname(__FILE__)}")
-
-require 'rule_processor'
-
-$LOAD_PATH.unshift(File.expand_path("../vendor/gems/json_pure-1.1.6/lib"))
-require 'json'
 
 # Setup a global binding so the GC doesn't close the file
 $RQ_IO = IO.for_fd(3)

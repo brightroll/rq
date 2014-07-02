@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 $: << File.expand_path('..', File.dirname(__FILE__))
 
+require 'vendor/environment'
 require 'fileutils'
 require 'fcntl'
 require 'net/http'
 require 'uri'
 require 'test/unit'
 
-require 'vendor/environment'
 require 'json'
 
 require 'rubygems' if RUBY_VERSION < '1.9'

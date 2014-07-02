@@ -1,4 +1,3 @@
-require 'vendor/environment'
 require 'code/rule_processor'
 require 'code/queueclient'
 require 'code/errors'
