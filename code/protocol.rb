@@ -9,6 +9,10 @@ module RQ
       @protocol_sock_path = sock_path
     end
 
+    def set_protocol_messages(messages)
+      @protocol_messages = messages
+    end
+
     def set_nonblocking(sock)
       flag = File::NONBLOCK
       if defined?(Fcntl::F_GETFL)
@@ -115,6 +119,29 @@ module RQ
         raise "Got an #{$!} from socket read"
       end
       dat
+    end
+
+    def message_send_recv(name, *params)
+      param = params.first
+      case param
+      when nil
+        send_recv(name)
+      when String
+        send_recv(name, param)
+      else
+        send_recv(name, param.to_json)
+      end
+    end
+
+    # Provides magic methods for words in the @protocol_messages array
+    def method_missing(name, *args, &block)
+      if @protocol_messages && @protocol_messages.include?(name.to_s)
+        message_send_recv(name, *args, &block)
+      else
+        super # You *must* call super if you don't handle the
+              # method, otherwise you'll mess up Ruby's method
+              # lookup.
+      end
     end
 
   end

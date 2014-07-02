@@ -7,6 +7,7 @@ module RQ
 
     def initialize
       set_protocol_sock_path('config/queuemgr.sock')
+      set_protocol_messages(PROTOCOL_MESSAGES)
     end
 
     def running?
@@ -40,6 +41,14 @@ module RQ
       File.read('config/queuemgr.pid').to_i rescue nil
     end
 
+    PROTOCOL_MESSAGES = %w{
+      queues
+      create_queue
+      create_queue_link
+      restart_queue
+      delete_queue
+    }
+
     def ping
       send_recv('ping').first
     end
@@ -54,29 +63,6 @@ module RQ
 
     def uptime
       send_recv('uptime').first
-    end
-
-    def queues
-      send_recv('queues')
-    end
-
-    def create_queue(params)
-      send_recv('create_queue', params.to_json)
-    end
-
-    # TODO: json params
-    def create_queue_link(json_path)
-      send_recv('create_queue_link', json_path)
-    end
-
-    # TODO: json params
-    def restart_queue(queue_name)
-      send_recv('restart_queue', queue_name)
-    end
-
-    # TODO: json params
-    def delete_queue(queue_name)
-      send_recv('delete_queue', queue_name)
     end
 
   end

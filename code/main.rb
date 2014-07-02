@@ -134,7 +134,7 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      ok, config = qc.get_config
+      ok, config = qc.config
       erb :queue, :locals => { :qc => qc, :config => config }
     end
 
@@ -248,7 +248,7 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      ok, config = qc.get_config()
+      ok, config = qc.config
       config.to_json
     end
 
