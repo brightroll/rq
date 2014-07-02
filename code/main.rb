@@ -11,7 +11,6 @@ require 'code/overrides'
 module RQ
   class Main < Sinatra::Base
 
-    disable :protection
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
     set :erb, :trim => '-'
