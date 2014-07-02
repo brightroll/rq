@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+
 $: << File.expand_path('..', File.dirname(__FILE__))
 require 'vendor/environment'
 
@@ -8,3 +9,89 @@ $log.level = Logger::WARN
 $log.progname = $0
 
 require 'code/rq'
+require 'version'
+
+require 'optparse'
+
+options = {}
+op = OptionParser.new do |opts|
+  opts.version = RQ_VER
+  opts.banner = <<BANNER
+BrightRoll RQ Command Line Tool
+
+Usage:
+  rq [OPTIONS] ACTION
+BANNER
+
+  opts.separator "\nMessage Actions:"
+  opts.on('--attachmesg', 'Attach Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :attachmesg
+    options[:request] = v
+  end
+
+  opts.on('--attachstatusmesg', 'Attach Status Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :attachstatusmesg
+    options[:request] = v
+  end
+
+  opts.on('--clone', 'Clone Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :clone
+    options[:request] = v
+  end
+
+  opts.on('--commitmesg', 'Commit Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :commitmesg
+    options[:request] = v
+  end
+
+  opts.on('--prepmesg', 'Prep Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :prepmesg
+    options[:request] = v
+  end
+
+  opts.on('--sendmesg', 'Send Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :sendmesg
+    options[:request] = v
+  end
+
+  opts.on('--single_que', 'Single Que Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :single_que
+    options[:request] = v
+  end
+
+  opts.on('--state', 'State of Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :state
+    options[:request] = v
+  end
+
+  opts.on('--statuscountmesg', 'Status Count Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :statuscountmesg
+    options[:request] = v
+  end
+
+  opts.on('--statusmesg', 'Status of Message') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :statusmesg
+    options[:request] = v
+  end
+
+  opts.on('--verify_rules', 'Verify Router Rules') do |v|
+    abort "Conflicting actions: already saw #{options[:action].to_s}" if options[:action]
+    options[:action] = :verify_rules
+    options[:request] = v
+  end
+end
+
+op.parse!
+
+cmd = "cmd_#{options[:action]}"
+RQ::Commands.send cmd, options
