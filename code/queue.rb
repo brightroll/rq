@@ -714,6 +714,11 @@ module RQ
       state
     end
 
+    def kill_msg!(msg)
+      state = msg_state(msg)
+      return nil unless state
+    end
+
     def delete_msg!(msg)
       state = msg_state(msg)
       return nil unless state
@@ -1175,19 +1180,23 @@ module RQ
       return true
     end
 
-    def write_msg_process_id(msg_id, pid)
-      # Write message pid to disk
-      begin
-        basename = "#{@queue_path}/run/#{msg_id}/pid"
-        File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
-        File.rename(basename + '.tmp', basename)
-      rescue
-        log("FATAL - couldn't write message pid file")
-        log("        [ #{$!} ]")
-        return false
-      end
+    def read_msg_process_id(msg_id)
+      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      File.read(basename).to_i
+    rescue
+      nil
+    end
 
-      return true
+    # Write message pid to disk
+    def write_msg_process_id(msg_id, pid)
+      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
+      File.rename(basename + '.tmp', basename)
+      true
+    rescue
+      log("FATAL - couldn't write message pid file")
+      log("        [ #{$!} ]")
+      false
     end
 
     def remove_msg_process_id(msg_id, state = 'run')
@@ -1416,8 +1425,7 @@ module RQ
                 # Remove from completion
                 @completed.delete(completion)
                 # Remove from run
-                @run = @run.reject { |i| i['msg_id'] == msg_id }
-                # TODO; a simple delete would suffice here
+                @run.delete_if { |i| i['msg_id'] == msg_id }
 
                 if (completion[1] == :resend) && (new_state == 'que')
                   # Re-inject into que
@@ -1764,11 +1772,27 @@ module RQ
           return
         end
 
-        resp = [ "fail", "unknown reason"].to_json
-
         if msg_state(options)
           delete_msg!(options)
           resp = [ "ok", "msg deleted" ].to_json
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        send_packet(sock, resp)
+        return
+
+      when 'destroy_message'
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        pid = read_msg_process_id(options['msg_id'])
+        if pid
+          Process.kill('TERM', pid)
+          resp = [ "ok", "msg destroyed" ].to_json
         else
           resp = [ "fail", "msg not found" ].to_json
         end

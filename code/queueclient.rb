@@ -69,6 +69,10 @@ module RQ
       send_recv('create_message', params.to_json)
     end
 
+    def destroy_message(params)
+      send_recv('destroy_message', params.to_json)
+    end
+
     def single_que(params)
       send_recv('single_que', params.to_json)
     end

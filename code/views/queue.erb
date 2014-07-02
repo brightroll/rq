@@ -85,7 +85,7 @@
       <span class="">
         <form id="delete-form" method="post" action="<%= "#{url}q/#{qc.name}/#{msg_id}" %>">
           <input name="_method" type="hidden" value="delete" />
-          <button id="delete-button" type="submit">Destroy it</button>
+          <button id="delete-button" type="submit">Delete</button>
         </form>
       </span>
     </li>
@@ -121,8 +121,8 @@
       <% end %>
     <% end %>
     <form id="destroy-form" method="post" action="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>">
-      <input name="_method" type="hidden" value="delete" />
-      <button id="destroy-button" type="submit">Destroy it</button>
+      <input name="_method" type="hidden" value="destroy" />
+      <button id="destroy-button" type="submit">Destroy</button>
     </form>
   <% end %>
   </ul>
