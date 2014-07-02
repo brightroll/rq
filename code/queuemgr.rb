@@ -18,18 +18,12 @@ module RQ
   class QueueMgr
     include Protocol
 
-    attr_accessor :queues
-    attr_accessor :scheduler
-    attr_accessor :web_server
-    attr_accessor :status
-    attr_accessor :environment
-
     def initialize
-      @queues = []
+      @queues = { } # Hash of queue name => RQ::Queue object
+      @queue_errs = Hash.new(0) # Hash of queue name => count of restarts, default 0
       @scheduler = nil
       @web_server = nil
       @start_time = Time.now
-      @status = "RUNNING"
     end
 
     def load_config
@@ -103,7 +97,7 @@ module RQ
         send_packet(sock, resp)
 
       when 'queues'
-        resp = @queues.map { |q| q.name }.to_json
+        resp = @queues.keys.to_json
         send_packet(sock, resp)
 
       when 'uptime'
@@ -111,13 +105,10 @@ module RQ
         send_packet(sock, resp)
 
       when 'restart_queue'
-        worker = @queues.find { |i| i.name == arg }
-        if worker.status == "RUNNING"
-          worker.status = "SHUTDOWN"
-          Process.kill("TERM", worker.pid) rescue nil
-          sleep(0.001)
-        end
-
+        stop_queue(arg)
+        # Reset the error count because the queue was manually restarted
+        @queue_errs.delete(arg)
+        sleep(0.001)
         start_queue(arg)
 
         resp = ['ok', arg].to_json
@@ -127,7 +118,7 @@ module RQ
         options = JSON.parse(arg)
         # "queue"=>{"name"=>"local", "script"=>"local.rb", "num_workers"=>"1", ...}
 
-        if @queues.any? { |q| q.name == options['name'] }
+        if @queues.has_key?(options['name'])
           resp = ['fail', 'already created'].to_json
         else
           if not valid_queue_name(options['name'])
@@ -137,7 +128,7 @@ module RQ
             worker = RQ::Queue.create(options)
             if worker
               log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
-              @queues << worker
+              @queues[worker.name] = worker
               resp = ['success', 'queue created - awesome'].to_json
             end
           end
@@ -159,7 +150,7 @@ module RQ
         end
 
         if not err
-          if @queues.any? { |q| q.name == options['name'] }
+          if @queues.has_key?(options['name'])
             reason = 'queue is already running'
             err = true
           end
@@ -176,7 +167,7 @@ module RQ
           worker = RQ::Queue.create(options, arg)
           log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
           if worker
-            @queues << worker
+            @queues[worker.name] = worker
             reason = 'queue created - awesome'
             err = false
           else
@@ -189,14 +180,15 @@ module RQ
         send_packet(sock, resp)
 
       when 'delete_queue'
-        worker = @queues.find { |i| i.name == arg }
-        status = 'fail'
-        msg = 'no such queue'
+        worker = @queues[arg]
         if worker
           worker.status = "DELETE"
           Process.kill("TERM", worker.pid) rescue nil
           status = 'ok'
           msg = 'started deleting queue'
+        else
+          status = 'fail'
+          msg = 'no such queue'
         end
         resp = [ status, msg ].to_json
         send_packet(sock, resp)
@@ -212,7 +204,7 @@ module RQ
       dirs = Hash[queue_dirs.zip]
 
       # Notify running queues to reload configs
-      @queues.each do |worker|
+      @queues.values.each do |worker|
         if dirs.has_key? worker.name
           log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING HUP")
           Process.kill("HUP", worker.pid) if worker.pid rescue nil
@@ -231,13 +223,11 @@ module RQ
       final_shutdown! if @queues.empty?
 
       # Remove non-running entries
-      @queues.delete_if { |q| !q.pid }
+      @queues.delete_if { |n, q| !q.pid }
 
-      @queues.each do |q|
+      @queues.each do |n, q|
         q.status = "SHUTDOWN"
-      end
 
-      @queues.each do |q|
         begin
           Process.kill("TERM", q.pid) if q.pid
         rescue StandardError => e
@@ -261,10 +251,16 @@ module RQ
       Process.exit! 0
     end
 
+    def stop_queue(name)
+      worker = @queues[name]
+      worker.status = "SHUTDOWN"
+      Process.kill("TERM", worker.pid) rescue nil
+    end
+
     def start_queue(name)
       worker = RQ::Queue.start_process({'name' => name})
       if worker
-        @queues << worker
+        @queues[worker.name] = worker
         log("STARTED [ #{worker.name} - #{worker.pid} ]")
       end
     end
@@ -291,7 +287,7 @@ module RQ
     def load_queues
       # Skip dot dirs and queues already running
       queue_dirs.each do |name|
-        next if @queues.any? { |q| q.name == name }
+        next if @queues.has_key?(name)
         start_queue name
       end
     end
@@ -332,7 +328,7 @@ module RQ
       # Ye old event loop
       while true
         #log(queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
-        io_list = queues.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
+        io_list = @queues.values.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
         io_list << $sock
         #log(io_list.inspect)
         log('sleeping')
@@ -365,14 +361,9 @@ module RQ
             handle_request(client_socket)
           else
             # probably a child pipe that closed
-            worker = queues.find do |i|
+            worker = @queues.values.find do |i|
               if i.child_write_pipe
                 i.child_write_pipe.fileno == io.fileno
-              else
-                new_worker = RQ::Queue.start_process(worker.options)
-                log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
-                worker = new_worker
-                false
               end
             end
             if worker
@@ -380,38 +371,40 @@ module RQ
               if res
                 log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]} - #{worker.status}")
                 worker.child_write_pipe.close
-                if worker.status == "RUNNING"
-                  worker.num_restarts += 1
-                  # TODO
-                  # would really like a timer on the event loop so I can sleep a sec, but
-                  # whatever
-                  #
-                  # If queue.rb code fails/exits
-                  if worker.num_restarts >= 11
-                    worker.status = "ERROR"
-                    worker.pid = nil
-                    worker.child_write_pipe = nil
+
+                case worker.status
+                when 'RUNNING'
+                  if (@queue_errs[worker.name] += 1) > 10
                     log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
+                    new_worker = RQ::Worker.new
+                    new_worker.status = 'ERROR'
+                    new_worker.name = worker.name
+                    @queues[worker.name] = new_worker
                   else
-                    new_worker = RQ::Queue.start_process(worker.options)
-                    log("STARTED [ #{new_worker.name} - #{new_worker.pid} ]")
-                    worker = new_worker
+                    worker = RQ::Queue.start_process(worker.options)
+                    log("RESTARTED [ #{worker.name} - #{worker.pid} ]")
+                    @queues[worker.name] = worker
                   end
-                elsif worker.status == "DELETE"
+
+                when 'DELETE'
                   RQ::Queue.delete(worker.name)
-                  queues.delete(worker)
+                  @queues.delete(worker.name)
                   log("DELETED [ #{worker.name} ]")
-                elsif worker.status == "SHUTDOWN"
-                  queues.delete(worker)
-                  if queues.empty?
+
+                when 'SHUTDOWN'
+                  @queues.delete(worker.name)
+                  if @queues.empty?
                     final_shutdown!
                   end
+
                 else
                   log("STRANGE: queue #{worker.pid } status = #{worker.status}")
                 end
+
               else
                 log("EXITING: queue #{worker.pid} was not ready to be reaped #{res}")
               end
+
             else
               log("VERY STRANGE: got a read ready on an io that we don't track!")
             end

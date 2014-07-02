@@ -77,6 +77,9 @@ module RQ
       client.close
 
       JSON.parse(result[1])
+    rescue SocketError => e
+      $stderr.puts "Error on the socket: #{e}"
+      nil
     end
 
     private
