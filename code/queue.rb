@@ -20,7 +20,6 @@ module RQ
     :status,
     :child_write_pipe,
     :pid,
-    :num_restarts,
     :options
   )
   end
@@ -182,7 +181,6 @@ module RQ
       worker.status = 'RUNNING'
       worker.child_write_pipe = parent_wr
       worker.pid = child_pid
-      worker.num_restarts = 0
       worker.options = options
 
       # Wait up to a second for the worker to start up
