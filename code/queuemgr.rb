@@ -18,19 +18,12 @@ module RQ
   class QueueMgr
     include Protocol
 
-    attr_accessor :queues
-    attr_accessor :scheduler
-    attr_accessor :web_server
-    attr_accessor :status
-    attr_accessor :environment
-
     def initialize
       @queues = { } # Hash of queue name => RQ::Queue object
       @queue_errs = Hash.new(0) # Hash of queue name => count of restarts, default 0
       @scheduler = nil
       @web_server = nil
       @start_time = Time.now
-      @status = "RUNNING"
     end
 
     def load_config
