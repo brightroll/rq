@@ -52,11 +52,13 @@ pick up if available.
             * [Markdown Templates](#markdown-templates)
             * [Textile Templates](#textile-templates)
             * [RDoc Templates](#rdoc-templates)
+            * [AsciiDoc Templates](#asciidoc-templates)
             * [Radius Templates](#radius-templates)
             * [Markaby Templates](#markaby-templates)
             * [RABL Templates](#rabl-templates)
             * [Slim Templates](#slim-templates)
             * [Creole Templates](#creole-templates)
+            * [MediaWiki Templates](#mediawiki-templates)
             * [CoffeeScript Templates](#coffeescript-templates)
             * [Stylus Templates](#stylus-templates)
             * [Yajl Templates](#yajl-templates)
@@ -222,6 +224,17 @@ Route patterns may have optional parameters:
 ``` ruby
 get '/posts.?:format?' do
   # matches "GET /posts" and any extension "GET /posts.json", "GET /posts.xml" etc.
+end
+```
+
+Routes may also utilize query parameters:
+
+``` ruby
+get '/posts' do
+  # matches "GET /posts?title=foo&author=bar"
+  title = params[:title]
+  author = params[:author]
+  # uses title and author variables; query is optional to the /posts route
 end
 ```
 
@@ -465,13 +478,13 @@ Available Options:
 
   <dt>layout</dt>
   <dd>
-    Whether to use a layout (<tt>true</tt> or <tt>false</tt>), if it's a Symbol, specifies
+    Whether to use a layout (<tt>true</tt> or <tt>false</tt>). If it's a Symbol, specifies
     what template to use. Example: <tt>erb :index, :layout => !request.xhr?</tt>
   </dd>
 
   <dt>content_type</dt>
   <dd>
-    Content-Type the template produces, default depends on template language.
+    Content-Type the template produces. Default depends on template language.
   </dd>
 
   <dt>scope</dt>
@@ -789,6 +802,26 @@ Since you cannot call Ruby from RDoc, you cannot use layouts written in
 RDoc. However, it is possible to use another rendering engine for the
 template than for the layout by passing the `:layout_engine` option.
 
+#### AsciiDoc Templates
+
+<table>
+  <tr>
+    <td>Dependency</td>
+    <td><a href="http://asciidoctor.org/" title="Asciidoctor">Asciidoctor</a></td>
+  </tr>
+  <tr>
+    <td>File Extension</td>
+    <td><tt>.asciidoc</tt>, <tt>.adoc</tt> and <tt>.ad</tt></td>
+  </tr>
+  <tr>
+    <td>Example</td>
+    <td><tt>asciidoc :README, :layout_engine => :erb</tt></td>
+  </tr>
+</table>
+
+Since you cannot call Ruby methods directly from an AsciiDoc template, you almost
+always want to pass locals to it.
+
 #### Radius Templates
 
 <table>
@@ -897,6 +930,41 @@ Since you cannot call Ruby from Creole, you cannot use layouts written in
 Creole. However, it is possible to use another rendering engine for the
 template than for the layout by passing the `:layout_engine` option.
 
+#### MediaWiki Templates
+
+<table>
+  <tr>
+    <td>Dependency</td>
+    <td><a href="https://github.com/nricciar/wikicloth" title="WikiCloth">WikiCloth</a></td>
+  </tr>
+  <tr>
+    <td>File Extension</td>
+    <td><tt>.mediawiki</tt> and <tt>.mw</tt></td>
+  </tr>
+  <tr>
+    <td>Example</td>
+    <td><tt>mediawiki :wiki, :layout_engine => :erb</tt></td>
+  </tr>
+</table>
+
+It is not possible to call methods from MediaWiki markup, nor to pass locals to it.
+You therefore will usually use it in combination with another rendering engine:
+
+``` ruby
+erb :overview, :locals => { :text => mediawiki(:introduction) }
+```
+
+Note that you may also call the `mediawiki` method from within other templates:
+
+``` ruby
+%h1 Hello From Haml!
+%p= mediawiki(:greetings)
+```
+
+Since you cannot call Ruby from MediaWiki, you cannot use layouts written in
+MediaWiki. However, it is possible to use another rendering engine for the
+template than for the layout by passing the `:layout_engine` option.
+
 #### CoffeeScript Templates
 
 <table>
@@ -994,8 +1062,9 @@ json[:baz] = key
 The `:callback` and `:variable` options can be used to decorate the rendered
 object:
 
-``` ruby
-var resource = {"foo":"bar","baz":"qux"}; present(resource);
+``` javascript
+var resource = {"foo":"bar","baz":"qux"};
+present(resource);
 ```
 
 #### WLang Templates
@@ -1003,7 +1072,7 @@ var resource = {"foo":"bar","baz":"qux"}; present(resource);
 <table>
   <tr>
     <td>Dependency</td>
-    <td><a href="https://github.com/blambeau/wlang/" title="wlang">wlang</a></td>
+    <td><a href="https://github.com/blambeau/wlang/" title="WLang">WLang</a></td>
   </tr>
   <tr>
     <td>File Extension</td>
@@ -1015,8 +1084,8 @@ var resource = {"foo":"bar","baz":"qux"}; present(resource);
   </tr>
 </table>
 
-Since calling ruby methods is not idiomatic in wlang, you almost always want to pass locals
-to it. Layouts written in wlang and `yield` are supported, though.
+Since calling ruby methods is not idiomatic in WLang, you almost always want to pass locals
+to it. Layouts written in WLang and `yield` are supported, though.
 
 ### Accessing Variables in Templates
 
@@ -1075,7 +1144,7 @@ erb :admin_layout, :layout => :main_layout do
 end
 ```
 
-Currently the following rendering method accept a block: `erb`, `haml`,
+Currently, the following rendering methods accept a block: `erb`, `haml`,
 `liquid`, `slim `, `wlang`.
 Also the general `render` method accepts a block.
 
@@ -1180,9 +1249,9 @@ get '/foo/*' do
 end
 ```
 
-After filters are evaluated after each request within the same context and can
-also modify the request and response. Instance variables set in before filters
-and routes are accessible by after filters:
+After filters are evaluated after each request within the same
+context as the routes will be and can also modify the request and response. Instance
+variables set in before filters and routes are accessible by after filters:
 
 ``` ruby
 after do
@@ -1447,7 +1516,7 @@ end
 ```
 
 This allows you to implement streaming APIs,
-[Server Sent Events](http://dev.w3.org/html5/eventsource/) and can be used as
+[Server Sent Events](http://dev.w3.org/html5/eventsource/), and can be used as
 the basis for [WebSockets](http://en.wikipedia.org/wiki/WebSocket). It can also be
 used to increase throughput if some but not all content depends on a slow
 resource.
@@ -1507,7 +1576,7 @@ end
 
 This logger will automatically take your Rack handler's logging settings into
 account. If logging is disabled, this method will return a dummy object, so
-you do not have to worry in your routes and filters about it.
+you do not have to worry about it in your routes and filters.
 
 Note that logging is only enabled for `Sinatra::Application` by
 default, so if you inherit from `Sinatra::Base`, you probably want to
@@ -1682,11 +1751,11 @@ end
 Use the `:static_cache_control` setting (see below) to add
 `Cache-Control` header info to static files.
 
-According to RFC 2616 your application should behave differently if the If-Match
-or If-None-Match header is set to `*` depending on whether the resource
+According to RFC 2616, your application should behave differently if the If-Match
+or If-None-Match header is set to `*`, depending on whether the resource
 requested is already in existence. Sinatra assumes resources for safe (like get)
 and idempotent (like put) requests are already in existence, whereas other
-resources (for instance for post requests), are treated as new resources. You
+resources (for instance post requests) are treated as new resources. You
 can change this behavior by passing in a `:new_resource` option:
 
 ``` ruby
@@ -1742,7 +1811,7 @@ The options are:
 
   <dt>status</dt>
     <dd>
-      Status code to be send. Useful when sending a static file as an error page.
+      Status code to be sent. Useful when sending a static file as an error page.
 
       If supported by the Rack handler, other means than streaming from the Ruby
       process will be used. If you use this helper method, Sinatra will automatically
@@ -2016,7 +2085,7 @@ set :protection, :session => true
 
   <dt>add_charsets</dt>
   <dd>
-    mime types the <tt>content_type</tt> helper will automatically add the charset info to.
+    Mime types the <tt>content_type</tt> helper will automatically add the charset info to.
     You should add to it rather than overriding this option:
     <tt>settings.add_charsets << "application/foobar"</tt>
   </dd>
@@ -2031,19 +2100,19 @@ set :protection, :session => true
   <dd>IP address to bind to (default: <tt>0.0.0.0</tt> <em>or</em> <tt>localhost</tt> if your `environment` is set to development.). Only used for built-in server.</dd>
 
   <dt>default_encoding</dt>
-  <dd>encoding to assume if unknown (defaults to <tt>"utf-8"</tt>).</dd>
+  <dd>Encoding to assume if unknown (defaults to <tt>"utf-8"</tt>).</dd>
 
   <dt>dump_errors</dt>
-  <dd>display errors in the log.</dd>
+  <dd>Display errors in the log.</dd>
 
   <dt>environment</dt>
   <dd>
-    current environment, defaults to <tt>ENV['RACK_ENV']</tt>, or <tt>"development"</tt> if
+    Current environment. Defaults to <tt>ENV['RACK_ENV']</tt>, or <tt>"development"</tt> if
     not available.
   </dd>
 
   <dt>logging</dt>
-  <dd>use the logger.</dd>
+  <dd>Use the logger.</dd>
 
   <dt>lock</dt>
   <dd>
@@ -2054,7 +2123,7 @@ set :protection, :session => true
 
   <dt>method_override</dt>
   <dd>
-    use <tt>_method</tt> magic to allow put/delete forms in browsers that
+    Use <tt>_method</tt> magic to allow put/delete forms in browsers that
     don't support it.
   </dd>
 
@@ -2093,18 +2162,18 @@ set :protection, :session => true
 
   <dt>raise_errors</dt>
   <dd>
-    raise exceptions (will stop application). Enabled by default when
+    Raise exceptions (will stop application). Enabled by default when
     <tt>environment</tt> is set to <tt>"test"</tt>, disabled otherwise.
   </dd>
 
   <dt>run</dt>
   <dd>
-    if enabled, Sinatra will handle starting the web server, do not
+    If enabled, Sinatra will handle starting the web server. Do not
     enable if using rackup or other means.
   </dd>
 
   <dt>running</dt>
-  <dd>is the built-in server running now? Do not change this setting!</dd>
+  <dd>Is the built-in server running now? Do not change this setting!</dd>
 
   <dt>server</dt>
   <dd>
@@ -2155,6 +2224,9 @@ set :protection, :session => true
     If set to <tt>true</tt>, will tell Thin to use <tt>EventMachine.defer</tt>
     for processing the request.
   </dd>
+
+  <dt>traps</dt>
+  <dd>Whether Sinatra should handle system signals.</dd>
 
   <dt>views</dt>
   <dd>
@@ -2315,8 +2387,7 @@ typically don't have to `use` them explicitly.
 You can find useful middleware in
 [rack](https://github.com/rack/rack/tree/master/lib/rack),
 [rack-contrib](https://github.com/rack/rack-contrib#readm),
-with [CodeRack](http://coderack.org/) or in the
-[Rack wiki](https://github.com/rack/rack/wiki/List-of-Middleware).
+or in the [Rack wiki](https://github.com/rack/rack/wiki/List-of-Middleware).
 
 ## Testing
 
@@ -2391,8 +2462,21 @@ available via the top-level DSL. Most top-level apps can be converted to
 
 `Sinatra::Base` is a blank slate. Most options are disabled by default,
 including the built-in server. See
-[Options and Configuration](http://sinatra.github.com/configuration.html)
-for details on available options and their behavior.
+[Configuring Settings](http://sinatra.github.com/configuration.html)
+for details on available options and their behavior. If you want
+behavior more similar to when you define your app at the top level (also
+know as Classic style), you
+can subclass `Sinatra::Application`.
+
+``` ruby
+require 'sinatra/base'
+
+class MyApp < Sinatra::Application
+  get '/' do
+    'Hello world!'
+  end
+end
+```
 
 ### Modular vs. Classic Style
 
@@ -2412,17 +2496,20 @@ different default settings:
     <th>Setting</th>
     <th>Classic</th>
     <th>Modular</th>
+    <th>Modular</th>
   </tr>
 
   <tr>
     <td>app_file</td>
     <td>file loading sinatra</td>
     <td>file subclassing Sinatra::Base</td>
+    <td>file subclassing Sinatra::Application</td>
   </tr>
 
   <tr>
     <td>run</td>
     <td>$0 == app_file</td>
+    <td>false</td>
     <td>false</td>
   </tr>
 
@@ -2430,24 +2517,28 @@ different default settings:
     <td>logging</td>
     <td>true</td>
     <td>false</td>
+    <td>true</td>
   </tr>
 
   <tr>
     <td>method_override</td>
     <td>true</td>
     <td>false</td>
+    <td>true</td>
   </tr>
 
   <tr>
     <td>inline_templates</td>
     <td>true</td>
     <td>false</td>
+    <td>true</td>
   </tr>
 
   <tr>
     <td>static</td>
     <td>true</td>
     <td>false</td>
+    <td>true</td>
   </tr>
 </table>
 
@@ -2562,7 +2653,7 @@ end
 ### Dynamic Application Creation
 
 Sometimes you want to create new applications at runtime without having to
-assign them to a constant, you can do this with `Sinatra.new`:
+assign them to a constant. You can do this with `Sinatra.new`:
 
 ``` ruby
 require 'sinatra/base'
@@ -2649,7 +2740,7 @@ You can reach the scope object (the class) like this:
 ### Request/Instance Scope
 
 For every incoming request, a new instance of your application class is
-created and all handler blocks run in that scope. From within this scope you
+created, and all handler blocks run in that scope. From within this scope you
 can access the `request` and `session` objects or call rendering methods like
 `erb` or `haml`. You can access the application scope from within the request
 scope via the `settings` helper:
@@ -2796,7 +2887,7 @@ We also push out prerelease gems from time to time, so you can do a
 gem install sinatra --pre
 ```
 
-To get some of the latest features.
+to get some of the latest features.
 
 ### With Bundler
 
@@ -2859,7 +2950,7 @@ rake sinatra.gemspec
 rake install
 ```
 
-If you install gems as root, the last step should be
+If you install gems as root, the last step should be:
 
 ``` shell
 sudo rake install

@@ -18,7 +18,7 @@ class StaticTest < Test::Unit::TestCase
 
   it 'produces a body that can be iterated over multiple times' do
     env = Rack::MockRequest.env_for("/#{File.basename(__FILE__)}")
-    status, headers, body = @app.call(env)
+    _, _, body = @app.call(env)
     buf1, buf2 = [], []
     body.each { |part| buf1 << part }
     body.each { |part| buf2 << part }
@@ -28,7 +28,7 @@ class StaticTest < Test::Unit::TestCase
 
   it 'sets the sinatra.static_file env variable if served' do
     env = Rack::MockRequest.env_for("/#{File.basename(__FILE__)}")
-    status, headers, body = @app.call(env)
+    @app.call(env)
     assert_equal File.expand_path(__FILE__), env['sinatra.static_file']
   end
 
@@ -192,7 +192,7 @@ class StaticTest < Test::Unit::TestCase
 
   it 'does not include static cache control headers by default' do
     env = Rack::MockRequest.env_for("/#{File.basename(__FILE__)}")
-    status, headers, body = @app.call(env)
+    _, headers, _ = @app.call(env)
     assert !headers.has_key?('Cache-Control')
   end
 
@@ -214,6 +214,23 @@ class StaticTest < Test::Unit::TestCase
       headers['Cache-Control'],
       'public, must-revalidate, max-age=300'
     )
+  end
+
+  it 'renders static assets with custom status via options' do
+    mock_app do
+      set :static, true
+      set :public_folder, File.dirname(__FILE__)
+
+      post '/*' do
+        static!(:status => params[:status])
+      end
+    end
+
+    post "/#{File.basename(__FILE__)}?status=422"
+    assert_equal response.status, 422
+    assert_equal File.read(__FILE__), body
+    assert_equal File.size(__FILE__).to_s, response['Content-Length']
+    assert response.headers.include?('Last-Modified')
   end
 
 end

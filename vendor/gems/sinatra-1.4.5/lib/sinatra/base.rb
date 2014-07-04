@@ -32,7 +32,7 @@ module Sinatra
     end
 
     def accept?(type)
-      preferred_type(type).include?(type)
+      preferred_type(type).to_s.include?(type)
     end
 
     def preferred_type(*types)
@@ -658,6 +658,7 @@ module Sinatra
     def initialize
       super
       @default_layout = :layout
+      @preferred_extension = nil
     end
 
     def erb(template, options = {}, locals = {}, &block)
@@ -715,6 +716,10 @@ module Sinatra
       render :rdoc, template, options, locals
     end
 
+    def asciidoc(template, options = {}, locals = {})
+      render :asciidoc, template, options, locals
+    end
+
     def radius(template, options = {}, locals = {})
       render :radius, template, options, locals
     end
@@ -739,6 +744,10 @@ module Sinatra
 
     def creole(template, options = {}, locals = {})
       render :creole, template, options, locals
+    end
+
+    def mediawiki(template, options = {}, locals = {})
+      render :mediawiki, template, options, locals
     end
 
     def wlang(template, options = {}, locals = {}, &block)
@@ -809,7 +818,7 @@ module Sinatra
 
       # render layout
       if layout
-        options.merge!(:views => views, :layout => false, :eat_errors => eat_errors, :scope => scope).
+        options = options.merge(:views => views, :layout => false, :eat_errors => eat_errors, :scope => scope).
                 merge!(layout_options)
         catch(:layout_missing) { return render(layout_engine, layout, options, locals) { output } }
       end
@@ -835,7 +844,7 @@ module Sinatra
             @preferred_extension = engine.to_s
             find_template(views, data, template) do |file|
               path ||= file # keep the initial path rather than the last one
-              if found = File.exists?(file)
+              if found = File.exist?(file)
                 path = file
                 break
               end
@@ -1015,14 +1024,14 @@ module Sinatra
 
     # Attempt to serve static files from public directory. Throws :halt when
     # a matching file is found, returns nil otherwise.
-    def static!
+    def static!(options = {})
       return if (public_dir = settings.public_folder).nil?
       path = File.expand_path("#{public_dir}#{unescape(request.path_info)}" )
       return unless File.file?(path)
 
       env['sinatra.static_file'] = path
       cache_control(*settings.static_cache_control) if settings.static_cache_control?
-      send_file path, :disposition => nil
+      send_file path, options.merge(:disposition => nil)
     end
 
     # Enable string or symbol key access to the nested params hash.
@@ -1129,7 +1138,7 @@ module Sinatra
 
     class << self
       CALLERS_TO_IGNORE = [ # :nodoc:
-        /\/sinatra(\/(base|main|showexceptions))?\.rb$/,    # all sinatra code
+        /\/sinatra(\/(base|main|show_exceptions))?\.rb$/,    # all sinatra code
         /lib\/tilt.*\.rb$/,                                 # all tilt code
         /^\(.*\)$/,                                         # generated code
         /rubygems\/(custom|core_ext\/kernel)_require\.rb$/, # rubygems require hacks
@@ -1575,6 +1584,7 @@ module Sinatra
       end
 
       def generate_method(method_name, &block)
+        method_name = method_name.to_sym
         define_method(method_name, &block)
         method = instance_method method_name
         remove_method method_name
@@ -1828,7 +1838,7 @@ module Sinatra
     set :use_code, false
     set :default_encoding, "utf-8"
     set :x_cascade, true
-    set :add_charset, %w[javascript xml xhtml+xml json].map { |t| "application/#{t}" }
+    set :add_charset, %w[javascript xml xhtml+xml].map { |t| "application/#{t}" }
     settings.add_charset << /^text\//
 
     # explicitly generating a session secret eagerly to play nice with preforking

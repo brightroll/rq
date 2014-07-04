@@ -63,6 +63,14 @@ end
 options '/' do
   # .. что-то ответить ..
 end
+
+link '/' do
+  .. что-то подключить ..
+end
+
+unlink '/' do
+  .. что-то отключить ..
+end
 ```
 
 Маршруты сверяются с запросом в порядке очередности их записи в файле
@@ -702,6 +710,26 @@ erb :overview, :locals => { :text => rdoc(:introduction) }
 для отображения шаблона, а другой для лэйаута с помощью опции
 `:layout_engine`.
 
+#### AsciiDoc шаблоны
+
+<table>
+  <tr>
+    <td>Зависимости</td>
+    <td><a href="http://asciidoctor.org/" title="Asciidoctor">Asciidoctor</a></td>
+  </tr>
+  <tr>
+    <td>Расширения файлов</td>
+    <td><tt>.asciidoc</tt>, <tt>.adoc</tt> и <tt>.ad</tt></td>
+  </tr>
+  <tr>
+    <td>Пример</td>
+    <td><tt>asciidoc :README, :layout_engine => :erb</tt></td>
+  </tr>
+</table>
+
+Так как в AsciiDoc шаблонах невозможно вызывать методы из Ruby напрямую, то вы
+почти всегда будете передавать в шаблон локальные переменные.
+
 #### Radius шаблоны
 
 <table>
@@ -809,6 +837,43 @@ erb :overview, :locals => { :text => creole(:introduction) }
 
 Вы не можете вызывать Ruby из Creole, соответственно, вы не можете
 использовать лэйауты на Creole. Тем не менее, есть возможность использовать
+один шаблонизатор для отображения шаблона, а другой для лэйаута с помощью
+опции `:layout_engine`.
+
+#### MediaWiki шаблоны
+
+<table>
+  <tr>
+    <td>Зависимости</td>
+    <td><a href="https://github.com/nricciar/wikicloth" title="WikiCloth">WikiCloth</a></td>
+  </tr>
+  <tr>
+    <td>Расширения файлов</td>
+    <td><tt>.mediawiki</tt> и <tt>.mw</tt></td>
+  </tr>
+  <tr>
+    <td>Пример</td>
+    <td><tt>mediawiki :wiki, :layout_engine => :erb</tt></td>
+  </tr>
+</table>
+
+В разметке MediaWiki невозможно вызывать методы или передавать локальные переменные.
+Следовательно, вам, скорее всего, придется использовать этот шаблон совместно
+с другим шаблонизатором:
+
+```ruby
+erb :overview, :locals => { :text => mediawiki(:introduction) }
+```
+
+Заметьте, что вы можете вызывать метод `mediawiki` из других шаблонов:
+
+```ruby
+%h1 Hello From Haml!
+%p= mediawiki(:greetings)
+```
+
+Вы не можете вызывать Ruby из MediaWiki, соответственно, вы не можете
+использовать лэйауты на MediaWiki. Тем не менее, есть возможность использовать
 один шаблонизатор для отображения шаблона, а другой для лэйаута с помощью
 опции `:layout_engine`.
 
@@ -954,7 +1019,7 @@ end
     end
 ```
 
-В настоящее время, следующие интерпретирубщие шаблоны методы
+В настоящее время, следующие интерпретирующие шаблоны методы
 принимают блок:
 `erb`, `haml`, `liquid`, `slim `, `wlang`.
 Общий метод заполнения шаблонов `render` также принимает блок.
@@ -2051,6 +2116,9 @@ set :protection, :except => [:path_traversal, :session_hijacking]
     обработки запросов.
   </dd>
 
+  <dt>traps</dt>
+  <dd>должна ли Синатра обрабатывать системные сигналы или нет.</tt></dd>
+
   <dt>views</dt>
   <dd>путь к директории с шаблонами.</dd>
 </dl>
@@ -2189,7 +2257,7 @@ Rack распространяется с различными стандартн
 Вы можете найти полезные прослойки в
 [rack](https://github.com/rack/rack/tree/master/lib/rack),
 [rack-contrib](https://github.com/rack/rack-contrib#readme),
-[CodeRack](http://coderack.org/) или в
+или в
 [Rack wiki](https://github.com/rack/rack/wiki/List-of-Middleware).
 
 ## Тестирование
