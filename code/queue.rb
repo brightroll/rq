@@ -1040,34 +1040,8 @@ module RQ
       child_pid = msg['child_pid']
 
       log("#{child_pid}: Reading status from child")
-      # I should just use sysread and syswrite everywhere
-      # the ruby IO model removes power from those who know
-      # with wrappers written by those who do not know
-      # update... using sysread
-      data = ""
-      loop do
-        begin
-          #child_io.sysread(4096)
-          #data += child_io.readpartial(4096)
-          data += child_io.sysread(4096)
-          break
-        rescue Errno::EAGAIN, Errno::EINTR
-          #log("Error: #{$!}")
-          sleep 0.001 # A tiny pause to prevent consuming all CPU
-          retry
-        rescue EOFError
-          #log("EOFError - #{$!}")
-          break
-        end
-      end
-
-      #if data
-      #  log("Done Reading status from child len: #{data.length}")
-      #else
-      #  log("Done Reading status from child (nil)")
-      #end
-
-      return false if data.empty?
+      data = do_read(child_io, 4096)
+      return false unless data
 
       child_msgs = data.split("\n")
 
@@ -1524,23 +1498,6 @@ module RQ
       if result[0] != 'ok'
         log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
       end
-    end
-
-    def do_read(client, numr = 32768)
-      begin
-        dat = client.sysread(numr)
-      rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
-        sleep 0.001 # A tiny pause to prevent consuming all CPU
-        retry
-      rescue EOFError
-        #TODO: add debug mode
-        #puts "Got an EOF from socket read"
-        return nil
-      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-        puts "Got an #{$!} from socket read"
-        exit! 0
-      end
-      dat
     end
 
     def handle_request(sock)

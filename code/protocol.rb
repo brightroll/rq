@@ -104,7 +104,7 @@ module RQ
     def do_read(client, numr = 32768)
       begin
         dat = client.sysread(numr)
-      rescue Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+      rescue Errno::EAGAIN, Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
         sleep 0.001 # A tiny pause to prevent consuming all CPU
         retry
       rescue EOFError
