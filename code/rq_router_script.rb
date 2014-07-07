@@ -31,8 +31,8 @@ $rq_msg_dir = Dir.pwd
 Dir.chdir("#{File.dirname(__FILE__)}")
 
 # Setup a global binding so the GC doesn't close the file
-$RQ_IO = IO.for_fd(3)
-$RQ_RESULT_IO = IO.for_fd(4)
+$RQ_IO = IO.for_fd(ENV['RQ_WRITE'].to_i)
+$RQ_RESULT_IO = IO.for_fd(ENV['RQ_READ'].to_i)
 
 # IO tower to RQ mgr process
 def write_status(state, mesg)
