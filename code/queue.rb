@@ -7,7 +7,6 @@ require 'unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
-require 'code/jsonconfigfile'
 require 'code/protocol'
 require 'pathname'
 
@@ -452,9 +451,8 @@ module RQ
     end
 
     def load_config
-      @config_check = Time.now
-      @config_file = JSONConfigFile.new(File.join(@queue_path, 'config.json'))
-      @config = sublimate_config(@config_file.conf)
+      data = File.read(File.join(@queue_path, 'config.json'))
+      @config = sublimate_config(JSON.parse(data))
     end
 
     def sublimate_config(conf)
@@ -1297,7 +1295,6 @@ module RQ
           retry
         end
 
-        now = Time.now
         next unless ready
 
         ready.each do |io|
@@ -1319,9 +1316,7 @@ module RQ
             log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL HUP")
             reset_nonblocking(@signal_hup_rd)
             do_read(@signal_hup_rd, 1)
-
-            # Force a new config check
-            @config_check = now - 10
+            load_config
 
           when @signal_chld_rd.fileno
             log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL CHLD")
@@ -1346,16 +1341,6 @@ module RQ
               log("QUEUE #{@name} of PID #{Process.pid} activity on unexpected fd: #{io.fileno}")
             end
           end
-
-          # Check if it has been > 5 seconds since last config file check
-          if (now - @config_check) > 5
-            if @config_file.check_for_change == JSONConfigFile::CHANGED
-              log('Config file changed. Using new config')
-              @config = sublimate_config(@config_file.conf)
-            end
-            @config_check = now
-          end
-
         end
       end
     end
