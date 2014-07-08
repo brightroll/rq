@@ -3,7 +3,6 @@ require 'json'
 require 'fcntl'
 require 'digest'
 require 'fileutils'
-require 'unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
@@ -1304,6 +1303,7 @@ module RQ
             end
             reset_nonblocking(client_socket)
             handle_request(client_socket)
+            client_socket.close
 
           when @parent_pipe.fileno
             log("QUEUE #{@name} noticed parent close exiting...")
@@ -1487,7 +1487,7 @@ module RQ
     end
 
     def handle_request(sock)
-      packet = read_packet(sock)
+      packet = read_packet(sock) rescue nil
       return unless packet
 
       cmd, arg = packet.split(' ', 2)

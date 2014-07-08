@@ -1,7 +1,6 @@
 require 'socket'
 require 'json'
 require 'fileutils'
-require 'unixrack'
 require 'code/hashdir'
 
 module RQ
