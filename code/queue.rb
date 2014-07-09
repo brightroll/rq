@@ -555,9 +555,10 @@ module RQ
       @prep.delete(msg['msg_id'])
       @que.unshift(msg)
 
+      # This may execute the new message immediately
       run_scheduler!
 
-      return true
+      true
     end
 
     def is_duplicate?(msg1, msg2)
@@ -1269,9 +1270,6 @@ module RQ
       log("Running #{ready_msg['msg_id']} - delta #{delta}")
       # Looks like it is time to run now...
       run_job(ready_msg)
-      run_scheduler!   # Tail recursion, fail me now, I'm in Ruby
-                       # So, lets hope the load isn't too high
-                       # If it is, then we will loop like crazy
     end
 
     def run_loop
@@ -1280,8 +1278,7 @@ module RQ
       while true
         run_scheduler!
 
-        io_list = @run.map { |i| i['child_read_pipe'] }
-        io_list.compact!
+        io_list = @run.map { |i| i['child_read_pipe'] }.compact
         io_list << @sock
         io_list << @parent_pipe
         io_list << @signal_hup_rd
