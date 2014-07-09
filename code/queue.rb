@@ -148,11 +148,6 @@ module RQ
           #child only code block
           RQ::Queue.log(queue_path, 'post fork')
 
-          # Unix house keeping
-          self.close_all_fds([child_rd.fileno])
-          # TODO: probly some other signal, session, proc grp, etc. crap
-
-          RQ::Queue.log(queue_path, 'post close_all')
           q = RQ::Queue.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
@@ -193,16 +188,6 @@ module RQ
     rescue Exception
       self.log("startup", "Failed to start worker #{options.inspect}: #{$!}")
       nil
-    end
-
-    def self.close_all_fds(exclude_fds)
-      0.upto(1023) do |fd|
-        begin
-          next if exclude_fds.include? fd
-          IO.for_fd(fd).close
-        rescue Exception
-        end
-      end
     end
 
     def self.validate_options(options)
@@ -322,9 +307,6 @@ module RQ
 
           parent_rd.close
           parent_wr.close
-
-          # Unix house keeping
-          #self.close_all_fds([child_wr.fileno])
 
           #... the pipe fd will get closed on exec
 
