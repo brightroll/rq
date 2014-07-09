@@ -1097,7 +1097,7 @@ module RQ
             begin
               qc = RQ::QueueClient.new(que_name)
             rescue RqQueueNotFound
-              log("#{@name}:#{Process.pid} couldn't DUP message - #{que_name} not available.")
+              log("QUEUE #{@name} couldn't DUP message - #{que_name} not available.")
               msg['child_write_pipe'].syswrite("fail couldn't connect to queue - #{que_name}\n")
               return
             end
@@ -1124,16 +1124,16 @@ module RQ
             if attachments.empty?
               result = qc.create_message(msg_copy)
               if result[0] != 'ok'
-                log("#{@name}:#{Process.pid} couldn't DUP message - #{result[1]}")
+                log("QUEUE #{@name} couldn't DUP message - #{result[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - #{result[1]}\n")
                 return
               end
-              log("#{@name}:#{Process.pid} DUP message #{msg['msg_id']}-> #{result[1]}")
+              log("QUEUE #{@name} DUP message #{msg['msg_id']}-> #{result[1]}")
               msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
             else
               result = qc.prep_message(msg_copy)
               if result[0] != 'ok'
-                log("#{@name}:#{Process.pid} couldn't DUP message - #{result[1]}")
+                log("QUEUE #{@name} couldn't DUP message - #{result[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - prep fail #{result[1]}\n")
                 return
               end
@@ -1144,7 +1144,7 @@ module RQ
               attachments.each do |path|
                 r2 = qc.attach_message({'msg_id' => que_msg_id, 'pathname' => path})
                 if r2[0] != 'ok'
-                  log("#{@name}:#{Process.pid} couldn't DUP message - #{r2[1]}")
+                  log("QUEUE #{@name} couldn't DUP message - #{r2[1]}")
                   msg['child_write_pipe'].syswrite("fail dup failed - attach fail #{r2[1]}\n")
                   return
                 end
@@ -1152,11 +1152,11 @@ module RQ
 
               r3 = qc.commit_message({'msg_id' => que_msg_id})
               if r3[0] != 'ok'
-                log("#{@name}:#{Process.pid} couldn't DUP message - #{r3[1]}")
+                log("QUEUE #{@name} couldn't DUP message - #{r3[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - commit fail #{r3[1]}\n")
                 return
               end
-              log("#{@name}:#{Process.pid} DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
+              log("QUEUE #{@name} DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
               msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
             end
 
@@ -1309,17 +1309,17 @@ module RQ
             handle_request(client_socket)
 
           when @parent_pipe.fileno
-            log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
+            log("QUEUE #{@name} noticed parent close exiting...")
             shutdown!
 
           when @signal_hup_rd.fileno
-            log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL HUP")
+            log("QUEUE #{@name} noticed SIGNAL HUP")
             reset_nonblocking(@signal_hup_rd)
             do_read(@signal_hup_rd, 1)
             load_config
 
           when @signal_chld_rd.fileno
-            log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL CHLD")
+            log("QUEUE #{@name} noticed SIGNAL CHLD")
             reset_nonblocking(@signal_chld_rd)
             do_read(@signal_chld_rd, 1)
             # A child exited, figure out which one
@@ -1334,11 +1334,11 @@ module RQ
             if msg
               status = handle_status_read(msg)
               unless status
-                log("QUEUE #{@name} of PID #{Process.pid} had a problem handling child status: #{status}")
+                log("QUEUE #{@name} had a problem handling child status: #{status}")
                 handle_child_close(msg)
               end
             else
-              log("QUEUE #{@name} of PID #{Process.pid} activity on unexpected fd: #{io.fileno}")
+              log("QUEUE #{@name} activity on unexpected fd: #{io.fileno}")
             end
           end
         end
@@ -1346,19 +1346,19 @@ module RQ
     end
 
     def handle_child_close(msg, status=nil)
-      log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe close... #{msg['child_pid']}")
+      log("QUEUE #{@name} noticed child pipe close... #{msg['child_pid']}")
 
       if status.nil?
         pid, status = Process.wait2(msg['child_pid'], Process::WNOHANG)
       end
 
       if status.nil?
-        log("EXITING: queue #{@name} - script msg #{msg['child_pid']} was not ready to be reaped")
+        log("QUEUE #{@name} script child #{msg['child_pid']} was not ready to be reaped")
         sleep 0.001
         return
       end
 
-      log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{msg['child_pid']} exit with status #{status}")
+      log("QUEUE #{@name} script child #{msg['child_pid']} exit with status #{status}")
 
       msg_id = msg['msg_id']
       orig_msg_id = msg['orig_msg_id']
@@ -1373,9 +1373,9 @@ module RQ
       completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
 
       if completion
-        log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} completion [#{completion.inspect}]")
+        log("QUEUE #{@name} child #{msg['child_pid']} completion [#{completion.inspect}]")
       else
-        log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} NO COMPLETION")
+        log("QUEUE #{@name} child #{msg['child_pid']} NO COMPLETION")
         completion = [nil, nil, nil]
       end
 
@@ -1465,7 +1465,7 @@ module RQ
       begin
         qc = RQ::QueueClient.new('webhook')
       rescue RqQueueNotFound
-        log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
+        log("QUEUE #{@name} couldn't que webhook for msg_id: #{msg_id}")
         return
       end
 
@@ -1485,7 +1485,7 @@ module RQ
       mesg['param2'] = msg_copy.to_json
       result = qc.create_message(mesg)
       if result[0] != 'ok'
-        log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
+        log("QUEUE #{@name} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
       end
     end
 
