@@ -1,6 +1,5 @@
 require 'socket'
 require 'json'
-require 'fcntl'
 require 'fileutils'
 require 'unixrack'
 require 'code/hashdir'

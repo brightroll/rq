@@ -1,4 +1,5 @@
 require 'unixrack'
+require 'fcntl'
 
 # Mix the Protocol module into classes that communicate on internal sockets
 
@@ -6,6 +7,23 @@ module RQ
   module Protocol
     def set_protocol_sock_path(sock_path)
       @protocol_sock_path = sock_path
+    end
+
+    def set_nonblocking(sock)
+      flag = File::NONBLOCK
+      if defined?(Fcntl::F_GETFL)
+        flag |= sock.fcntl(Fcntl::F_GETFL)
+      end
+      sock.fcntl(Fcntl::F_SETFL, flag)
+    end
+
+    def reset_nonblocking(sock)
+      # Linux Doesn't inherit and BSD does... recomended behavior is to set again
+      flag = 0xffffffff ^ File::NONBLOCK
+      if defined?(Fcntl::F_GETFL)
+        flag &= sock.fcntl(Fcntl::F_GETFL)
+      end
+      sock.fcntl(Fcntl::F_SETFL, flag)
     end
 
     def read_packet(sock)

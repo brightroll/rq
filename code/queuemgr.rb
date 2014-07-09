@@ -1,6 +1,5 @@
 require 'socket'
 require 'json'
-require 'fcntl'
 
 require 'code/queue'
 require 'code/scheduler'
@@ -319,11 +318,7 @@ module RQ
 
       start_webserver
 
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= $sock.fcntl(Fcntl::F_GETFL)
-      end
-      $sock.fcntl(Fcntl::F_SETFL, flag)
+      set_nonblocking($sock)
 
       # Ye old event loop
       while true
@@ -351,13 +346,7 @@ module RQ
             rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
               log('error acception on main sock, supposed to be readysleeping')
             end
-            # Linux Doesn't inherit and BSD does... recomended behavior is to set again
-            flag = 0xffffffff ^ File::NONBLOCK
-            if defined?(Fcntl::F_GETFL)
-              flag &= client_socket.fcntl(Fcntl::F_GETFL)
-            end
-            #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
-            client_socket.fcntl(Fcntl::F_SETFL, flag)
+            reset_nonblocking(client_socket)
             handle_request(client_socket)
           else
             # probably a child pipe that closed

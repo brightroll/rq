@@ -1306,11 +1306,7 @@ module RQ
     end
 
     def run_loop
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= @sock.fcntl(Fcntl::F_GETFL)
-      end
-      @sock.fcntl(Fcntl::F_SETFL, flag)
+      set_nonblocking(@sock)
 
       while true
         run_scheduler!
@@ -1342,13 +1338,7 @@ module RQ
               rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
                 log('error acception on main sock, supposed to be readysleeping')
               end
-              # Linux Doesn't inherit and BSD does... recomended behavior is to set again
-              flag = 0xffffffff ^ File::NONBLOCK
-              if defined?(Fcntl::F_GETFL)
-                flag &= client_socket.fcntl(Fcntl::F_GETFL)
-              end
-              #log("Non Block Flag -> #{flag} == #{File::NONBLOCK}")
-              client_socket.fcntl(Fcntl::F_SETFL, flag)
+              reset_nonblocking(client_socket)
               handle_request(client_socket)
               next
             elsif io.fileno == @parent_pipe.fileno
@@ -1361,12 +1351,7 @@ module RQ
               # Force a new config check
               @config_check = now - 10
 
-              # Linux Doesn't inherit and BSD does... recomended behavior is to set again
-              flag = 0xffffffff ^ File::NONBLOCK
-              if defined?(Fcntl::F_GETFL)
-                flag &= @signal_hup_rd.fcntl(Fcntl::F_GETFL)
-              end
-              @signal_hup_rd.fcntl(Fcntl::F_SETFL, flag)
+              reset_nonblocking(@signal_hup_rd)
               dat = do_read(@signal_hup_rd, 1)
               log("Strange Result from HUP signal pipe.") if dat.size != 1
               next
