@@ -58,7 +58,7 @@ module RQ
 
       # Setup IPC
       File.unlink('config/queuemgr.sock') rescue nil
-      $sock = UNIXServer.open('config/queuemgr.sock')
+      @sock = UNIXServer.open('config/queuemgr.sock')
     end
 
     # Validate characters in name
@@ -218,7 +218,7 @@ module RQ
       load_queues
     end
 
-    def shutdown
+    def shutdown!
       final_shutdown! if @queues.empty?
 
       # Remove non-running entries
@@ -244,7 +244,7 @@ module RQ
 
       # The actual shutdown happens when all procs are reaped
       File.unlink('config/queuemgr.pid') rescue nil
-      $sock.close
+      @sock.close
       File.unlink('config/queuemgr.sock') rescue nil
       log("FINAL SHUTDOWN - EXITING")
       Process.exit! 0
@@ -297,18 +297,22 @@ module RQ
       init
       load_config
 
+      @signal_hup_rd, @signal_hup_wr = IO.pipe
+      @signal_chld_rd, @signal_chld_wr = IO.pipe
+
       Signal.trap("TERM") do
         log("received TERM signal")
-        shutdown
+        shutdown!
       end
 
       Signal.trap("CHLD") do
         log("received CHLD signal")
+        @signal_chld_wr.syswrite('.')
       end
 
       Signal.trap("HUP") do
         log("received HUP signal")
-        reload
+        @signal_hup_wr.syswrite('.')
       end
 
       load_queues
@@ -318,13 +322,14 @@ module RQ
 
       start_webserver
 
-      set_nonblocking($sock)
+      set_nonblocking(@sock)
 
       # Ye old event loop
       while true
-        #log(queues.select { |i| i.status != "ERROR" }.map { |i| [i.name, i.child_write_pipe] }.inspect)
         io_list = @queues.values.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
-        io_list << $sock
+        io_list << @sock
+        io_list << @signal_hup_rd
+        io_list << @signal_chld_rd
         #log(io_list.inspect)
         log('sleeping')
         begin
@@ -340,14 +345,34 @@ module RQ
         next unless ready
 
         ready.each do |io|
-          if io.fileno == $sock.fileno
+          case io.fileno
+          when @sock.fileno
             begin
-              client_socket, client_sockaddr = $sock.accept
+              client_socket, client_sockaddr = @sock.accept
             rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
               log('error acception on main sock, supposed to be readysleeping')
             end
             reset_nonblocking(client_socket)
             handle_request(client_socket)
+
+          when @signal_hup_rd.fileno
+            log("noticed SIGNAL HUP")
+            reset_nonblocking(@signal_hup_rd)
+            do_read(@signal_hup_rd, 1)
+            reload
+
+          when @signal_chld_rd.fileno
+            log("noticed SIGNAL CHLD")
+            reset_nonblocking(@signal_chld_rd)
+            do_read(@signal_chld_rd, 1)
+
+            # A child exited, figure out which one
+            pid, status = Process.wait2(-1, Process::WNOHANG) rescue nil
+            if pid
+              worker = @queues.values.find { |o| o.pid == pid }
+              handle_worker_close(worker, status) if worker
+            end
+
           else
             # probably a child pipe that closed
             worker = @queues.values.find do |i|
@@ -355,52 +380,45 @@ module RQ
                 i.child_write_pipe.fileno == io.fileno
               end
             end
-            if worker
-              res = Process.wait2(worker.pid, Process::WNOHANG)
-              if res
-                log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{res[1]} - #{worker.status}")
-                worker.child_write_pipe.close
-
-                case worker.status
-                when 'RUNNING'
-                  if (@queue_errs[worker.name] += 1) > 10
-                    log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
-                    new_worker = RQ::Worker.new
-                    new_worker.status = 'ERROR'
-                    new_worker.name = worker.name
-                    @queues[worker.name] = new_worker
-                  else
-                    worker = RQ::Queue.start_process(worker.options)
-                    log("RESTARTED [ #{worker.name} - #{worker.pid} ]")
-                    @queues[worker.name] = worker
-                  end
-
-                when 'DELETE'
-                  RQ::Queue.delete(worker.name)
-                  @queues.delete(worker.name)
-                  log("DELETED [ #{worker.name} ]")
-
-                when 'SHUTDOWN'
-                  @queues.delete(worker.name)
-                  if @queues.empty?
-                    final_shutdown!
-                  end
-
-                else
-                  log("STRANGE: queue #{worker.pid } status = #{worker.status}")
-                end
-
-              else
-                log("EXITING: queue #{worker.pid} was not ready to be reaped #{res}")
-              end
-
-            else
-              log("VERY STRANGE: got a read ready on an io that we don't track!")
-            end
-
+            pid, status = Process.wait2(worker.pid, Process::WNOHANG)
+            handle_worker_close(worker, status) if worker
           end
         end
 
+      end
+    end
+
+    def handle_worker_close(worker, status)
+      log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{status} - #{worker.status}")
+      worker.child_write_pipe.close
+
+      case worker.status
+      when 'RUNNING'
+        if (@queue_errs[worker.name] += 1) > 10
+          log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
+          new_worker = RQ::Worker.new
+          new_worker.status = 'ERROR'
+          new_worker.name = worker.name
+          @queues[worker.name] = new_worker
+        else
+          worker = RQ::Queue.start_process(worker.options)
+          log("RESTARTED [ #{worker.name} - #{worker.pid} ]")
+          @queues[worker.name] = worker
+        end
+
+      when 'DELETE'
+        RQ::Queue.delete(worker.name)
+        @queues.delete(worker.name)
+        log("DELETED [ #{worker.name} ]")
+
+      when 'SHUTDOWN'
+        @queues.delete(worker.name)
+        if @queues.empty?
+          final_shutdown!
+        end
+
+      else
+        log("STRANGE: queue #{worker.pid} status = #{worker.status}")
       end
     end
 
