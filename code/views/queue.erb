@@ -16,7 +16,7 @@
   <% end %>
   </div>
   <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{qc.name}/config.json" %>">raw</a> ]</p>
-  <pre id="config" class="json hidden"><%= config.to_json %></pre>
+  <pre id="config" class="json hidden"><%= JSON.pretty_generate(config) %></pre>
 </div>
 
 <% if admin_status == 'UP' %>
