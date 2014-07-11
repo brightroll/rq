@@ -565,7 +565,8 @@ module RQ
 
       api_call = params.fetch('x_format', 'html')
 
-      if params[:_method] == 'delete'
+      case params[:_method]
+      when 'delete'
         result = qc.delete_message( {'msg_id' => params[:msg_id]} )
         if api_call == 'json'
           result.to_json
@@ -578,7 +579,22 @@ module RQ
             redirect "/q/#{params[:name]}/#{params[:msg_id]}"
           end
         end
-      elsif params[:_method] == 'commit'
+
+      when 'destroy'
+        result = qc.destroy_message( {'msg_id' => params[:msg_id]} )
+        if api_call == 'json'
+          result.to_json
+        else
+          if result[0] == "ok"
+            flash :notice, "Message destroyed successfully"
+            redirect "/q/#{params[:name]}"
+          else
+            flash :error, "destroy got #{result.inspect}"
+            redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+          end
+        end
+
+      when 'commit'
         result = qc.commit_message( {'msg_id' => params[:msg_id]} )
         if api_call == 'json'
           result.to_json

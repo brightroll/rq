@@ -7,7 +7,6 @@ require 'unixrack'
 require 'code/hashdir'
 require 'code/adminoper'
 require 'code/queueclient'
-require 'code/jsonconfigfile'
 require 'code/protocol'
 require 'pathname'
 
@@ -59,10 +58,16 @@ module RQ
       @temp_que_dups = {}
 
       @signal_hup_rd, @signal_hup_wr = IO.pipe
+      @signal_chld_rd, @signal_chld_wr = IO.pipe
 
       Signal.trap("TERM") do
         log("received TERM signal")
         shutdown!
+      end
+
+      Signal.trap("CHLD") do
+        # Ye Ole DJB self_pipe trick again
+        @signal_chld_wr.syswrite('.')
       end
 
       Signal.trap("HUP") do
@@ -446,9 +451,8 @@ module RQ
     end
 
     def load_config
-      @config_check = Time.now
-      @config_file = JSONConfigFile.new(File.join(@queue_path, 'config.json'))
-      @config = sublimate_config(@config_file.conf)
+      data = File.read(File.join(@queue_path, 'config.json'))
+      @config = sublimate_config(JSON.parse(data))
     end
 
     def sublimate_config(conf)
@@ -551,9 +555,10 @@ module RQ
       @prep.delete(msg['msg_id'])
       @que.unshift(msg)
 
+      # This may execute the new message immediately
       run_scheduler!
 
-      return true
+      true
     end
 
     def is_duplicate?(msg1, msg2)
@@ -712,6 +717,11 @@ module RQ
       end
 
       state
+    end
+
+    def kill_msg!(msg)
+      state = msg_state(msg)
+      return nil unless state
     end
 
     def delete_msg!(msg)
@@ -1088,7 +1098,7 @@ module RQ
             begin
               qc = RQ::QueueClient.new(que_name)
             rescue RqQueueNotFound
-              log("#{@name}:#{Process.pid} couldn't DUP message - #{que_name} not available.")
+              log("QUEUE #{@name} couldn't DUP message - #{que_name} not available.")
               msg['child_write_pipe'].syswrite("fail couldn't connect to queue - #{que_name}\n")
               return
             end
@@ -1115,16 +1125,16 @@ module RQ
             if attachments.empty?
               result = qc.create_message(msg_copy)
               if result[0] != 'ok'
-                log("#{@name}:#{Process.pid} couldn't DUP message - #{result[1]}")
+                log("QUEUE #{@name} couldn't DUP message - #{result[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - #{result[1]}\n")
                 return
               end
-              log("#{@name}:#{Process.pid} DUP message #{msg['msg_id']}-> #{result[1]}")
+              log("QUEUE #{@name} DUP message #{msg['msg_id']}-> #{result[1]}")
               msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
             else
               result = qc.prep_message(msg_copy)
               if result[0] != 'ok'
-                log("#{@name}:#{Process.pid} couldn't DUP message - #{result[1]}")
+                log("QUEUE #{@name} couldn't DUP message - #{result[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - prep fail #{result[1]}\n")
                 return
               end
@@ -1135,7 +1145,7 @@ module RQ
               attachments.each do |path|
                 r2 = qc.attach_message({'msg_id' => que_msg_id, 'pathname' => path})
                 if r2[0] != 'ok'
-                  log("#{@name}:#{Process.pid} couldn't DUP message - #{r2[1]}")
+                  log("QUEUE #{@name} couldn't DUP message - #{r2[1]}")
                   msg['child_write_pipe'].syswrite("fail dup failed - attach fail #{r2[1]}\n")
                   return
                 end
@@ -1143,11 +1153,11 @@ module RQ
 
               r3 = qc.commit_message({'msg_id' => que_msg_id})
               if r3[0] != 'ok'
-                log("#{@name}:#{Process.pid} couldn't DUP message - #{r3[1]}")
+                log("QUEUE #{@name} couldn't DUP message - #{r3[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - commit fail #{r3[1]}\n")
                 return
               end
-              log("#{@name}:#{Process.pid} DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
+              log("QUEUE #{@name} DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
               msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
             end
 
@@ -1156,7 +1166,7 @@ module RQ
         end
       end
 
-      return true
+      true
     end
 
     def write_msg_status(msg_id, mesg, state = 'run')
@@ -1175,19 +1185,23 @@ module RQ
       return true
     end
 
-    def write_msg_process_id(msg_id, pid)
-      # Write message pid to disk
-      begin
-        basename = "#{@queue_path}/run/#{msg_id}/pid"
-        File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
-        File.rename(basename + '.tmp', basename)
-      rescue
-        log("FATAL - couldn't write message pid file")
-        log("        [ #{$!} ]")
-        return false
-      end
+    def read_msg_process_id(msg_id)
+      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      File.read(basename).to_i
+    rescue
+      nil
+    end
 
-      return true
+    # Write message pid to disk
+    def write_msg_process_id(msg_id, pid)
+      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
+      File.rename(basename + '.tmp', basename)
+      true
+    rescue
+      log("FATAL - couldn't write message pid file")
+      log("        [ #{$!} ]")
+      false
     end
 
     def remove_msg_process_id(msg_id, state = 'run')
@@ -1256,9 +1270,6 @@ module RQ
       log("Running #{ready_msg['msg_id']} - delta #{delta}")
       # Looks like it is time to run now...
       run_job(ready_msg)
-      run_scheduler!   # Tail recursion, fail me now, I'm in Ruby
-                       # So, lets hope the load isn't too high
-                       # If it is, then we will loop like crazy
     end
 
     def run_loop
@@ -1267,189 +1278,182 @@ module RQ
       while true
         run_scheduler!
 
-        io_list = @run.map { |i| i['child_read_pipe'] }
-        io_list.compact!
+        io_list = @run.map { |i| i['child_read_pipe'] }.compact
         io_list << @sock
         io_list << @parent_pipe
         io_list << @signal_hup_rd
+        io_list << @signal_chld_rd
         #log('sleeping') if @wait_time == 60
         begin
-          ready = IO.select(io_list, nil, nil, @wait_time)
+          ready, _, _ = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
           log("error on SELECT #{$!}")
           sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         end
 
-        # TODO: handle children that have reported a state change, but have
-        #       not exited
+        next unless ready
 
-        now = Time.now
-        # If no timeout occurred
-        if ready
-          ready[0].each do |io|
-            if io.fileno == @sock.fileno
-              begin
-                client_socket, client_sockaddr = @sock.accept
-              rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-                log('error acception on main sock, supposed to be readysleeping')
-              end
-              reset_nonblocking(client_socket)
-              handle_request(client_socket)
-              next
-            elsif io.fileno == @parent_pipe.fileno
-              log("QUEUE #{@name} of PID #{Process.pid} noticed parent close exiting...")
-              shutdown!
-              next
-            elsif io.fileno == @signal_hup_rd.fileno
-              log("QUEUE #{@name} of PID #{Process.pid} noticed SIGNAL HUP")
+        ready.each do |io|
+          case io.fileno
+          when @sock.fileno
+            begin
+              client_socket, client_sockaddr = @sock.accept
+            rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
+              log('error acception on main sock, supposed to be readysleeping')
+            end
+            reset_nonblocking(client_socket)
+            handle_request(client_socket)
 
-              # Force a new config check
-              @config_check = now - 10
+          when @parent_pipe.fileno
+            log("QUEUE #{@name} noticed parent close exiting...")
+            shutdown!
 
-              reset_nonblocking(@signal_hup_rd)
-              dat = do_read(@signal_hup_rd, 1)
-              log("Strange Result from HUP signal pipe.") if dat.size != 1
-              next
+          when @signal_hup_rd.fileno
+            log("QUEUE #{@name} noticed SIGNAL HUP")
+            reset_nonblocking(@signal_hup_rd)
+            do_read(@signal_hup_rd, 1)
+            load_config
+
+          when @signal_chld_rd.fileno
+            log("QUEUE #{@name} noticed SIGNAL CHLD")
+            reset_nonblocking(@signal_chld_rd)
+            do_read(@signal_chld_rd, 1)
+            # A child exited, figure out which one
+            pid, status = Process.wait2(-1, Process::WNOHANG) rescue nil
+            if pid
+              msg = @run.find { |o| o['child_pid'] == pid }
+              handle_child_close(msg, status) if msg
             end
 
+          else
             msg = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
             if msg
-              #log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe readable... #{msg['child_pid']}")
-              #log("QUEUE #{@name} of PID #{Process.pid} #{msg['child_read_pipe'].object_id} <=> #{io.object_id}")
-
-              # TODO: make this stateful for incomplete reads
-              next if handle_status_read(msg)
-
-              log("QUEUE #{@name} of PID #{Process.pid} noticed child pipe close... #{msg['child_pid']}")
-
-              res = Process.wait2(msg['child_pid'], Process::WNOHANG)
-              if res
-                log("QUEUE PROC #{@name} PID #{Process.pid} noticed child #{msg['child_pid']} exit with status #{res.inspect}")
-
-                msg_id = msg['msg_id']
-                orig_msg_id = msg['orig_msg_id']
-
-                # Ok, close the pipe on our end
-                msg['child_read_pipe'].close
-                msg.delete('child_read_pipe')
-                msg['child_write_pipe'].close
-                msg.delete('child_write_pipe')
-
-                # Determine status of msg
-                completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
-
-                if completion
-                  log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} completion [#{completion.inspect}]")
-                else
-                  log("QUEUE PROC #{@name} PID #{Process.pid} child #{msg['child_pid']} NO COMPLETION")
-                  completion = [nil, nil, nil]
-                end
-
-                new_state = nil
-                if completion[1] == :done && res[1] == 0
-                  new_state = 'done'
-                end
-
-                if completion[1] == :relayed && res[1] == 0
-                  new_state = 'relayed'
-                end
-
-                if completion[1] == :err
-                  new_state = 'err'
-                end
-
-                #if completion[1] == :pause
-                #  new_state = 'err'
-                #end
-
-                if completion[1] == :resend && res[1] == 0
-                  if msg['count'] >= msg['max_count']
-                    new_state = 'err'
-                    log("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
-                    write_msg_status(msg_id, "HIT MAX RESEND COUNT - MOVING TO ERR" )
-                  else
-                    new_state = 'que'
-                  end
-                end
-
-                if new_state == nil
-                  # log a message
-                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{res.inspect}" )
-                  write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY" )
-                  new_state = 'err'
-                end
-
-                # Process has exited, so it must change states at this point
-                # Move to relay dir and update in-memory data structure
-                begin
-                  basename = "#{@queue_path}/run/#{msg_id}"
-                  raise unless File.exists? basename
-                  remove_msg_process_id(msg_id)
-                  if ['done', 'relayed'].include? new_state
-                    handle_dups_done(msg, new_state)
-                    store_msg(msg, 'run') # store message since it made it to done and we want the 'dups' field to live
-                    RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
-                  else
-                    handle_dups_fail(msg)
-                    store_msg(msg, 'run') # store message since it failed to make it to done and
-                                          # we want the 'dups' field to be removed
-                    newname = "#{@queue_path}/#{new_state}/#{msg_id}"
-                    File.rename(basename, newname)
-                  end
-                rescue
-                  log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")
-                  log("        [ #{$!} ]")
-                  next
-                end
-
-                if ['err', 'done', 'relayed'].include? new_state
-                  # Send a webhook if there is a web hook
-                  if msg.include? 'post_run_webhook'
-                    msg['post_run_webhook'].each do |wh|
-                      webhook_message(wh, msg, new_state)
-                    end
-                  end
-                end
-
-                log("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
-                # Remove from completion
-                @completed.delete(completion)
-                # Remove from run
-                @run = @run.reject { |i| i['msg_id'] == msg_id }
-                # TODO; a simple delete would suffice here
-
-                if (completion[1] == :resend) && (new_state == 'que')
-                  # Re-inject into que
-                  msg['due'] = Time.now.to_i + completion[2]
-                  @que.unshift(msg)
-
-                  log("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
-
-                  # No-need to re-run scheduler, it runs on every iteration
-                  # of this loop
-                end
-
-              else
-                log("EXITING: queue #{@name} - script msg #{msg['child_pid']} was not ready to be reaped")
-                sleep 0.001
+              status = handle_status_read(msg)
+              unless status
+                log("QUEUE #{@name} had a problem handling child status: #{status}")
+                handle_child_close(msg)
               end
-
             else
-              log("QUEUE #{@name} of PID #{Process.pid} noticed fd close on fd #{io.fileno}...NO CHILD ON RECORD?")
+              log("QUEUE #{@name} activity on unexpected fd: #{io.fileno}")
             end
           end
         end
+      end
+    end
 
-        # Check if it has been > 5 seconds since last config file check
-        if (now - @config_check) > 5
-          if @config_file.check_for_change == JSONConfigFile::CHANGED
-            log('Config file changed. Using new config')
-            @config = sublimate_config(@config_file.conf)
-          end
-          @config_check = now
+    def handle_child_close(msg, status=nil)
+      log("QUEUE #{@name} noticed child pipe close... #{msg['child_pid']}")
+
+      if status.nil?
+        pid, status = Process.wait2(msg['child_pid'], Process::WNOHANG)
+      end
+
+      if status.nil?
+        log("QUEUE #{@name} script child #{msg['child_pid']} was not ready to be reaped")
+        sleep 0.001
+        return
+      end
+
+      log("QUEUE #{@name} script child #{msg['child_pid']} exit with status #{status}")
+
+      msg_id = msg['msg_id']
+      orig_msg_id = msg['orig_msg_id']
+
+      # Ok, close the pipe on our end
+      msg['child_read_pipe'].close
+      msg.delete('child_read_pipe')
+      msg['child_write_pipe'].close
+      msg.delete('child_write_pipe')
+
+      # Determine status of msg
+      completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
+
+      if completion
+        log("QUEUE #{@name} child #{msg['child_pid']} completion [#{completion.inspect}]")
+      else
+        log("QUEUE #{@name} child #{msg['child_pid']} NO COMPLETION")
+        completion = [nil, nil, nil]
+      end
+
+      new_state = nil
+      if completion[1] == :done && status == 0
+        new_state = 'done'
+      end
+
+      if completion[1] == :relayed && status == 0
+        new_state = 'relayed'
+      end
+
+      if completion[1] == :err
+        new_state = 'err'
+      end
+
+      #if completion[1] == :pause
+      #  new_state = 'err'
+      #end
+
+      if completion[1] == :resend && status == 0
+        if msg['count'] >= msg['max_count']
+          new_state = 'err'
+          log("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
+          write_msg_status(msg_id, "HIT MAX RESEND COUNT - MOVING TO ERR" )
+        else
+          new_state = 'que'
         end
+      end
 
+      if new_state == nil
+        # log a message
+        write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{status}" )
+        write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY" )
+        new_state = 'err'
+      end
+
+      # Process has exited, so it must change states at this point
+      # Move to relay dir and update in-memory data structure
+      begin
+        basename = "#{@queue_path}/run/#{msg_id}"
+        raise unless File.exists? basename
+        remove_msg_process_id(msg_id)
+        if ['done', 'relayed'].include? new_state
+          handle_dups_done(msg, new_state)
+          store_msg(msg, 'run') # store message since it made it to done and we want the 'dups' field to live
+          RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
+        else
+          handle_dups_fail(msg)
+          store_msg(msg, 'run') # store message since it failed to make it to done and
+                                # we want the 'dups' field to be removed
+          newname = "#{@queue_path}/#{new_state}/#{msg_id}"
+          File.rename(basename, newname)
+        end
+      rescue
+        log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")
+        log("        [ #{$!} ]")
+        return
+      end
+
+      if ['err', 'done', 'relayed'].include? new_state
+        # Send a webhook if there is a web hook
+        if msg.include? 'post_run_webhook'
+          msg['post_run_webhook'].each do |wh|
+            webhook_message(wh, msg, new_state)
+          end
+        end
+      end
+
+      log("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
+      # Remove from completion
+      @completed.delete(completion)
+      # Remove from run
+      @run.delete_if { |i| i['msg_id'] == msg_id }
+
+      if (completion[1] == :resend) && (new_state == 'que')
+        # Re-inject into que
+        msg['due'] = Time.now.to_i + completion[2]
+        @que.unshift(msg)
+
+        log("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
       end
     end
 
@@ -1458,7 +1462,7 @@ module RQ
       begin
         qc = RQ::QueueClient.new('webhook')
       rescue RqQueueNotFound
-        log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook for msg_id: #{msg_id}")
+        log("QUEUE #{@name} couldn't que webhook for msg_id: #{msg_id}")
         return
       end
 
@@ -1478,7 +1482,7 @@ module RQ
       mesg['param2'] = msg_copy.to_json
       result = qc.create_message(mesg)
       if result[0] != 'ok'
-        log("QUEUE #{@name} of PID #{Process.pid} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
+        log("QUEUE #{@name} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
       end
     end
 
@@ -1764,11 +1768,27 @@ module RQ
           return
         end
 
-        resp = [ "fail", "unknown reason"].to_json
-
         if msg_state(options)
           delete_msg!(options)
           resp = [ "ok", "msg deleted" ].to_json
+        else
+          resp = [ "fail", "msg not found" ].to_json
+        end
+
+        send_packet(sock, resp)
+        return
+
+      when 'destroy_message'
+        if not options.has_key?('msg_id')
+          resp = [ "fail", "lacking 'msg_id' field"].to_json
+          send_packet(sock, resp)
+          return
+        end
+
+        pid = read_msg_process_id(options['msg_id'])
+        if pid
+          Process.kill('TERM', pid)
+          resp = [ "ok", "msg destroyed" ].to_json
         else
           resp = [ "fail", "msg not found" ].to_json
         end
