@@ -1,4 +1,4 @@
-require 'unixrack'
+require 'socket'
 require 'fcntl'
 
 # Mix the Protocol module into classes that communicate on internal sockets
@@ -7,6 +7,10 @@ module RQ
   module Protocol
     def set_protocol_sock_path(sock_path)
       @protocol_sock_path = sock_path
+    end
+
+    def set_protocol_messages(messages)
+      @protocol_messages = messages
     end
 
     def set_nonblocking(sock)
@@ -29,77 +33,60 @@ module RQ
     def read_packet(sock)
       protocol = do_read(sock, 4)
 
-      if protocol != 'rq1 '
-        log("REQ - Invalid protocol - bad ver")
-        return nil
+      if protocol != "rq1 "
+        raise "REQ - Invalid protocol - bad ver #{protocol}"
       end
 
       size_str = do_read(sock, 9)
 
       if size_str[-1..-1] != " "
-        log("REQ - Invalid protocol - bad size #{size_str}")
-        return nil
+        raise "REQ - Invalid protocol - bad size #{size_str}"
       end
 
       size = size_str.to_i
-      log("REQ - size #{size}")
+      # log("REQ - size #{size}")
 
-      result = UnixRack::Socket.read_sock_num_bytes(sock, size)
-
-      if result[0] == false
-        log("REQ - Invalid packet - didn't receive contents")
-        return nil
-      end
-
-      result[1]
+      do_read(sock, size)
     end
 
     def send_packet(sock, resp)
       log_msg = resp.length > 80 ? "#{resp[0...80]}..." : resp
-      log("RESP [ #{resp.length}  #{log_msg} ]")
+      # log("RESP [ #{resp.length}  #{log_msg} ]")
       sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
-      UnixRack::Socket.write_buff(sock, sock_msg)
-      sock.close
+      do_write(sock, sock_msg)
     end
 
     # msg is single word, data is assumbed to be content as json
     def send_recv(msg, data="")
       client = UNIXSocket.open(@protocol_sock_path)
 
-      contents = "#{msg} #{data}"
-      sock_msg = sprintf("rq1 %08d %s", contents.length, contents)
-
-      UnixRack::Socket.write_buff(client, sock_msg)
-
-      protocol = do_read(client, 4)
-
-      if protocol != 'rq1 '
-        raise "Invalid Protocol - Expecting 'rq1 ' got: #{protocol}"
-      end
-
-      size_str = do_read(client, 9)
-
-      if size_str[-1..-1] != " "
-        raise "Invalid Protocol"
-      end
-
-      size = size_str.to_i
-
-      result = UnixRack::Socket.read_sock_num_bytes(client, size, lambda {|s| puts s})
-
-      if result[0] == false
-        return ["fail", result[1]]
-      end
+      send_packet(client, "#{msg} #{data}")
+      reply = read_packet(client) rescue nil
 
       client.close
 
-      JSON.parse(result[1])
-    rescue SocketError => e
-      $stderr.puts "Error on the socket: #{e}"
+      JSON.parse(reply) if reply
+    rescue
+      $stderr.puts "Error on the socket: #{$!}"
       nil
     end
 
     private
+
+    # Borrowed from UnixRack
+    def do_write(client, buff)
+      nwritten = 0
+
+      out_buff = buff
+
+      while true
+        nw = client.syswrite(out_buff)
+        nwritten = nwritten + nw
+        break if nw == out_buff.bytesize
+        out_buff = out_buff.byteslice(nw..-1)
+      end
+      nwritten
+    end
 
     def do_read(client, numr = 32768)
       begin
@@ -115,6 +102,29 @@ module RQ
         raise "Got an #{$!} from socket read"
       end
       dat
+    end
+
+    def message_send_recv(name, *params)
+      param = params.first
+      case param
+      when nil
+        send_recv(name)
+      when String
+        send_recv(name, param)
+      else
+        send_recv(name, param.to_json)
+      end
+    end
+
+    # Provides magic methods for words in the @protocol_messages array
+    def method_missing(name, *args, &block)
+      if @protocol_messages && @protocol_messages.include?(name.to_s)
+        message_send_recv(name, *args, &block)
+      else
+        super # You *must* call super if you don't handle the
+              # method, otherwise you'll mess up Ruby's method
+              # lookup.
+      end
     end
 
   end
