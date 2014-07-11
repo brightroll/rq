@@ -103,6 +103,68 @@ module RQ
         resp = [(Time.now - @start_time).to_i, ].to_json
         send_packet(sock, resp)
 
+      when 'down_queue'
+        if valid_queue_name(arg) && queue = @queues[arg]
+          f = File.new("config/#{arg}.down", File::CREAT, 0644) rescue nil
+          if f
+            resp = ['ok', arg].to_json
+          else
+            resp = ['fail', 'not allowed to down'].to_json
+          end
+        else
+          resp = ['fail', 'invalid queue name'].to_json
+        end
+        send_packet(sock, resp)
+
+      when 'up_queue'
+        if valid_queue_name(arg) && queue = @queues[arg]
+          if File.exists? "config/#{arg}.down"
+            count = File.unlink "config/#{arg}.down" rescue 0
+            if count > 0
+              resp = ['ok', arg].to_json
+            else
+              resp = ['fail', 'not allowed to up'].to_json
+            end
+          else
+              # Not downed anyways, return success
+              resp = ['ok', arg].to_json
+          end
+        else
+          resp = ['fail', 'invalid queue name'].to_json
+        end
+        send_packet(sock, resp)
+
+      when 'pause_queue'
+        if valid_queue_name(arg) && queue = @queues[arg]
+          f = File.new("config/#{arg}.pause", File::CREAT, 0644) rescue nil
+          if f
+            resp = ['ok', arg].to_json
+          else
+            resp = ['fail', 'not allowed to pause'].to_json
+          end
+        else
+          resp = ['fail', 'invalid queue name'].to_json
+        end
+        send_packet(sock, resp)
+
+      when 'resume_queue'
+        if valid_queue_name(arg) && queue = @queues[arg]
+          if File.exists? "config/#{arg}.pause"
+            count = File.unlink "config/#{arg}.pause" rescue 0
+            if count > 0
+              resp = ['ok', arg].to_json
+            else
+              resp = ['fail', 'not allowed to resume'].to_json
+            end
+          else
+              # Not paused anyways, return success
+              resp = ['ok', arg].to_json
+          end
+        else
+          resp = ['fail', 'invalid queue name'].to_json
+        end
+        send_packet(sock, resp)
+
       when 'restart_queue'
         stop_queue(arg)
         # Reset the error count because the queue was manually restarted

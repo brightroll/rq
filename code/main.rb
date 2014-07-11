@@ -225,6 +225,34 @@ module RQ
       end
     end
 
+    post '/q/:name/adminoper' do
+      res = if params[:pause] && params[:resume] && params[:down] && params[:up]
+        # Makes no sense
+      elsif params[:pause]
+        action = "pause"
+        queuemgr.pause_queue(params[:name])
+      elsif params[:resume]
+        action = "resume"
+        queuemgr.resume_queue(params[:name])
+      elsif params[:down]
+        action = "down"
+        queuemgr.down_queue(params[:name])
+      elsif params[:up]
+        action = "up"
+        queuemgr.up_queue(params[:name])
+      end
+
+      if not res
+        throw :halt, [500, "500 - Couldn't #{action} queue. Internal error."]
+      end
+      if res[0] != 'ok'
+        throw :halt, [500, "500 - Couldn't #{action} queue. #{res.inspect}."]
+      end
+
+      flash :notice, "Successfully #{action}d queue #{params[:name]}"
+      redirect back
+    end
+
     post '/q/:name/restart' do
       res = queuemgr.restart_queue(params[:name])
 

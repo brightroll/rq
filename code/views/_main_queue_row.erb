@@ -5,7 +5,11 @@
     raise unless qc.running?
     admin_stat, oper_stat = qc.status
 -%>
+<%  if admin_stat != 'DOWN' -%>
       <td><pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre></td>
+<%  else -%>
+      <td>-</td>
+<%  end -%>
       <td><%= qc.ping %></td>
       <td><%= qc.read_pid %></td>
       <td><%= qc.uptime %></td>
@@ -20,7 +24,21 @@
       <td>-</td>
       <td><span class="red">DOWN <%= $! %></span></td>
 <% end -%>
-      <td><form method="post" action="<%= "#{url}q/#{name}/restart" %>">
-      <button id="restart-queue">Restart</button>
-      </form></td>
+      <td>
+        <form class="inline" method="post" action="<%= "#{url}q/#{name}/adminoper" %>">
+          <%- if admin_stat == 'PAUSE' -%>
+            <button id="resume-queue" name="resume" value="resume" <%= 'disabled="disabled"' if admin_stat == 'DOWN' %>>Resume</button>
+          <%- else -%>
+            <button id="pause-queue" name="pause" value="pause" <%= 'disabled="disabled"' if admin_stat == 'DOWN' %>>Pause</button>
+          <%- end -%>
+          <%- if admin_stat == 'DOWN' -%>
+            <button id="up-queue" name="up" value="up">Up</button>
+          <%- else -%>
+            <button id="down-queue" name="down" value="down">Down</button>
+          <%- end -%>
+        </form>
+        <form class="inline" method="post" action="<%= "#{url}q/#{name}/restart" %>">
+          <button id="restart-queue" name="restart" value="restart">Restart</button>
+        </form>
+      </td>
     </tr>

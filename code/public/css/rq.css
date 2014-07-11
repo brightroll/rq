@@ -182,6 +182,15 @@ form .note {
   font-style: italic;
 }
 
+form.inline {
+  padding: 0;
+  margin: 0;
+}
+
+form.inline button {
+  width: 5em;
+}
+
 #queue-lists {table-layout: fixed}
 #queue-lists td, #queue-lists th {padding: 5px}
 #queue-lists th {font-size: 20px}

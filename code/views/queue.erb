@@ -19,7 +19,7 @@
   <pre id="config" class="json hidden"><%= JSON.pretty_generate(config) %></pre>
 </div>
 
-<% if admin_status == 'UP' %>
+<% if %w{UP PAUSE}.include? admin_status %>
 <h2>Message List</h2>
 
 <% num_msgs = qc.num_messages %>

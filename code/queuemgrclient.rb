@@ -45,6 +45,10 @@ module RQ
       queues
       create_queue
       create_queue_link
+      up_queue
+      down_queue
+      pause_queue
+      resume_queue
       restart_queue
       delete_queue
     }
