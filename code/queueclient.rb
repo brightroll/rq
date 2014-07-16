@@ -43,7 +43,6 @@ module RQ
     end
 
     PROTOCOL_MESSAGES = %w{
-      status
       shutdown
       num_messages
       config
@@ -69,6 +68,10 @@ module RQ
 
     def uptime
       send_recv('uptime').first
+    end
+
+    def status
+      send_recv('status').first
     end
 
   end

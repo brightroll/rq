@@ -5,21 +5,22 @@
 
 <div id="sub-header">
   <% if qc.running? %>
-  <% admin_status, oper_status = qc.status %>
+  <% status = qc.status %>
   <div id="queue-status">
-    <p><span class="<%= admin_status == "UP" ? "green" : "red" %>"><%= admin_status %></span>:<span class="<%= oper_status == "UP" ? "green" : "red" %>"><%= oper_status %></span>
+    <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span></span>
     <span class=""> <%=  qc.ping %></span>
     <span class=""> <%=  qc.read_pid %></span>
-    up for <%= qc.uptime %> seconds</p>
+    running for <%= qc.uptime %> seconds
+<%=     erb :_main_queue_form, :locals => {:status => status, :url => url, :name => qc.name } %>
   <% else %>
-   <p>Status: <span class="red">queue is COMPLETELY DOWN</span></p>
+   Status: <span class="red">queue is COMPLETELY DOWN</span>
   <% end %>
   </div>
   <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{qc.name}/config.json" %>">raw</a> ]</p>
   <pre id="config" class="json hidden"><%= JSON.pretty_generate(config) %></pre>
 </div>
 
-<% if %w{UP PAUSE}.include? admin_status %>
+<% if status != 'DOWN' %>
 <h2>Message List</h2>
 
 <% num_msgs = qc.num_messages %>

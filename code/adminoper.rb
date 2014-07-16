@@ -1,8 +1,7 @@
 module RQ
   class AdminOper
 
-    attr_accessor :admin_status
-    attr_accessor :oper_status
+    attr_accessor :status
 
     def initialize(pathname)
       @pathname = pathname
@@ -13,18 +12,17 @@ module RQ
       @down_name = @dirname + "/" + @filename + ".down"
       @pause_name = @dirname + "/" + @filename + ".pause"
 
-      @admin_status = "UNKNOWN"
-      @oper_status = "UNKNOWN"
+      @status = "UNKNOWN"
       @daemon_status = "UP"
     end
 
     def update!
       if File.exists?(@down_name)
-        @admin_status = @oper_status = "DOWN"
+        @status = "DOWN"
       elsif File.exists?(@pause_name)
-        @admin_status = @oper_status = "PAUSE"
+        @status = "PAUSE"
       else
-        @admin_status = @oper_status = "UP"
+        @status = "UP"
       end
       update_status
     end
@@ -36,14 +34,11 @@ module RQ
       update_status
     end
 
+    private
+
     def update_status
-      if @daemon_status == "UP"
-        @oper_status = @admin_status
-      else
-        @oper_status = @daemon_status
-      end
+      @status = @daemon_status if @daemon_status != "UP"
     end
-    private :update_status
 
   end
 end

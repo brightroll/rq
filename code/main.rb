@@ -214,7 +214,7 @@ module RQ
         throw :halt, [400, "400 - Invalid method param"]
       end
 
-      if result == [ "fail", "oper_status: DOWN"]
+      if result == [ "fail", "status: DOWN"]
         throw :halt, [503, "503 - Service Unavailable - Operationally Down"]
       end
 
@@ -250,7 +250,7 @@ module RQ
       end
 
       flash :notice, "Successfully #{action}d queue #{params[:name]}"
-      redirect back
+      redirect params[:back]
     end
 
     post '/q/:name/restart' do
@@ -264,7 +264,7 @@ module RQ
       end
 
       flash :notice, "Successfully restarted queue #{params[:name]}"
-      redirect back
+      redirect params[:back]
     end
 
     get '/q/:name/config.json' do
