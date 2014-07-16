@@ -1588,19 +1588,13 @@ module RQ
         return
 
       when 'messages'
-        if not options.has_key?('state')
-          resp = [ "fail", "lacking 'state' field"].to_json
-          send_packet(sock, resp)
-          return
-        end
-
         case options['state']
         when 'prep'
-           status = @prep
+          status = (options['limit'] ? @prep.take(options['limit']) : @prep)
         when 'que'
-          status = @que.map { |m| [m['msg_id'], m['due']] }
+          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| [m['msg_id'], m['due']] }
         when 'run'
-          status = @run.map { |m| [m['msg_id'], m['status']] }
+          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| [m['msg_id'], m['status']] }
         when 'done'
           status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
         when 'relayed'
@@ -1608,7 +1602,7 @@ module RQ
         when 'err'
           status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }
         else
-          status = [ "fail", "invalid 'state' field (#{options['state']})"]
+          status = [ "fail", "invalid or missing 'state' field (#{options['state']})"]
         end
 
         resp = status.to_json
