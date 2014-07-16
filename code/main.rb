@@ -11,7 +11,6 @@ require 'code/overrides'
 module RQ
   class Main < Sinatra::Base
 
-    disable :protection
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
     set :erb, :trim => '-'
@@ -23,6 +22,10 @@ module RQ
     helpers do
       def url
         "http://#{request.host}:#{request.port}/"
+      end
+
+      def new_queue_allowed
+        %w{test development}.include? ENV["RQ_ENV"]
       end
 
       def get_queueclient(name)
@@ -70,10 +73,13 @@ module RQ
     end
 
     get '/new_queue' do
+      throw :halt, [403, "Queue creation not allowed at this time."] unless new_queue_allowed
+
       erb :new_queue
     end
 
     post '/new_queue' do
+      throw :halt, [403, "Queue creation not allowed at this time."] unless new_queue_allowed
       # TODO: validation
 
       # This creates and starts a queue
@@ -83,6 +89,8 @@ module RQ
     end
 
     post '/new_queue_link' do
+      throw :halt, [403, "Queue creation not allowed at this time."] unless new_queue_allowed
+
       # This creates and starts a queue via a config file in json
       js_data = {}
       begin
