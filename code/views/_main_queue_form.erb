@@ -1,0 +1,17 @@
+        <form class="inline inrow" method="post" action="<%= "#{url}q/#{name}/adminoper" %>">
+          <input type="hidden" name="back" value="<%= request.path  %>" />
+          <%- if status == 'PAUSE' -%>
+            <button id="resume-queue" name="resume" value="resume" <%= 'disabled="disabled"' if status == 'DOWN' %>>Resume</button>
+          <%- else -%>
+            <button id="pause-queue" name="pause" value="pause" <%= 'disabled="disabled"' if status == 'DOWN' %>>Pause</button>
+          <%- end -%>
+          <%- if status == 'DOWN' -%>
+            <button id="up-queue" name="up" value="up">Up</button>
+          <%- else -%>
+            <button id="down-queue" name="down" value="down">Down</button>
+          <%- end -%>
+        </form>
+        <form class="inline inrow" method="post" action="<%= "#{url}q/#{name}/restart" %>">
+          <input type="hidden" name="back" value="<%= request.path  %>" />
+          <button id="restart-queue" name="restart" value="restart">Restart</button>
+        </form>

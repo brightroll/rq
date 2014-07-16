@@ -3,15 +3,18 @@
 <% begin
     qc = get_queueclient(name)
     raise unless qc.running?
-    admin_stat, oper_stat = qc.status
+    status = qc.status
 -%>
+<%  if status != 'DOWN' -%>
       <td><pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre></td>
+<%  else -%>
+      <td>-</td>
+<%  end -%>
       <td><%= qc.ping %></td>
       <td><%= qc.read_pid %></td>
       <td><%= qc.uptime %></td>
       <td>
-        <span class="<%= admin_stat == 'UP' ? 'green' : 'red' %>"><%= admin_stat %></span>:
-        <span class="<%= oper_stat  == 'UP' ? 'green' : 'red' %>"><%= oper_stat %></span>
+        <span class="<%= status == 'UP' ? 'green' : 'red' %>"><%= status %></span>
       </td>
 <% rescue -%>
       <td>-</td>
@@ -20,7 +23,7 @@
       <td>-</td>
       <td><span class="red">DOWN <%= $! %></span></td>
 <% end -%>
-      <td><form method="post" action="<%= "#{url}q/#{name}/restart" %>">
-      <button id="restart-queue">Restart</button>
-      </form></td>
+      <td>
+<%=     erb :_main_queue_form, :locals => {:status => status, :url => url, :name => name } %>
+      </td>
     </tr>

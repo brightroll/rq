@@ -214,7 +214,7 @@ module RQ
         throw :halt, [400, "400 - Invalid method param"]
       end
 
-      if result == [ "fail", "oper_status: DOWN"]
+      if result == [ "fail", "status: DOWN"]
         throw :halt, [503, "503 - Service Unavailable - Operationally Down"]
       end
 
@@ -223,6 +223,34 @@ module RQ
       else
         erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => qc.name }
       end
+    end
+
+    post '/q/:name/adminoper' do
+      res = if params[:pause] && params[:resume] && params[:down] && params[:up]
+        # Makes no sense
+      elsif params[:pause]
+        action = "pause"
+        queuemgr.pause_queue(params[:name])
+      elsif params[:resume]
+        action = "resume"
+        queuemgr.resume_queue(params[:name])
+      elsif params[:down]
+        action = "down"
+        queuemgr.down_queue(params[:name])
+      elsif params[:up]
+        action = "up"
+        queuemgr.up_queue(params[:name])
+      end
+
+      if not res
+        throw :halt, [500, "500 - Couldn't #{action} queue. Internal error."]
+      end
+      if res[0] != 'ok'
+        throw :halt, [500, "500 - Couldn't #{action} queue. #{res.inspect}."]
+      end
+
+      flash :notice, "Successfully #{action}d queue #{params[:name]}"
+      redirect params[:back]
     end
 
     post '/q/:name/restart' do
@@ -236,7 +264,7 @@ module RQ
       end
 
       flash :notice, "Successfully restarted queue #{params[:name]}"
-      redirect back
+      redirect params[:back]
     end
 
     get '/q/:name/config.json' do

@@ -116,7 +116,6 @@ h1 {font-size: 2.5em; margin-top: 0; margin-bottom: 2px; font-weight: bold;
 #queue-status,
 #message-actions {
   float: right;
-  width: 300px;
   text-align: right
 }
 .right {text-align: right}
@@ -180,6 +179,15 @@ form .note {
   padding: 0 0 0 20%;
   color: #444;
   font-style: italic;
+}
+
+form.inrow {
+  padding: 0;
+  margin: 0;
+}
+
+form.inrow button {
+  width: 5em;
 }
 
 #queue-lists {table-layout: fixed}
