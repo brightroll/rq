@@ -73,18 +73,19 @@ module RQ
 
     private
 
-    # Borrowed from UnixRack
+    # Borrowed from UnixRack and updated by Backports
     def do_write(client, buff)
-      nwritten = 0
+      lwritten = client.syswrite(buff)
+      nwritten = lwritten
 
-      out_buff = buff
-
-      while true
-        nw = client.syswrite(out_buff)
-        nwritten = nwritten + nw
-        break if nw == out_buff.bytesize
-        out_buff = out_buff.byteslice(nw..-1)
+      # Only dup the original buff if we didn't get it all in the first try
+      while nwritten < buff.bytesize
+        remaining = buff.bytesize - nwritten
+        rbuff = (rbuff || buff.dup).unpack("@#{lwritten}a#{remaining}").first
+        lwritten = client.syswrite(rbuff)
+        nwritten += lwritten
       end
+
       nwritten
     end
 
