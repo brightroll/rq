@@ -81,28 +81,26 @@ module RQ
       # Only dup the original buff if we didn't get it all in the first try
       while nwritten < buff.bytesize
         remaining = buff.bytesize - nwritten
-        rbuff = (rbuff || buff.dup).unpack("@#{lwritten}a#{remaining}").first
+        rbuff = (rbuff || buff).unpack("@#{lwritten}a#{remaining}").first
         lwritten = client.syswrite(rbuff)
         nwritten += lwritten
       end
 
       nwritten
+    rescue
+      defined?(nwritten) ? nwritten : 0
     end
 
     def do_read(client, numr = 32768)
-      begin
-        dat = client.sysread(numr)
-      rescue Errno::EAGAIN, Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
-        sleep 0.001 # A tiny pause to prevent consuming all CPU
-        retry
-      rescue EOFError
-        #TODO: add debug mode
-        #puts "Got an EOF from socket read"
-        return nil
-      rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
-        raise "Got an #{$!} from socket read"
-      end
-      dat
+      client.sysread(numr)
+    rescue Errno::EAGAIN, Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
+      sleep 0.001 # A tiny pause to prevent consuming all CPU
+      retry
+    rescue EOFError
+      $stderr.puts "Got an EOF from socket read"
+      return nil
+    rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
+      raise "Got an #{$!} from socket read"
     end
 
     def message_send_recv(name, *params)
