@@ -52,7 +52,7 @@ module RQ
 
       @wait_time = 1
 
-      @status = RQ::AdminOper.new(@rq_config_path + @name)
+      @status = RQ::AdminOper.new(@rq_config_path, @name)
 
       @temp_que_dups = {}
 
@@ -260,18 +260,18 @@ module RQ
       script_path = Pathname.new(@config.script).realpath.to_s rescue @config.script
       if (!File.executable?(script_path) rescue false)
         log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
-        if @status.status != 'SCRIPTERROR'
-          @status.set_daemon_status('SCRIPTERROR')
+        if @status.oper_status != 'SCRIPTERROR'
+          @status.set_oper_status('SCRIPTERROR')
           log("SCRIPTERROR - DAEMON STATUS is set to SCRIPTERROR")
-          log("OPER STATUS is now: #{@status.status}")
+          log("OPER STATUS is now: #{@status.oper_status}")
         end
         return
       end
 
-      if @status.status == 'SCRIPTERROR'
-        @status.set_daemon_status('UP')
+      if @status.oper_status == 'SCRIPTERROR'
+        @status.set_oper_status('UP')
         log("SCRIPTERROR FIXED - DAEMON STATUS is set to UP")
-        log("OPER STATUS is now: #{@status.status}")
+        log("OPER STATUS is now: #{@status.oper_status}")
       end
 
       #log("0 child process prep step for runnable #{script_path}")
@@ -1526,7 +1526,7 @@ module RQ
 
       # IF queue status is DOWN, no need to respond to any of the
       # following messages (Note: there are other states, this is a hard DOWN)
-      if @status.status == 'DOWN'
+      if @status.admin_status == 'DOWN'
         resp = [ "fail", "status: DOWN"].to_json
         send_packet(sock, resp)
         return

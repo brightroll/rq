@@ -192,7 +192,7 @@ function verify_msg_dup()
 
 
 echo "SETTING admin PAUSE"
-echo "TEST que in proper oper PAUSE mode"
+echo "TEST que in proper PAUSE mode"
 touch "./config/test.pause"
 
 # Inject 2 fast running messages into the queue
@@ -217,19 +217,14 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, system has incorrect # of jobs in que"
   exit 1
 fi
-egrep "admin_status: PAUSE" _test.txt > /dev/null
+egrep "status: PAUSE" _test.txt > /dev/null
 if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect admin_status - should be DOWN"
-  exit 1
-fi
-egrep "oper_status: PAUSE" _test.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect oper_status - should be DOWN"
+  echo "Sorry, system has incorrect status - should be DOWN"
   exit 1
 fi
 
 
-echo "TEST que in proper oper PAUSE mode"
+echo "TEST que in proper PAUSE mode"
 echo "SETTING admin UP"
 
 # Set que to admin up and kick scheduler (asking for status is a kick)
@@ -239,14 +234,9 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running/couldn't get /q/test.txt"
   exit 1
 fi
-egrep "admin_status: UP" _test2.txt > /dev/null
+egrep "status: UP" _test2.txt > /dev/null
 if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect admin_status - should be UP"
-  exit 1
-fi
-egrep "oper_status: UP" _test2.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect oper_status - should be UP"
+  echo "Sorry, system has incorrect status - should be UP"
   exit 1
 fi
 
@@ -271,14 +261,9 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, system has incorrect # of jobs in que"
   exit 1
 fi
-egrep "admin_status: UP" _test3.txt > /dev/null
+egrep "status: UP" _test3.txt > /dev/null
 if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect admin_status - should be UP"
-  exit 1
-fi
-egrep "oper_status: UP" _test3.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect oper_status - should be UP"
+  echo "Sorry, system has incorrect status - should be UP"
   exit 1
 fi
 

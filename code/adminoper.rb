@@ -1,43 +1,74 @@
 module RQ
   class AdminOper
 
-    attr_accessor :status
+    attr_reader :admin_status
+    attr_reader :oper_status
 
-    def initialize(pathname)
-      @pathname = pathname
-      @dirname = File.dirname(pathname)
-      @filename = File.basename(pathname)
-      raise ArgumentError, "#{@dirname} doesn't exist" unless File.directory? @dirname
+    def initialize(dirname, filename)
+      raise ArgumentError, "#{dirname} doesn't exist" unless File.directory? dirname
 
-      @down_name = @dirname + "/" + @filename + ".down"
-      @pause_name = @dirname + "/" + @filename + ".pause"
+      @down_file = File.join(dirname, filename + '.down')
+      @pause_file = File.join(dirname, filename + '.pause')
 
-      @status = "UNKNOWN"
-      @daemon_status = "UP"
+      @oper_status = 'UP'
+      update!
+    end
+
+    # Combined admin/oper status report
+    def status
+      @oper_status != 'UP' ? @oper_status : @admin_status
     end
 
     def update!
-      if File.exists?(@down_name)
-        @status = "DOWN"
-      elsif File.exists?(@pause_name)
-        @status = "PAUSE"
+      if File.exists?(@down_file)
+        @admin_status = 'DOWN'
+      elsif File.exists?(@pause_file)
+        @admin_status = 'PAUSE'
       else
-        @status = "UP"
+        @admin_status = 'UP'
       end
-      update_status
     end
 
-    # What the administrator cannot set, only daemons should set this 
-    def set_daemon_status(stat)
-      @daemon_status = stat
+    def set_admin_status(stat)
+      success = case stat
+      when 'UP'
+        delete_file(@down_file)
+      when 'DOWN'
+        create_file(@down_file)
+      when 'PAUSE'
+        create_file(@pause_file)
+      when 'RESUME'
+        delete_file(@pause_file)
+      end
 
-      update_status
+      # Change internal state based on file changes
+      update!
+
+      # Return success/failure of file change actions
+      success
+    end
+
+    def set_oper_status(stat)
+      @oper_status = stat
     end
 
     private
 
-    def update_status
-      @status = @daemon_status if @daemon_status != "UP"
+    def create_file(file)
+      unless File.exists?(file)
+        File.new(file, File::CREAT, 0644) rescue nil
+      else
+        true
+      end
+    end
+
+    def delete_file(file)
+      if File.exists?(file)
+        count = File.unlink(file) rescue 0
+        count > 0
+      else
+        true
+      end
     end
 
   end

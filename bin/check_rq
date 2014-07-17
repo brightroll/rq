@@ -86,12 +86,8 @@ end
 
 qinfo.keys.each do |q|
 
-  if qinfo[q]["admin_status"] != "UP"
-    rq_errors[q] = "admin_status #{qinfo[q]['admin_status']}"
-    exitcode = 2
-  end
-  if qinfo[q]["oper_status"] != "UP"
-    rq_errors[q] = "oper_status #{qinfo[q]['oper_status']}"
+  if qinfo[q]["status"] != "UP"
+    rq_errors[q] = "status #{qinfo[q]['status']}"
     exitcode = 2
   end
   if (qinfo[q]["prep"].to_i + qinfo[q]["que"].to_i + qinfo[q]["run"].to_i) >= thresh[1]

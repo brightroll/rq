@@ -192,7 +192,7 @@ function verify_msg_dup()
 
 
 echo "SETTING admin DOWN"
-echo "TEST que in proper oper DOWN mode"
+echo "TEST que in proper DOWN mode"
 touch "./config/test.down"
 
 # Verify nothing in run and all in que
@@ -201,18 +201,13 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running/couldn't get /q/test.txt"
   exit 1
 fi
-egrep "admin_status: DOWN" _test.txt > /dev/null
+egrep "status: DOWN" _test.txt > /dev/null
 if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect admin_status - should be DOWN"
-  exit 1
-fi
-egrep "oper_status: DOWN" _test.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect oper_status - should be DOWN"
+  echo "Sorry, system has incorrect status - should be DOWN"
   exit 1
 fi
 
-echo "TEST que in proper oper DOWN mode"
+echo "TEST que in proper DOWN mode"
 echo "SETTING admin UP"
 
 # Set que to admin up and kick scheduler (asking for status is a kick)
@@ -222,14 +217,9 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ is not running/couldn't get /q/test.txt"
   exit 1
 fi
-egrep "admin_status: UP" _test2.txt > /dev/null
+egrep "status: UP" _test2.txt > /dev/null
 if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect admin_status - should be UP"
-  exit 1
-fi
-egrep "oper_status: UP" _test2.txt > /dev/null
-if [ "$?" -ne "0" ]; then
-  echo "Sorry, system has incorrect oper_status - should be UP"
+  echo "Sorry, system has incorrect status - should be UP"
   exit 1
 fi
 
