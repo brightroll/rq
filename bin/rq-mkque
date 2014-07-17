@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+$: << File.expand_path('..', File.dirname(__FILE__))
+
+require 'vendor/environment'
+require 'optparse'
+require 'json'
+require 'code/queue'
+
+def mkque(queue)
+  puts "Created queue #{queue.inspect}" if RQ::Queue.create(queue) or fail "Failed to create queue: #{queue}"
+end
+
+options = {
+  'num_workers' => 1,
+  'coalesce'    => false,
+}
+
+op = OptionParser.new do |opts|
+  opts.banner = 'Usage: rq-mkque [options]'
+
+  opts.on('--name NAME', 'Queue Name (required)') do |v|
+    options['name'] = v
+  end
+  opts.on('--script SCRIPT', 'Queue Script (required)') do |v|
+    options['script'] = v
+  end
+  opts.on('--num-workers NUM', 'Number Simultaenous Workers (default: 1)') do |v|
+    options['num_workers'] = v
+  end
+  opts.on('--exec-prefix PREF', 'Shell prefix to the exec(3) call (default: none)') do |v|
+    options['exec_prefix'] = v
+  end
+  opts.on('--[no-]coalesce', 'Coalesce? (default: no-coalesce)') do |v|
+    options['coalesce'] = v
+  end
+  opts.on('--force', 'Force create queue') do |v|
+    options['force'] = v
+  end
+end
+
+op.parse!
+
+unless options['name'] && options['script']
+  $stderr.puts 'Missing name or script argument, these are required.'
+  $stderr.puts
+  $stderr.puts op.help
+  exit 1
+end
+
+if !options.delete('force') && File.exists?("queue/#{options['name']}")
+  $stderr.puts 'Already installed'
+  exit 1
+end
+
+mkque(options)
+  queue = {
+    'name'        => 'rq_router',
+    'script'      => './code/rq_router_script.rb',
+    'num_workers' => '1',
+    'exec_prefix' => '',
+  }
