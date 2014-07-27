@@ -2,7 +2,6 @@ require 'socket'
 require 'json'
 
 require 'code/queue'
-require 'code/scheduler'
 require 'code/web_server'
 require 'code/protocol'
 require 'version'
@@ -20,7 +19,6 @@ module RQ
     def initialize
       @queues = { } # Hash of queue name => RQ::Queue object
       @queue_errs = Hash.new(0) # Hash of queue name => count of restarts, default 0
-      @scheduler = nil
       @web_server = nil
       @start_time = Time.now
     end
@@ -288,9 +286,6 @@ module RQ
     end
 
     def final_shutdown!
-      # Once all the queues are down, take the scheduler down
-      # Process.kill("TERM", @scheduler.pid) if @scheduler.pid
-
       # Once all the queues are down, take the web server down
       Process.kill("TERM", @web_server) if @web_server
 
@@ -312,14 +307,6 @@ module RQ
       worker = RQ::Queue.start_process({'name' => name})
       if worker
         @queues[worker.name] = worker
-        log("STARTED [ #{worker.name} - #{worker.pid} ]")
-      end
-    end
-
-    def start_scheduler
-      worker = RQ::Scheduler.start_process
-      if worker
-        @scheduler = worker
         log("STARTED [ #{worker.name} - #{worker.pid} ]")
       end
     end
@@ -368,9 +355,6 @@ module RQ
       end
 
       load_queues
-
-      # TODO implement cron-like scheduler and start it up
-      # start_scheduler
 
       start_webserver
 
