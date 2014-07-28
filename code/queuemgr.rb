@@ -6,12 +6,6 @@ require 'code/web_server'
 require 'code/protocol'
 require 'version'
 
-def log(mesg)
-  File.open('log/queuemgr.log', "a") do |f|
-    f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-  end
-end
-
 module RQ
   class QueueMgr
     include Protocol
@@ -29,7 +23,7 @@ module RQ
         @config = JSON.parse(data)
         ENV["RQ_ENV"] = @config['env']
       rescue
-        log("Bad config file. Exiting")
+        $log.error("Bad config file. Exiting")
         exit! 1
       end
 
@@ -39,7 +33,7 @@ module RQ
           # This will affect the class Tempfile, which is used by Rack
           ENV['TMPDIR'] = dir
         else
-          log("Bad 'tmpdir' in config json [#{dir}]. Exiting")
+          $log.error("Bad 'tmpdir' in config json [#{dir}]. Exiting")
           exit! 1
         end
       end
@@ -78,7 +72,7 @@ module RQ
       return unless packet
 
       cmd, arg = packet.split(' ', 2)
-      log("REQ [ #{cmd} #{arg} ]")
+      $log.debug("REQ [ #{cmd} #{arg} ]")
 
       case cmd
       when 'ping'
@@ -176,7 +170,7 @@ module RQ
             resp = ['fail', 'queue not created'].to_json
             worker = RQ::Queue.create(options)
             if worker
-              log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
+              $log.info("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
               @queues[worker.name] = worker
               resp = ['success', 'queue created - awesome'].to_json
             end
@@ -214,7 +208,7 @@ module RQ
 
         if not err
           worker = RQ::Queue.create(options, arg)
-          log("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
+          $log.info("create_queue STARTED [ #{worker.name} - #{worker.pid} ]")
           if worker
             @queues[worker.name] = worker
             reason = 'queue created - awesome'
@@ -255,10 +249,10 @@ module RQ
       # Notify running queues to reload configs
       @queues.values.each do |worker|
         if dirs.has_key? worker.name
-          log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING HUP")
+          $log.info("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING HUP")
           Process.kill("HUP", worker.pid) if worker.pid rescue nil
         else
-          log("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING TERM")
+          $log.info("RELOAD [ #{worker.name} - #{worker.pid} ] - SENDING TERM")
           worker.status = "SHUTDOWN"
           Process.kill("TERM", worker.pid) if worker.pid rescue nil
         end
@@ -293,7 +287,7 @@ module RQ
       File.unlink('config/queuemgr.pid') rescue nil
       @sock.close
       File.unlink('config/queuemgr.sock') rescue nil
-      log("FINAL SHUTDOWN - EXITING")
+      $log.info("FINAL SHUTDOWN - EXITING")
       Process.exit! 0
     end
 
@@ -307,7 +301,7 @@ module RQ
       worker = RQ::Queue.start_process({'name' => name})
       if worker
         @queues[worker.name] = worker
-        log("STARTED [ #{worker.name} - #{worker.pid} ]")
+        $log.info("STARTED [ #{worker.name} - #{worker.pid} ]")
       end
     end
 
@@ -317,7 +311,7 @@ module RQ
         Signal.trap('TERM', 'DEFAULT')
         Signal.trap('CHLD', 'DEFAULT')
 
-        $0 = '[rq-web]'
+        $0 = $log.progname = '[rq-web]'
         RQ::WebServer.new(@config).run!
       end
     end
@@ -331,7 +325,7 @@ module RQ
     end
 
     def run!
-      $0 = '[rq-mgr]'
+      $0 = $log.progname = '[rq-mgr]'
 
       init
       load_config
@@ -340,17 +334,14 @@ module RQ
       @signal_chld_rd, @signal_chld_wr = IO.pipe
 
       Signal.trap("TERM") do
-        log("received TERM signal")
         shutdown!
       end
 
       Signal.trap("CHLD") do
-        log("received CHLD signal")
         @signal_chld_wr.syswrite('.')
       end
 
       Signal.trap("HUP") do
-        log("received HUP signal")
         @signal_hup_wr.syswrite('.')
       end
 
@@ -360,21 +351,18 @@ module RQ
 
       set_nonblocking(@sock)
 
-      # Ye old event loop
       while true
         io_list = @queues.values.select { |i| i.status != "ERROR" }.map { |i| i.child_write_pipe }
         io_list << @sock
         io_list << @signal_hup_rd
         io_list << @signal_chld_rd
-        #log(io_list.inspect)
-        log('sleeping')
         begin
           ready, _, _ = IO.select(io_list, nil, nil, 60)
         rescue SystemCallError, StandardError # SystemCallError is the parent for all Errno::EFOO exceptions
           sleep 0.001 # A tiny pause to prevent consuming all CPU
-          log("error on SELECT #{$!}")
+          $log.warn("error on SELECT #{$!}")
           closed_sockets = io_list.delete_if { |i| i.closed? }
-          log("removing closed sockets #{closed_sockets.inspect} from io_list")
+          $log.warn("removing closed sockets #{closed_sockets.inspect} from io_list")
           retry
         end
 
@@ -386,20 +374,20 @@ module RQ
             begin
               client_socket, client_sockaddr = @sock.accept
             rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-              log('error acception on main sock, supposed to be readysleeping')
+              $log.warn('error acception on main sock, supposed to be readysleeping')
             end
             reset_nonblocking(client_socket)
             handle_request(client_socket)
             client_socket.close
 
           when @signal_hup_rd.fileno
-            log("noticed SIGNAL HUP")
+            $log.debug("noticed SIGNAL HUP")
             reset_nonblocking(@signal_hup_rd)
             do_read(@signal_hup_rd, 1)
             reload
 
           when @signal_chld_rd.fileno
-            log("noticed SIGNAL CHLD")
+            $log.debug("noticed SIGNAL CHLD")
             reset_nonblocking(@signal_chld_rd)
             do_read(@signal_chld_rd, 1)
 
@@ -426,27 +414,27 @@ module RQ
     end
 
     def handle_worker_close(worker, status)
-      log("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{status} - #{worker.status}")
+      $log.info("QUEUE PROC #{worker.name} of PID #{worker.pid} exited with status #{status} - #{worker.status}")
       worker.child_write_pipe.close
 
       case worker.status
       when 'RUNNING'
         if (@queue_errs[worker.name] += 1) > 10
-          log("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
+          $log.warn("FAILED [ #{worker.name} - too many restarts. Not restarting ]")
           new_worker = RQ::Worker.new
           new_worker.status = 'ERROR'
           new_worker.name = worker.name
           @queues[worker.name] = new_worker
         else
           worker = RQ::Queue.start_process(worker.options)
-          log("RESTARTED [ #{worker.name} - #{worker.pid} ]")
+          $log.info("RESTARTED [ #{worker.name} - #{worker.pid} ]")
           @queues[worker.name] = worker
         end
 
       when 'DELETE'
         RQ::Queue.delete(worker.name)
         @queues.delete(worker.name)
-        log("DELETED [ #{worker.name} ]")
+        $log.info("DELETED [ #{worker.name} ]")
 
       when 'SHUTDOWN'
         @queues.delete(worker.name)
@@ -455,7 +443,7 @@ module RQ
         end
 
       else
-        log("STRANGE: queue #{worker.pid} status = #{worker.status}")
+        $log.warn("STRANGE: queue #{worker.pid} status = #{worker.status}")
       end
     end
 

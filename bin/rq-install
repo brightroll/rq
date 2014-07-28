@@ -7,6 +7,11 @@ require 'fileutils'
 require 'json'
 require 'code/queue'
 
+require 'logger'
+$log = Logger.new(STDERR)
+$log.level = Logger::WARN
+$log.progname = $0
+
 def write_config(data, conffile='config/config.json')
   confdir = File.dirname(conffile)
   FileUtils.mkdir_p(confdir) if confdir
