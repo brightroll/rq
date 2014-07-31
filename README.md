@@ -151,24 +151,36 @@ configuration. A typical config:
 
 config.json
 ``` json
-{"name":"relay","script":"./code/relay_script.rb","num_workers":1,"exec_prefix":""}
+{"name":"interval_do_work","script":"/usr/bin/interval_script.sh","num_workers":5,
+ "schedule":[
+  {"cron":"*/10 * * * *",  "param1":"10m"},
+  {"cron":"@hourly",       "param1":"1h"}
+] }
 ```
 form.json
 ``` json
-{"default":"hidden","mesg_param1":{"label":"Something Here","help":"foobar"}}
+{"default":"hidden","mesg_param1":{"label":"Frequency of run","help":"Tell the script its run interval"}}
 ```
 
-Key             | Description
-:--             | :----------
-**name**        | Name of the queue
-**script**      | Path to the script to execute for each message
-num_workers     | Maximum number of messages to process at a time, default `1`
-exec_prefix     | This is prepended to the script path before calling `exec()`, default `bash -lc`
-env_vars        | Hash of environment variables and values set before calling `exec()`, default empty
-coalesce        | Boolean, whether to coalesce messages with identical paramters, default `false`
-coalesce_paramN | Boolean, if coalesce is true, whether to coalesce on a particular parameter
+Key                  | Description
+:--                  | :----------
+**name**             | Name of the queue
+**script**           | Path to the script to execute for each message
+num_workers          | Maximum number of messages to process at a time, default `1`
+exec_prefix          | This is prepended to the script path before calling `exec()`, default `bash -lc`
+env_vars             | Hash of environment variables and values set before calling `exec()`, default empty
+coalesce             | Boolean, whether to coalesce messages with identical paramters, default `false`
+coalesce_paramN      | Boolean, if coalesce is true, whether to coalesce on a particular parameter
+schedule             | Array of hashes of cron-like scheduled jobs
+schedule[]: **cron** | A cron-like five element recurring schedule, see crontab(5)
+schedule[]: paramN   | Optional param1-param4 will be passed to each scheduled job
 
 _Fields in **bold** are mandatory, all others are optional._
+
+Scheduled jobs may be queued up to 1 minute in advance, with a `due` time set to
+match the scheduled time. Scheduled jobs will only be created if the queue is in
+`UP` state - a paused or downed queue will not schedule new jobs. Multiple
+schedules are supported and each can have different params.
 
 <a name='section_Guarantees'></a>
 ## Guarantees

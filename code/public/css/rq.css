@@ -40,6 +40,10 @@ td {
   color: #FEF9EE;
 }
 
+#queue-list tr {
+  vertical-align: text-top;
+}
+
 #custom-queues {
   background: #FEF9EE;
 }

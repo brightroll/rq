@@ -15,3 +15,4 @@ rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/rack-protection-1.5.
 rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/sinatra-1.4.5/lib"))
 rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/unixrack-1.0.4.1/lib"))
 rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/daemons-1.1.9/lib"))
+rqrq_rqenv_add_path_if_needed(File.expand_path("#{dir}/gems/parse-cron-0.1.4/lib"))

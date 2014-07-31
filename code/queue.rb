@@ -8,6 +8,7 @@ require 'code/adminoper'
 require 'code/queueclient'
 require 'code/protocol'
 require 'pathname'
+require 'parse-cron'
 
 module RQ
 
@@ -28,7 +29,8 @@ module RQ
     :exec_prefix,
     :env_vars,
     :coalesce,
-    :coalesce_params
+    :coalesce_params,
+    :schedule
   )
   end
 
@@ -37,6 +39,7 @@ module RQ
 
     def initialize(options, parent_pipe)
       @start_time = Time.now
+      @last_sched = nil
       # Read config
       @name = options['name']
       @queue_path = "queue/#{@name}"
@@ -436,6 +439,12 @@ module RQ
       @config = sublimate_config(JSON.parse(data))
     end
 
+    # There are a variety of ways we used to specify truth.
+    # Going forward, javascript true / false are preferred.
+    def so_truthy? fudge
+      !!([true, 'true', 'yes', '1', 1].include? fudge)
+    end
+
     def sublimate_config(conf)
       # TODO config validation
       new_config                 = QueueConfig.new
@@ -444,8 +453,24 @@ module RQ
       new_config.num_workers     = conf['num_workers'].to_i
       new_config.exec_prefix     = conf['exec_prefix']
       new_config.env_vars        = conf['env_vars']
-      new_config.coalesce        = !!(%w{true yes 1}.include? conf['coalesce'])
-      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, !!(conf["coalesce_param#{x}"].to_i == 1)]} ]
+      new_config.coalesce        = so_truthy?(conf['coalesce'])
+      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, so_truthy?(conf["coalesce_param#{x}"])]} ]
+      new_config.schedule        = (conf['schedule'] || []).map do |s|
+                                     begin
+                                       {
+                                         'cron'     => s['cron'],
+                                         'cron_obj' => CronParser.new(s['cron']),
+                                         'params'   => {
+                                           'param1' => s['param1'],
+                                           'param2' => s['param2'],
+                                           'param3' => s['param3'],
+                                           'param4' => s['param4'],
+                                         }
+                                       }
+                                     rescue
+                                       $log.warn("Invalid cron spec: #{s['cron']}: [ #{$!} ]")
+                                     end
+                                   end.compact
       new_config
     end
 
@@ -499,9 +524,7 @@ module RQ
     def store_msg(msg, que = 'prep')
       # Write message to disk
       begin
-        if not msg.has_key?('due')
-          msg['due'] = Time.now.to_i
-        end
+        msg['due'] ||= Time.now.to_i
         clean = msg.reject { |k,v| k == 'child_read_pipe' || k == 'child_pid' || k == 'child_write_pipe' }
         data = clean.to_json
         # Need a sysopen style system here TODO
@@ -539,6 +562,17 @@ module RQ
       run_scheduler!
 
       true
+    end
+
+    # required: dest
+    # options: src param1 param2 param3 param4 post_run_webhook due force_remote
+    def make_message(options, que=true)
+      msg = { }
+      alloc_id(msg)
+      check_msg(msg, options)
+      store_msg(msg)
+      que(msg) if que
+      msg
     end
 
     def is_duplicate?(msg1, msg2)
@@ -952,17 +986,6 @@ module RQ
       [result, size]
     end
 
-    def fixup_msg(msg, que)
-      needs_fixing = false
-      if not msg.has_key?('due')
-        needs_fixing = true
-      end
-
-      if needs_fixing
-        store_msg(msg, que)
-      end
-    end
-
     def load_messages
 
       # prep just has message ids
@@ -992,7 +1015,7 @@ module RQ
         begin
           data = File.read(basename + mname + "/msg")
           msg = JSON.parse(data)
-          fixup_msg(msg, 'que')
+          store_msg(msg, 'que') unless msg.has_key?('due')
         rescue
           $log.warn("Bad message in queue: #{mname}")
           next
@@ -1239,10 +1262,37 @@ module RQ
       run_job(ready_msg)
     end
 
+    # If the upcoming minute should have a scheduled job, add it to the que
+    def run_cron!
+      # This could be DOWN, PAUSE, SCRIPTERROR
+      return unless @status.status == 'UP'
+
+      now = Time.now
+      @config.schedule.each do |sched|
+        next_time = sched['cron_obj'].next(now)
+        if @last_sched == next_time
+          $log.debug("Already ran scheduled job #{next_time}")
+        elsif next_time - now < 60
+          @last_sched = next_time
+          begin
+            msg = make_message sched['params'].merge({
+              'dest' => @name,
+              'src'  => 'cron',
+              'due'  => next_time.to_i,
+            })
+            $log.info("Queueing scheduled job #{next_time}: #{msg['msg_id']}")
+          rescue
+            $log.warn("Failed to que scheduled job #{next_time}")
+          end
+        end
+      end
+    end
+
     def run_loop
       set_nonblocking(@sock)
 
       while true
+        run_cron!
         run_scheduler!
 
         io_list = @run.map { |i| i['child_read_pipe'] }.compact
@@ -1506,10 +1556,7 @@ module RQ
       when 'create_message'
         msg = { }
         begin
-          alloc_id(msg)
-          check_msg(msg, options)
-          store_msg(msg)
-          que(msg)
+          msg = make_message(options)
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
         rescue Exception => e
@@ -1527,10 +1574,7 @@ module RQ
           resp = [ "ok", msg_id ].to_json
         else
           begin
-            alloc_id(msg)
-            check_msg(msg, options)
-            store_msg(msg)
-            que(msg)
+            msg = make_message(options)
             msg_id = gen_full_msg_id(msg)
             resp = [ "ok", msg_id ].to_json
           rescue Exception => e
@@ -1579,9 +1623,7 @@ module RQ
       when 'prep_message'
         msg = { }
         begin
-          alloc_id(msg)
-          check_msg(msg, options)
-          store_msg(msg)
+          msg = make_message(options, false)
           msg_id = gen_full_msg_id(msg)
           resp = [ "ok", msg_id ].to_json
         rescue Exception => e

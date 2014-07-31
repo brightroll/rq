@@ -6,7 +6,18 @@
     status = qc.status
 -%>
 <%  if status != 'DOWN' -%>
-      <td><pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre></td>
+      <td>
+        <pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre>
+        <% qc.config[1]['schedule'].each do |sched| %>
+          <pre>
+<%=           sched['cron'] -%>
+<%=           "\n  PARAM1: \"#{sched['params']['param1']}\"" if sched['params']['param1'] -%>
+<%=           "\n  PARAM2: \"#{sched['params']['param2']}\"" if sched['params']['param2'] -%>
+<%=           "\n  PARAM3: \"#{sched['params']['param3']}\"" if sched['params']['param3'] -%>
+<%=           "\n  PARAM4: \"#{sched['params']['param4']}\"" if sched['params']['param4'] -%>
+          </pre>
+        <% end %>
+      </td>
 <%  else -%>
       <td>-</td>
 <%  end -%>
