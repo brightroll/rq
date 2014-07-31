@@ -67,6 +67,7 @@ Table Of Contents
 * [Quick Setup](#section_Quick_Setup)
 * [Features](#section_Features)
 * [Hip Tips](#section_Hip_Tips)
+* [Config Files](#section_Config_Files)
 * [Queue Config Files](#section_Queue_Config_Files)
 * [Guarantees](#section_Guarantees)
 * [Your First Queue Script](#section_Your_First_Queue_Script)
@@ -112,10 +113,41 @@ RQ returns a complete HTTP URL for each enqueued message, therefore you must con
 * Master passing.Do not access other message directories unless the message is `done`
 * Don't take too long via the Web UI, there is a X second timeout
 
+<a name='section_Config_Files'></a>
+## Config Files
+
+At the top level, `config/config.json` provides primary configuration. A typical
+config:
+
+config.json
+``` json
+{"env":"development","host":"127.0.0.1","port":"3333","addr":"0.0.0.0","tmpdir":"/tmp",
+ "basic_auth":{
+  "realm":"Your RQ",
+  "users":{
+   "foo user":"bar pass"
+} } }
+```
+
+Key                   | Description
+:--                   | :----------
+**env**               | Environment for RQ_ENV
+**host**              | Hostname used for canonical full message ID
+**port**              | Port for the web UI to listen on (required, but default is 3333)
+**addr**              | Addr for the web UI to listen on (0.0.0.0 for all interfaces)
+**tmpdir**            | Directory for temp files
+allow_new_queue       | Boolean, enable the new queue web UI, default `false`
+basic_auth            | Hash for HTTP Basic authentication, has two required elements
+basic_auth: **realm** | Realm for HTTP Basic
+basic_auth: **users** | Hash of username:password pairs
+
+_Fields in **bold** are mandatory, all others are optional._
+
 <a name='section_Queue_Config_Files'></a>
 ## Queue Config Files
 
-A typical config:
+Within each queue directory, the files `config.json` and `form.json` provide
+configuration. A typical config:
 
 config.json
 ``` json
@@ -298,7 +330,7 @@ RQ_HOST         | Base URL of host (Ex. "http://localhost:3333/")
 RQ_DEST         | Msg Dest Queue (Ex. http://localhost:3333/q/test/)
 RQ_DEST_QUEUE   | Just Queue Name (Ex. 'test')
 RQ_MSG_ID       | Short msg id (Ex. "20091109.0558.57.780")
-RQ_FULL_MSG_ID  | Full msg id of message being processed (Ex. http://vidxcode27.vbtrll.com:3333/q/test/20091109.0558.57.780)
+RQ_FULL_MSG_ID  | Full msg id of message being processed (Ex. http://rq.example.com:3333/q/test/20091109.0558.57.780)
 RQ_MSG_DIR      | Dir for msg (Should be Current Dir unless dir is changed by script)
 RQ_READ         | Read side pipe FD to the Queue management process
 RQ_WRITE        | Write side pipe FD to the Queue management process
