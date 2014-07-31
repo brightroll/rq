@@ -439,6 +439,12 @@ module RQ
       @config = sublimate_config(JSON.parse(data))
     end
 
+    # There are a variety of ways we used to specify truth.
+    # Going forward, javascript true / false are preferred.
+    def so_truthy? fudge
+      !!([true, 'true', 'yes', '1', 1].include? fudge)
+    end
+
     def sublimate_config(conf)
       # TODO config validation
       new_config                 = QueueConfig.new
@@ -447,8 +453,8 @@ module RQ
       new_config.num_workers     = conf['num_workers'].to_i
       new_config.exec_prefix     = conf['exec_prefix']
       new_config.env_vars        = conf['env_vars']
-      new_config.coalesce        = !!(%w{true yes 1}.include? conf['coalesce'])
-      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, !!(conf["coalesce_param#{x}"].to_i == 1)]} ]
+      new_config.coalesce        = so_truthy?(conf['coalesce'])
+      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, so_truthy?(conf["coalesce_param#{x}"])]} ]
       new_config.schedule        = (conf['schedule'] || []).map do |s|
                                      begin
                                        {
