@@ -22,6 +22,23 @@ module RQ
     enable :static
     set :public_folder, './code/public'
 
+    # Use the global Logger
+    after do
+      # Format adapted from Rack::CommonLogger
+      $log.info %{%s - %s "%s %s %s" %d %d %s "%s" "%s"} % [
+        request.ip || "-",
+        env["REMOTE_USER"] || "-",
+        request.request_method,
+        request.fullpath,
+        env["HTTP_VERSION"],
+        status.to_s[0..3],
+        request.content_length.to_i,
+        request.media_type || "-",
+        request.referer || "-",
+        request.user_agent || "-",
+      ]
+    end
+
     def initialize(app=nil, config={})
       super(app)
       @allow_new_queue = config.fetch('allow_new_queue', false)
