@@ -1,8 +1,9 @@
 require 'socket'
 require 'json'
+require 'unixrack'
 
+require 'code/main'
 require 'code/queue'
-require 'code/web_server'
 require 'code/protocol'
 require 'version'
 
@@ -312,7 +313,13 @@ module RQ
         Signal.trap('CHLD', 'DEFAULT')
 
         $0 = $log.progname = '[rq-web]'
-        RQ::WebServer.new(@config).run!
+        Rack::Handler::UnixRack.run(
+          RQ::Main.new(nil, @config), {
+          :Port        => @config['port'],
+          :Host        => @config['addr'],
+          :Hostname    => @config['host'],
+          :allowed_ips => @config['allowed_ips'],
+        })
       end
     end
 

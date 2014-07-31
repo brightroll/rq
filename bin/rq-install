@@ -16,7 +16,7 @@ def write_config(data, conffile='config/config.json')
   confdir = File.dirname(conffile)
   FileUtils.mkdir_p(confdir) if confdir
   File.open(conffile, 'w') do |f|
-    f.write(data.to_json)
+    f.puts(data.to_json)
   end
 end
 
@@ -67,6 +67,7 @@ options = {
   :port   => 3333,
   :addr   => '0.0.0.0',
   :tmpdir => '/tmp',
+  :allow_new_queue => true,
 }
 
 OptionParser.new do |opts|
@@ -86,6 +87,9 @@ OptionParser.new do |opts|
   end
   opts.on('--tmpdir DIR', 'Temporary directory (default: /tmp)') do |v|
     options[:tmpdir] = v
+  end
+  opts.on('--[no-]allow-new-queue', 'Allow new queues from the web UI (default: true)') do |v|
+    options[:allow_new_queue] = v
   end
   opts.on('--force', 'Force install') do |v|
     options[:force] = v

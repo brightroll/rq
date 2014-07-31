@@ -1,5 +1,5 @@
 <div id="header">
-<% if new_queue_allowed -%>
+<% if allow_new_queue? -%>
   <p id="new-queue"><a href="/new_queue">New Queue</a></p>
 <% end -%>
   <h1><a href="<%= url %>">RQ</a></h1>
