@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
 $: << File.expand_path('..', File.dirname(__FILE__))
 require 'vendor/environment'
+
+require 'logger'
+$log = Logger.new(STDERR)
+$log.level = Logger::WARN
+$log.progname = $0
+
 require 'code/rq'

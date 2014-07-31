@@ -13,10 +13,49 @@ module RQ
 
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
-    set :erb, :trim => '-'
 
-    def self.views
-      './code/views'
+    # Enable erb templates with <%- newline trimming
+    set :erb, :trim => '-'
+    set :views, './code/views'
+
+    # Let Sinatra handle static file service
+    enable :static
+    set :public_folder, './code/public'
+
+    # Use the global Logger
+    after do
+      # Format adapted from Rack::CommonLogger
+      $log.info %{%s - %s "%s %s %s" %d %d %s "%s" "%s"} % [
+        request.ip || "-",
+        env["REMOTE_USER"] || "-",
+        request.request_method,
+        request.fullpath,
+        env["HTTP_VERSION"],
+        status.to_s[0..3],
+        request.content_length.to_i,
+        request.media_type || "-",
+        request.referer || "-",
+        request.user_agent || "-",
+      ]
+    end
+
+    def initialize(app=nil, config={})
+      super(app)
+      @allow_new_queue = config.fetch('allow_new_queue', false)
+    end
+
+    # If basic auth is enabled, wrap ourselves in Rack middleware
+    def self.new(app=nil, config={})
+      basic_auth = config['basic_auth']
+      if basic_auth
+        app = Rack::Auth::Basic.new(super(app, config)) do |username, password|
+           basic_auth['users'][username] == password
+        end
+        app.realm = basic_auth['realm']
+        app
+      else
+        super(app, config)
+      end
     end
 
     helpers do
@@ -24,8 +63,8 @@ module RQ
         "http://#{request.host}:#{request.port}/"
       end
 
-      def new_queue_allowed
-        %w{test development}.include? ENV["RQ_ENV"]
+      def allow_new_queue?
+        @allow_new_queue
       end
 
       def get_queueclient(name)
@@ -73,13 +112,13 @@ module RQ
     end
 
     get '/new_queue' do
-      throw :halt, [403, "Queue creation not allowed at this time."] unless new_queue_allowed
+      throw :halt, [403, "Queue creation not allowed at this time."] unless allow_new_queue?
 
       erb :new_queue
     end
 
     post '/new_queue' do
-      throw :halt, [403, "Queue creation not allowed at this time."] unless new_queue_allowed
+      throw :halt, [403, "Queue creation not allowed at this time."] unless allow_new_queue?
       # TODO: validation
 
       # This creates and starts a queue
@@ -89,7 +128,7 @@ module RQ
     end
 
     post '/new_queue_link' do
-      throw :halt, [403, "Queue creation not allowed at this time."] unless new_queue_allowed
+      throw :halt, [403, "Queue creation not allowed at this time."] unless allow_new_queue?
 
       # This creates and starts a queue via a config file in json
       js_data = {}

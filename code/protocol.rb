@@ -44,14 +44,14 @@ module RQ
       end
 
       size = size_str.to_i
-      # log("REQ - size #{size}")
+      $log.debug("REQ - size #{size}")
 
       do_read(sock, size)
     end
 
     def send_packet(sock, resp)
       log_msg = resp.length > 80 ? "#{resp[0...80]}..." : resp
-      # log("RESP [ #{resp.length}  #{log_msg} ]")
+      $log.debug("RESP [ #{resp.length}  #{log_msg} ]")
       sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
       do_write(sock, sock_msg)
     end
@@ -67,7 +67,7 @@ module RQ
 
       JSON.parse(reply) if reply
     rescue
-      $stderr.puts "Error on the socket: #{$!}"
+      $log.warn("Error on the socket: #{$!} [ #{$@} ]")
       nil
     end
 
@@ -97,7 +97,7 @@ module RQ
       sleep 0.001 # A tiny pause to prevent consuming all CPU
       retry
     rescue EOFError
-      $stderr.puts "Got an EOF from socket read"
+      $log.debug("Got an EOF from socket read")
       return nil
     rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
       raise "Got an #{$!} from socket read"

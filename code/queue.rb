@@ -60,29 +60,26 @@ module RQ
       @signal_chld_rd, @signal_chld_wr = IO.pipe
 
       Signal.trap("TERM") do
-        log("received TERM signal")
         shutdown!
       end
 
       Signal.trap("CHLD") do
-        # Ye Ole DJB self_pipe trick again
         @signal_chld_wr.syswrite('.')
       end
 
       Signal.trap("HUP") do
-        # Ye Ole DJB self_pipe trick again
         @signal_hup_wr.syswrite('.')
       end
 
       unless load_rq_config
         sleep 5
-        log("Invalid main rq config for #{@name}. Exiting." )
+        $log.error("Invalid main rq config for #{@name}. Exiting." )
         exit! 1
       end
 
       unless load_config
         sleep 5
-        log("Invalid config for #{@name}. Exiting." )
+        $log.error("Invalid config for #{@name}. Exiting." )
         exit! 1
       end
 
@@ -126,14 +123,6 @@ module RQ
       RQ::Queue.start_process(options)
     end
 
-    def self.log(path, mesg)
-      File.open(path + '/queue.log', "a") do |f|
-        f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-      end
-    rescue Exception
-      $stderr.write("Cannot log to #{path}: #{Process.pid} - #{Time.now} - #{mesg}\n")
-    end
-
     def self.start_process(options)
       # nice pipes writeup
       # http://www.cim.mcgill.ca/~franco/OpSys-304-427/lecture-notes/node28.html
@@ -146,21 +135,21 @@ module RQ
         Signal.trap('HUP', 'DEFAULT')
 
         queue_path = "queue/#{options['name']}"
-        $0 = "[rq-que] [#{options['name']}]"
+        $0 = $log.progname = "[rq-que] [#{options['name']}]"
         begin
           parent_wr.close
           #child only code block
-          RQ::Queue.log(queue_path, 'post fork')
+          $log.debug('post fork')
 
           q = RQ::Queue.new(options, child_rd)
           # This should never return, it should Kernel.exit!
           # but we may wrap this instead
-          RQ::Queue.log(queue_path, 'post new')
+          $log.debug('post new')
           q.run_loop
         rescue Exception
-          self.log(queue_path, "Exception!")
-          self.log(queue_path, $!)
-          self.log(queue_path, $!.backtrace)
+          $log.error("Exception!")
+          $log.error($!)
+          $log.error($!.backtrace)
           raise
         end
       end
@@ -183,14 +172,14 @@ module RQ
 
       # Wait up to a second for the worker to start up
       20.times do
-        break if worker.qc.ping == 'pong' rescue false
         sleep 0.05
+        break if worker.qc.ping == 'pong' rescue false
       end
 
       worker
     # If anything went wrong at all log it and return nil.
     rescue Exception
-      self.log("startup", "Failed to start worker #{options.inspect}: #{$!}")
+      $log.error("Failed to start worker #{options.inspect}: #{$!}")
       nil
     end
 
@@ -259,55 +248,50 @@ module RQ
       # script lived under a symlinked path
       script_path = Pathname.new(@config.script).realpath.to_s rescue @config.script
       if (!File.executable?(script_path) rescue false)
-        log("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
+        $log.warn("ERROR - QUEUE SCRIPT - not there or runnable #{script_path}")
         if @status.oper_status != 'SCRIPTERROR'
           @status.set_oper_status('SCRIPTERROR')
-          log("SCRIPTERROR - DAEMON STATUS is set to SCRIPTERROR")
-          log("OPER STATUS is now: #{@status.oper_status}")
+          $log.warn("SCRIPTERROR - DAEMON STATUS is set to SCRIPTERROR")
+          $log.warn("OPER STATUS is now: #{@status.oper_status}")
         end
         return
       end
 
       if @status.oper_status == 'SCRIPTERROR'
         @status.set_oper_status('UP')
-        log("SCRIPTERROR FIXED - DAEMON STATUS is set to UP")
-        log("OPER STATUS is now: #{@status.oper_status}")
+        $log.info("SCRIPTERROR FIXED - DAEMON STATUS is set to UP")
+        $log.info("OPER STATUS is now: #{@status.oper_status}")
       end
 
-      #log("0 child process prep step for runnable #{script_path}")
-      # 0 = stdin, 1 = stdout, 2 = stderr, 4 = pipe
-      #
       parent_rd, child_wr = IO.pipe
       child_rd, parent_wr = IO.pipe
 
-      log("1 child process prep step for runnable #{script_path}")
-      #log("1 child process prep step for runnable #{job_path}")
+      $log.debug("1 child process prep step for runnable #{script_path}")
 
       child_pid = fork do
         # Setup env
-        $0 = "[rq-msg] [#{@name}] [#{msg_id}]"
+        $0 = $log.progname = "[rq-msg] [#{@name}] [#{msg_id}]"
         begin
 
           #child only code block
 
           Dir.chdir(job_path)   # Chdir to child path
 
-          # TODO: log level
-          #RQ::Queue.log(job_path, "child process prep step for runnable #{script_path}")
+          $log.debug("child process prep step for runnable #{script_path}")
 
-          #RQ::Queue.log(job_path, "post fork - parent rd pipe fd: #{parent_rd.fileno}")
-          #RQ::Queue.log(job_path, "post fork - child wr pipe fd: #{child_wr.fileno}")
+          $log.debug("post fork - parent rd pipe fd: #{parent_rd.fileno}")
+          $log.debug("post fork - child wr pipe fd: #{child_wr.fileno}")
 
-          #RQ::Queue.log(job_path, "post fork - child rd pipe fd: #{child_rd.fileno}")
-          #RQ::Queue.log(job_path, "post fork - parent wr pipe fd: #{parent_wr.fileno}")
+          $log.debug("post fork - child rd pipe fd: #{child_rd.fileno}")
+          $log.debug("post fork - parent wr pipe fd: #{parent_wr.fileno}")
 
           # WE MUST DO THIS BECAUSE WE MAY GET PIPE FDs IN THE 3-4 RANGE
           # THIS GIVES US HIGHER # FDs SO WE CAN SAFELY CLOSE
           child_wr_fd = child_wr.fcntl(Fcntl::F_DUPFD)
           child_rd_fd = child_rd.fcntl(Fcntl::F_DUPFD)
 
-          #RQ::Queue.log(job_path, "post fork - child_wr_fd pipe fd: #{child_wr_fd}")
-          #RQ::Queue.log(job_path, "post fork - child_rd_fd pipe fd: #{child_rd_fd}")
+          $log.debug("post fork - child_wr_fd pipe fd: #{child_wr_fd}")
+          $log.debug("post fork - child_rd_fd pipe fd: #{child_rd_fd}")
 
           parent_rd.close
           parent_wr.close
@@ -317,13 +301,13 @@ module RQ
           # child_wr
           IO.for_fd(3).close rescue nil
           fd = IO.for_fd(child_wr_fd).fcntl(Fcntl::F_DUPFD, 3)
-          RQ::Queue.log(job_path, "Error duping fd for 3 - got #{fd}") unless fd == 3
+          $log.warn("Error duping fd for 3 - got #{fd}") unless fd == 3
           IO.for_fd(child_wr_fd).close rescue nil
 
           # child_rd
           IO.for_fd(4).close rescue nil
           fd = IO.for_fd(child_rd_fd).fcntl(Fcntl::F_DUPFD, 4)
-          RQ::Queue.log(job_path, "Error duping fd for 4 - got #{fd}") unless fd == 4
+          $log.warn("Error duping fd for 4 - got #{fd}") unless fd == 4
           IO.for_fd(child_rd_fd).close rescue nil
 
           f = File.open(job_path + "/stdio.log", "a")
@@ -347,9 +331,9 @@ module RQ
             next unless io
             io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
           end
-          #RQ::Queue.log(job_path, 'post FD_CLOEXEC') unless fd == 2
+          $log.debug('post FD_CLOEXEC') unless fd == 2
 
-          #RQ::Queue.log(job_path, "running #{script_path}")
+          $log.debug("running #{script_path}")
 
           ENV["RQ_VER"] = RQ_VER
           ENV["RQ_SCRIPT"] = @config.script
@@ -381,29 +365,27 @@ module RQ
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
           ENV.delete("RUBYOPT")
 
-          # TODO
-#          RQ::Queue.log(job_path, "set ENV now executing #{msg.inspect}")
+          $log.debug("set ENV now executing #{msg.inspect}")
 
           # Setting priority to BATCH mode
           Process.setpriority(Process::PRIO_PROCESS, 0, 19)
 
-          # TODO
-          #RQ::Queue.log(job_path, "set ENV, now executing #{script_path}")
+          $log.debug("set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
           exec_prefix = @config.exec_prefix || "bash -lc "
           if exec_prefix.empty?
-            #RQ::Queue.log(job_path, "exec path: #{script_path}")
+            $log.debug("exec path: #{script_path}")
             exec(script_path, "") if RUBY_VERSION < '2.0'
             exec(script_path, "", :close_others => false)
           else
-            #RQ::Queue.log(job_path, "exec path: #{exec_prefix + script_path}")
+            $log.debug("exec path: #{exec_prefix + script_path}")
             exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
             exec(exec_prefix + script_path, :close_others => false)
           end
         rescue
-          RQ::Queue.log(job_path, $!)
-          RQ::Queue.log(job_path, $!.backtrace)
+          $log.warn($!)
+          $log.warn($!.backtrace)
           raise
         end
       end
@@ -414,7 +396,7 @@ module RQ
 
       if child_pid == nil
         parent_rd.close
-        log("ERROR failed to run child script: queue_path, $!")
+        $log.warn("ERROR failed to run child script: queue_path, $!")
         return nil
       end
 
@@ -481,9 +463,9 @@ module RQ
       msg["msg_id"] = new_name
     rescue
       times += 1
-      log("FATAL - couldn't ALLOC ID times: #{times} #{$!}")
+      $log.warn("couldn't ALLOC ID times: #{times} [ #{$!} ]")
       if times > 10
-        log("FAILED TO ALLOC ID")
+        $log.warn("FAILED TO ALLOC ID")
         raise
       end
       sleep 0.001
@@ -527,7 +509,7 @@ module RQ
         File.open(basename + '/tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '/tmp', basename + '/msg')
       rescue
-        log("FATAL - couldn't write message")
+        $log.error("couldn't write message")
         return false
       end
 
@@ -545,8 +527,7 @@ module RQ
         msg['state']  = 'que'
         msg['status'] = 'que'
       rescue
-        log("FATAL - couldn't commit message #{msg_id}")
-        log("        [ #{$!} ]")
+        $log.error("couldn't commit message #{msg_id}: #{$!}")
         return false
       end
 
@@ -607,7 +588,7 @@ module RQ
 
       return if duplicates.empty?
 
-      log("#{msg['msg_id']} - found #{duplicates.length} dups ")
+      $log.info("#{msg['msg_id']} - found #{duplicates.length} dups ")
       # Collect all the dups into the msg and remove from the @que
       # also show parent in each dup
       msg['dups'] = []
@@ -615,7 +596,7 @@ module RQ
         msg['dups'] << i['msg_id']
         @temp_que_dups[i['msg_id']] = i
         r = @que.delete(i)               # ordering here is important
-        log("#{r['msg_id']} - removed from @que as dup")
+        $log.info("#{r['msg_id']} - removed from @que as dup")
         i['dup'] = gen_full_msg_id(msg)
       }
     end
@@ -649,8 +630,7 @@ module RQ
         newname = File.join(@queue_path, 'run', msg_id)
         File.rename(basename, newname)
       rescue
-        log("FATAL - couldn't run message #{msg_id}")
-        log("        [ #{$!} ]")
+        $log.warn("couldn't run message #{msg_id} [ #{$!} ]")
 
         # Remove the job from the queue. This may leave things in que state that
         # will be attempted again after a restart, but avoids the job jamming
@@ -675,8 +655,8 @@ module RQ
       return false unless @prep.include?(msg_id)
 
       if not File.exists?(basename)
-        log("WARNING - serious queue inconsistency #{msg_id}")
-        log("WARNING - #{msg_id} in memory but not on disk")
+        $log.warn("WARNING - serious queue inconsistency #{msg_id}")
+        $log.warn("WARNING - #{msg_id} in memory but not on disk")
         return false
       end
 
@@ -709,8 +689,8 @@ module RQ
 
       if options[:consistency]
         if not File.exists?(basename)
-          log("WARNING - serious queue inconsistency #{msg_id}")
-          log("WARNING - #{msg_id} in memory but not on disk")
+          $log.warn("WARNING - serious queue inconsistency #{msg_id}")
+          $log.warn("WARNING - #{msg_id} in memory but not on disk")
           return false
         end
       end
@@ -835,8 +815,7 @@ module RQ
 
       rescue
         msg = nil
-        log("Bad message in queue: #{basename}")
-        log("        [ #{$!} ]")
+        $log.warn("Bad message in queue: #{basename} [ #{$!} ]")
       end
 
       return [msg, basename]
@@ -927,8 +906,7 @@ module RQ
 
         result = [true, "#{md5}-Attached successfully"]
       rescue
-        log("FATAL - couldn't add attachment to message #{msg_id}")
-        log("        [ #{$!} ]")
+        $log.warn("couldn't add attachment to message #{msg_id} [ #{$!} ]")
         return false
       end
 
@@ -955,8 +933,7 @@ module RQ
 
         result = ["ok", "Attachment deleted successfully"]
       rescue
-        log("FATAL - couldn't delete attachment #{attach_name} from message #{msg_id}")
-        log("        [ #{$!} ]")
+        $log.warn("couldn't delete attachment #{attach_name} from message #{msg_id} [ #{$!} ]")
       end
 
       return result
@@ -1000,7 +977,7 @@ module RQ
         begin
           File.rename(basename + mname, @queue_path + '/que/' + mname)
         rescue
-          log("Bad message in run queue: #{mname}")
+          $log.warn("Bad message in run queue: #{mname}")
           next
         end
       end
@@ -1017,7 +994,7 @@ module RQ
           msg = JSON.parse(data)
           fixup_msg(msg, 'que')
         rescue
-          log("Bad message in queue: #{mname}")
+          $log.warn("Bad message in queue: #{mname}")
           next
         end
         @que << msg
@@ -1030,7 +1007,7 @@ module RQ
       child_io = msg['child_read_pipe']
       child_pid = msg['child_pid']
 
-      log("#{child_pid}: Reading status from child")
+      $log.debug("#{child_pid}: Reading status from child")
       data = do_read(child_io, 4096)
       return false unless data
 
@@ -1051,7 +1028,7 @@ module RQ
         # This allows us to notice any processes that have failed to terminate
         # and then kill them down the road.
 
-        log("#{child_pid}: child msg came in: #{child_msg}")
+        $log.debug("#{child_pid}: child msg came in: #{child_msg}")
         if (parts[0] != "run")
           if parts[0] == 'done'
             @completed << [msg, :done, Time.now.to_i]
@@ -1097,7 +1074,7 @@ module RQ
             begin
               qc = RQ::QueueClient.new(que_name)
             rescue RqQueueNotFound
-              log("QUEUE #{@name} couldn't DUP message - #{que_name} not available.")
+              $log.info("couldn't DUP message - #{que_name} not available.")
               msg['child_write_pipe'].syswrite("fail couldn't connect to queue - #{que_name}\n")
               return
             end
@@ -1124,16 +1101,16 @@ module RQ
             if attachments.empty?
               result = qc.create_message(msg_copy)
               if result[0] != 'ok'
-                log("QUEUE #{@name} couldn't DUP message - #{result[1]}")
+                $log.info("couldn't DUP message - #{result[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - #{result[1]}\n")
                 return
               end
-              log("QUEUE #{@name} DUP message #{msg['msg_id']}-> #{result[1]}")
+              $log.info("DUP message #{msg['msg_id']}-> #{result[1]}")
               msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
             else
               result = qc.prep_message(msg_copy)
               if result[0] != 'ok'
-                log("QUEUE #{@name} couldn't DUP message - #{result[1]}")
+                $log.info("couldn't DUP message - #{result[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - prep fail #{result[1]}\n")
                 return
               end
@@ -1144,7 +1121,7 @@ module RQ
               attachments.each do |path|
                 r2 = qc.attach_message({'msg_id' => que_msg_id, 'pathname' => path})
                 if r2[0] != 'ok'
-                  log("QUEUE #{@name} couldn't DUP message - #{r2[1]}")
+                  $log.info("couldn't DUP message - #{r2[1]}")
                   msg['child_write_pipe'].syswrite("fail dup failed - attach fail #{r2[1]}\n")
                   return
                 end
@@ -1152,11 +1129,11 @@ module RQ
 
               r3 = qc.commit_message({'msg_id' => que_msg_id})
               if r3[0] != 'ok'
-                log("QUEUE #{@name} couldn't DUP message - #{r3[1]}")
+                $log.info("couldn't DUP message - #{r3[1]}")
                 msg['child_write_pipe'].syswrite("fail dup failed - commit fail #{r3[1]}\n")
                 return
               end
-              log("QUEUE #{@name} DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
+              $log.info("DUP message with ATTACH #{msg['msg_id']}-> #{result[1]}")
               msg['child_write_pipe'].syswrite("ok #{result[1]}\n")
             end
 
@@ -1176,8 +1153,7 @@ module RQ
         File.open(basename + '.tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '.tmp', basename)
       rescue
-        log("FATAL - couldn't write status message")
-        log("        [ #{$!} ]")
+        $log.warn("couldn't write status message [ #{$!} ]")
         return false
       end
 
@@ -1198,8 +1174,7 @@ module RQ
       File.rename(basename + '.tmp', basename)
       true
     rescue
-      log("FATAL - couldn't write message pid file")
-      log("        [ #{$!} ]")
+      $log.warn("couldn't write message pid file [ #{$!} ]")
       false
     end
 
@@ -1208,14 +1183,7 @@ module RQ
       FileUtils.rm_rf(basename)
     end
 
-    def log(mesg)
-      File.open(@queue_path + '/queue.log', "a") do |f|
-        f.write("#{Process.pid} - #{Time.now} - #{mesg}\n")
-      end
-    end
-
     def shutdown!
-      log("Received shutdown")
       Process.exit! 0
     end
 
@@ -1236,7 +1204,7 @@ module RQ
       end
 
       if active_count >= @config.num_workers
-        #log("Already running #{active_count} config is max: #{@config['num_workers']}")
+        $log.debug("Already running #{active_count} config is max: #{@config['num_workers']}")
         return
       end
 
@@ -1257,7 +1225,7 @@ module RQ
 
       delta = ready_msg['due'].to_f - Time.now.to_f
 
-      log("Delta: #{delta}")
+      $log.debug("Delta: #{delta}")
       # If it is time to wait, then run
       if delta > 0
         if delta < 60  # Set timeout to be this, vs default of 60 set above
@@ -1266,7 +1234,7 @@ module RQ
         return
       end
 
-      log("Running #{ready_msg['msg_id']} - delta #{delta}")
+      $log.info("Running #{ready_msg['msg_id']} - delta #{delta}")
       # Looks like it is time to run now...
       run_job(ready_msg)
     end
@@ -1282,11 +1250,11 @@ module RQ
         io_list << @parent_pipe
         io_list << @signal_hup_rd
         io_list << @signal_chld_rd
-        #log('sleeping') if @wait_time == 60
+        $log.debug('sleeping') if @wait_time == 60
         begin
           ready, _, _ = IO.select(io_list, nil, nil, @wait_time)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-          log("error on SELECT #{$!}")
+          $log.warn("error on SELECT #{$!}")
           sleep 0.001 # A tiny pause to prevent consuming all CPU
           retry
         end
@@ -1299,24 +1267,24 @@ module RQ
             begin
               client_socket, client_sockaddr = @sock.accept
             rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::ECONNABORTED, Errno::EPROTO, Errno::EINTR
-              log('error acception on main sock, supposed to be readysleeping')
+              $log.warn('error acception on main sock, supposed to be readysleeping')
             end
             reset_nonblocking(client_socket)
             handle_request(client_socket)
             client_socket.close
 
           when @parent_pipe.fileno
-            log("QUEUE #{@name} noticed parent close exiting...")
+            $log.info("noticed parent close exiting...")
             shutdown!
 
           when @signal_hup_rd.fileno
-            log("QUEUE #{@name} noticed SIGNAL HUP")
+            $log.info("noticed SIGNAL HUP")
             reset_nonblocking(@signal_hup_rd)
             do_read(@signal_hup_rd, 1)
             load_config
 
           when @signal_chld_rd.fileno
-            log("QUEUE #{@name} noticed SIGNAL CHLD")
+            $log.debug("noticed SIGNAL CHLD")
             reset_nonblocking(@signal_chld_rd)
             do_read(@signal_chld_rd, 1)
             # A child exited, figure out which one
@@ -1331,11 +1299,11 @@ module RQ
             if msg
               status = handle_status_read(msg)
               unless status
-                log("QUEUE #{@name} had a problem handling child status: #{status}")
+                $log.debug("had a problem handling child status: #{status}")
                 handle_child_close(msg)
               end
             else
-              log("QUEUE #{@name} activity on unexpected fd: #{io.fileno}")
+              $log.warn("activity on unexpected fd: #{io.fileno}")
             end
           end
         end
@@ -1343,19 +1311,19 @@ module RQ
     end
 
     def handle_child_close(msg, status=nil)
-      log("QUEUE #{@name} noticed child pipe close... #{msg['child_pid']}")
+      $log.debug("noticed child pipe close... #{msg['child_pid']}")
 
       if status.nil?
         pid, status = Process.wait2(msg['child_pid'], Process::WNOHANG)
       end
 
       if status.nil?
-        log("QUEUE #{@name} script child #{msg['child_pid']} was not ready to be reaped")
+        $log.debug("script child #{msg['child_pid']} was not ready to be reaped")
         sleep 0.001
         return
       end
 
-      log("QUEUE #{@name} script child #{msg['child_pid']} exit with status #{status}")
+      $log.info("script child #{msg['child_pid']} exit with status #{status}")
 
       msg_id = msg['msg_id']
       orig_msg_id = msg['orig_msg_id']
@@ -1370,9 +1338,9 @@ module RQ
       completion = @completed.find { |i| i[0]['msg_id'] == msg_id }
 
       if completion
-        log("QUEUE #{@name} child #{msg['child_pid']} completion [#{completion.inspect}]")
+        $log.info("child #{msg['child_pid']} completion [#{completion.inspect}]")
       else
-        log("QUEUE #{@name} child #{msg['child_pid']} NO COMPLETION")
+        $log.info("child #{msg['child_pid']} NO COMPLETION")
         completion = [nil, nil, nil]
       end
 
@@ -1396,7 +1364,7 @@ module RQ
       if completion[1] == :resend && status == 0
         if msg['count'] >= msg['max_count']
           new_state = 'err'
-          log("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
+          $log.info("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
           write_msg_status(msg_id, "HIT MAX RESEND COUNT - MOVING TO ERR" )
         else
           new_state = 'que'
@@ -1428,8 +1396,7 @@ module RQ
           File.rename(basename, newname)
         end
       rescue
-        log("FATAL - couldn't move from 'run' to '#{new_state}' #{msg_id}")
-        log("        [ #{$!} ]")
+        $log.warn("couldn't move from 'run' to '#{new_state}' #{msg_id} [ #{$!} ]")
         return
       end
 
@@ -1442,7 +1409,7 @@ module RQ
         end
       end
 
-      log("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
+      $log.info("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
       # Remove from completion
       @completed.delete(completion)
       # Remove from run
@@ -1453,7 +1420,7 @@ module RQ
         msg['due'] = Time.now.to_i + completion[2]
         @que.unshift(msg)
 
-        log("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
+        $log.info("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
       end
     end
 
@@ -1462,7 +1429,7 @@ module RQ
       begin
         qc = RQ::QueueClient.new('webhook')
       rescue RqQueueNotFound
-        log("QUEUE #{@name} couldn't que webhook for msg_id: #{msg_id}")
+        $log.warn("couldn't que webhook for msg_id: #{msg_id}")
         return
       end
 
@@ -1482,7 +1449,7 @@ module RQ
       mesg['param2'] = msg_copy.to_json
       result = qc.create_message(mesg)
       if result[0] != 'ok'
-        log("QUEUE #{@name} couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
+        $log.warn("couldn't que webhook: #{result[0]} #{result[1]} for msg_id: #{msg_id}")
       end
     end
 
@@ -1491,7 +1458,7 @@ module RQ
       return unless packet
 
       cmd, arg = packet.split(' ', 2)
-      log("REQ [ #{cmd} #{arg} ]")
+      $log.debug("REQ [ #{cmd} #{arg} ]")
 
       # These commands do not take an argument, and always respond
       case cmd
@@ -1845,7 +1812,7 @@ module RQ
 
       else
         send_packet(sock, '[ "ERROR" ]')
-        log("RESP [ ERROR ] - Unhandled message")
+        $log.warn("RESP [ ERROR ] - Unhandled message")
       end
     end
 
