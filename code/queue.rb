@@ -543,7 +543,8 @@ module RQ
       msg_id = msg['msg_id']
       begin
         # Read in full message
-        msg, basename = get_message(msg, from_state)
+        msg = get_message(msg, from_state)
+        basename = msg['path']
         return false unless File.exists? basename
         newname = @queue_path + "/que/" + msg_id
         File.rename(basename, newname)
@@ -764,7 +765,8 @@ module RQ
       return nil unless state
       return nil unless ['err', 'relayed', 'done'].include? state
 
-      old_msg, old_basename = get_message(msg, state)
+      old_msg = get_message(msg, state)
+      old_basename = old_msg['path']
 
       new_msg = { }
       alloc_id(new_msg)
@@ -822,6 +824,7 @@ module RQ
         else
           msg = {}
         end
+        msg['path'] = basename
         msg['status'] = state
         msg['state'] = state
         if File.exists?(basename + "/status")
@@ -852,7 +855,7 @@ module RQ
         $log.warn("Bad message in queue: #{basename} [ #{$!} ]")
       end
 
-      return [msg, basename]
+      return msg
     end
 
     def gen_full_msg_id(msg)
@@ -1704,7 +1707,7 @@ module RQ
 
         state = msg_state(options)
         if state
-          msg, msg_path = get_message(options, state)
+          msg = get_message(options, state)
           if msg
             resp = [ "ok", msg ].to_json
           else
@@ -1749,9 +1752,9 @@ module RQ
         # turn off consistency for a little more speed
         state = msg_state(options, {:consistency => false})
         if state
-          msg, msg_path = get_message(options,
-                                      state,
-                                      {:read_message => false})
+          msg = get_message(options,
+                            state,
+                            {:read_message => false})
           if msg
             resp = [ "ok", msg ].to_json
           else
