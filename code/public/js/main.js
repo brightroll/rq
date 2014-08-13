@@ -1,22 +1,17 @@
-$(function() {
+domready(function() {
   var a2hObj = ansi2html.ansi_to_html_obj();
-  var last_fragment = "";
 
-  var path = config.path;
-  var msg_path = config.msg_path + "/state.json";
-  var BUFFER_SIZE = 8192;  // constant
+  var CONTINUE_STATES = ["prep", "que", "run"];
   var last_done = 0;
   var last_file_start = 0;
-  var last_file_end = BUFFER_SIZE;
+  var last_fragment = "";
 
   function process(txt) {
 
     if (txt.length == 0) return;
 
-    var new_fragment = "";
     var new_block = "";
-
-    // Pull out new fragment
+    var new_fragment = "";
 
     // Look for last newline and adjust it to a usable value
     // (aka ++, since the split requires that value vs. actual idx)
@@ -31,94 +26,90 @@ $(function() {
       new_fragment = last_fragment = txt.slice(last_newline_idx);
     }
 
-    var t1 = a2hObj.escape_for_html(new_block);
-    var t2 = a2hObj.linkify(t1);
-    var t3 = a2hObj.ansi_to_html(t2);
+    // Delete the last fragment we're about to replace it with a larger block
+    var span_last_fragment = document.getElementById("last_fragment");
+    if (span_last_fragment) span_last_fragment.parentNode.removeChild(span_last_fragment);
+
+    var block = a2hObj.ansi_to_html(a2hObj.linkify(a2hObj.escape_for_html(new_block)));
+    if (block) {
+      // console.log("block: " + block);
+      var ansitxt = document.getElementById("ansitxt");
+      ansitxt.innerHTML += block;
+    }
 
     // Now preserve state of a2hObj for multi-line ansi
     // and do throw-away processing of fragment
-    var a2hObjFrag = $.extend({}, a2hObj);
-    var f1 = a2hObjFrag.escape_for_html(new_fragment);
-    var f2 = a2hObjFrag.linkify(f1);
-    var f3 = a2hObjFrag.ansi_to_html(f2);
+    var a2hObjFrag = Object.create(a2hObj);
+    var fragment = a2hObjFrag.ansi_to_html(a2hObjFrag.linkify(a2hObjFrag.escape_for_html(new_fragment)));
+    if (fragment) {
+      // console.log("fragment: " + fragment);
+      var new_last_fragment = document.createElement("span");
+      new_last_fragment.id = "last_fragment";
+      new_last_fragment.innerHTML = fragment;
 
-    $("#last_fragment").remove();
-    $("#ansitxt").append(t3);
-    if (new_fragment.length > 0) {
-      $("#ansitxt").append($('<span id="last_fragment"/>'));
-      $("#last_fragment").append(f3);
+      var ansitxt = document.getElementById("ansitxt");
+      ansitxt.insertBefore(new_last_fragment, ansitxt.nextSibling);
     }
-    //$("html, body").animate({ scrollTop: $("html, body").height() }, 500);
-    $("#ansitxt").animate({ scrollTop: $("#ansitxt")[0].scrollHeight }, 500);
+
+    // Scroll to the bottom
+    window.scrollTo(0, document.body.scrollHeight);
   }
 
   function checkState() {
-    $.ajax({type: "GET",
-             url: msg_path,
-      })
-     .done( function(data,textStatus,xhr) {
-        var continue_states = ["prep", "que", "run"];
-        var state = data[0];
-
-        // if in a 'continue' state (as opposed to 'done', 'err', 'relayed'
-        if (continue_states.indexOf(state) != -1) {
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open("GET", config.state_path, true);
+    xmlhttp.setRequestHeader("Cache-Control", "no-cache");
+    xmlhttp.onreadystatechange = function() {
+      if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+        // console.log(xmlhttp.responseText);
+        var state = JSON.parse(xmlhttp.responseText)[0];
+        if (CONTINUE_STATES.indexOf(state) != -1) {
           window.setTimeout(function () { nextChunk(); }, 1000);
         } else {
           last_done = last_done + 1;
           if (last_done < 2) {
             window.setTimeout(function () { nextChunk(); }, 1000);
+          } else {
+            console.log("Completed loading file.");
           }
         }
-      })
-     .fail( function(xhr,textStatus,errorThrown) {
-        console.log('checkState');
-        console.log(textStatus);
-        console.log(xhr.status);
-        console.log(errorThrown);
-      })
-     .always( function() {
-        //console.log("complete2");
-      });
+      }
+      else if (xmlhttp.readyState == 4) {
+        // Try again in 1 second
+        window.setTimeout(function () { checkState(); }, 1000);
+      }
+    };
+    xmlhttp.send();
   }
 
   function nextChunk() {
-    var start = last_file_start;
-    var end = last_file_end;
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open("GET", config.tail_path, true);
+    var range_query = "bytes=" + last_file_start + "-" ;
+    // console.log("Range: " + range_query);
+    xmlhttp.setRequestHeader("Range", range_query);
+    xmlhttp.setRequestHeader("Cache-Control", "no-cache");
+    xmlhttp.onreadystatechange = function() {
+      if (xmlhttp.readyState == 4 && xmlhttp.status == 206) {
+        process(xmlhttp.response);
+        var range = xmlhttp.getResponseHeader("Content-Range");
+        var range_parts = range.match(/bytes (\d+)-(\d+)\/(\d+)/);
+        // console.log(range_parts);
+        var r_start = parseInt(range_parts[1]);
+        var r_max_end = parseInt(range_parts[2]);
+        var r_actual_end = parseInt(range_parts[3]);
 
-    $.ajax({type: "GET",
-             url: path,
-         headers: {"Range": "bytes=" + start + "-" + end}
-      })
-     .done( function(data,textStatus,xhr) {
-        process(data);
-        var range = xhr.getResponseHeader("Content-Range");
-        //console.log(range);
-        var parts = range.split(' ', 2);
-        var rangeSize = parts[1].split('/', 2);
-        var ranges = rangeSize[0].split('-', 2);
-
-        last_file_start = parseInt(ranges[1]) + 1;
-        last_file_end = last_file_start + BUFFER_SIZE;
+        last_file_start = 1 + (r_max_end < r_actual_end ? r_max_end : r_actual_end);
         window.setTimeout(function () { nextChunk(); }, 100);
         last_done = 0;
-      })
-     .fail( function(xhr,textStatus,errorThrown) {
-        if (xhr.status == 416) {
-          // 416 Requested Range Not Satisfiable
-          // Try again in 1 second
-          window.setTimeout(function () { checkState(); }, 1000);
-        } else {
-          console.log(textStatus);
-          console.log(xhr.status);
-          console.log(errorThrown);
-          //alert("error");
-        }
-      })
-     .always( function() {
-        //console.log("complete2");
-      });
+      }
+      else if (xmlhttp.readyState == 4) {
+        // Try again in 1 second
+        window.setTimeout(function () { checkState(); }, 1000);
+      }
+    };
+    xmlhttp.send();
   };
 
-  //console.log('this');
   nextChunk();
 });

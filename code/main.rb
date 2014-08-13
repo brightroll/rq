@@ -598,14 +598,11 @@ module RQ
         throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
       end
 
-      in_iframe = params['in_iframe'] == '1'
-
       erb :tailview, :layout => false,
                      :locals => {
-                       :msg_id      => msg_id,
-                       :msg         => msg,
-                       :attach_name => params['attach_name'],
-                       :in_iframe   => in_iframe,
+                       :tail_path  => path,
+                       :state_path => "/q/#{params[:name]}/#{msg_id}/state.json",
+                       :name       => params['attach_name'],
                      }
     end
 
@@ -625,8 +622,8 @@ module RQ
 
       erb :tailview, :layout => false,
                      :locals => {
-                       :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                       :msg_path => "/q/#{params[:name]}/#{msg_id}",
+                       :tail_path  => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                       :state_path => "/q/#{params[:name]}/#{msg_id}/state.json",
                      }
     end
 
