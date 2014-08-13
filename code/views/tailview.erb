@@ -1,29 +1,26 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <% if params[:name] && !params[:name].empty? %>
-      <title>RQ :: <%= params[:name] %></title>
-    <% else %>
-      <title>RQ</title>
-    <% end %>
+    <%- if defined?(name) && !name.empty? -%>
+    <title>RQ :: <%= name %></title>
+    <%- else -%>
+    <title>RQ</title>
+    <%- end -%>
     <link rel="stylesheet" href="/css/rq.css" type="text/css" media="screen, projection" />
-    <script src="/js/jquery-1.7.2.min.js"></script>
+    <script src="/js/ready.js"></script>
     <script src="/js/ansi2html.js"></script>
     <script src="/js/main.js"></script>
     <script>
       var config = {
-        path: "<%= path %>",
-        msg_path: "<%= msg_path %>"
+        tail_path: "<%= tail_path %>",
+        state_path: "<%= state_path %>"
       };
     </script>
-    <% if params[:in_iframe] %>
     <base target="_top">
-    <% end %>
   </head>
   <body class="tailview">
-    <div id="filedata" />
-      <pre id="ansitxt">
-      </pre>
+    <div id="filedata">
+      <pre id="ansitxt"></pre>
     </div>
   </body>
 </html>

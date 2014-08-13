@@ -523,12 +523,7 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
-      if ['done', 'relayed'].include? msg['state']
-        path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
-        path += "/job/#{params['log_name']}"
-      else
-        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/job/#{params['log_name']}"
-      end
+      path = "#{msg['path']}/job/#{params['log_name']}"
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
@@ -553,13 +548,7 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
-      # TODO: use path from get_message instead of below
-      if ['done', 'relayed'].include? msg['state']
-        path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
-        path += "/attach/#{params['attach_name']}"
-      else
-        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/attach/#{params['attach_name']}"
-      end
+      path = "#{msg['path']}/attach/#{params['attach_name']}"
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
@@ -584,13 +573,7 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
-      # TODO: use path from get_message instead of below
-      if ['done', 'relayed'].include? msg['state']
-        path = RQ::HashDir.path_for("./queue/#{params['name']}/#{msg['state']}", params['msg_id'])
-        path += "/attach/#{params['attach_name']}"
-      else
-        path = "./queue/#{params['name']}/#{msg['state']}/#{params['msg_id']}/attach/#{params['attach_name']}"
-      end
+      path = "#{msg['path']}/attach/#{params['attach_name']}"
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
@@ -598,14 +581,11 @@ module RQ
         throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
       end
 
-      in_iframe = params['in_iframe'] == '1'
-
       erb :tailview, :layout => false,
                      :locals => {
-                       :msg_id      => msg_id,
-                       :msg         => msg,
-                       :attach_name => params['attach_name'],
-                       :in_iframe   => in_iframe,
+                       :tail_path  => path,
+                       :state_path => "/q/#{params[:name]}/#{msg_id}/state.json",
+                       :name       => params['attach_name'],
                      }
     end
 
@@ -625,8 +605,8 @@ module RQ
 
       erb :tailview, :layout => false,
                      :locals => {
-                       :path => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                       :msg_path => "/q/#{params[:name]}/#{msg_id}",
+                       :tail_path  => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                       :state_path => "/q/#{params[:name]}/#{msg_id}/state.json",
                      }
     end
 
