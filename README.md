@@ -101,16 +101,16 @@ RQ returns a complete HTTP URL for each enqueued message, therefore you must con
 <a name='section_Hip_Tips'></a>
 ## Hip Tips
 
-* Scripts should be idempotent if at all possible. You should assume that
+* Scripts should be idempotent if at all possible.
 * Messages should not go to error frequently
-  * RQ can retry a message if the error is transient. let you kno. If this is happening, something is wrong with your assumptions.
+  * RQ can retry a message if the error is transient. If this is happening, something is wrong with your assumptions.
 * Do not fire and forget an RQ message.
   * It is ok to be more lax in side of the queue script that processes that message
 * Log output that might help someone other than you diagnose the issue
 * Crypto - sign and encrypt your message before giving it to RQ. Secure channels is too hard of a problem.
 * Use the status system for progress updates
 * Do not run RQ in production with the name 'localhost'
-* Master passing.Do not access other message directories unless the message is `done`
+* Master passing - Do not access other message directories unless the message is `done`
 * Don't take too long via the Web UI, there is a X second timeout
 
 <a name='section_Config_Files'></a>
