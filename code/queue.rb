@@ -351,11 +351,11 @@ module RQ
           ENV["RQ_WRITE"] = "3" # USE THESE INSTEAD
           ENV["RQ_READ"] = "4"
           ENV["RQ_COUNT"] = msg['count'].to_s
-          ENV["RQ_PARAM1"] = msg['param1']
-          ENV["RQ_PARAM2"] = msg['param2']
-          ENV["RQ_PARAM3"] = msg['param3']
-          ENV["RQ_PARAM4"] = msg['param4']
-          ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id']
+          ENV["RQ_PARAM1"] = msg['param1'].to_s
+          ENV["RQ_PARAM2"] = msg['param2'].to_s
+          ENV["RQ_PARAM3"] = msg['param3'].to_s
+          ENV["RQ_PARAM4"] = msg['param4'].to_s
+          ENV["RQ_ORIG_MSG_ID"] = msg['orig_msg_id'].to_s
           ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
           # Set env vars specified in queue config file
