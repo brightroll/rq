@@ -9,6 +9,17 @@
       <td>
         <pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre>
         <% qc.config[1]['schedule'].each do |sched| %>
+          <form class="inline inrow" method="post" action="<%= "#{url}q/#{name}/new_message" %>">
+            <input type="hidden" name="back" value="<%= request.path  %>" />
+            <input type="hidden" name="x_format" value="html" />
+            <input type="hidden" name="mesg[src]" value="cron-now " />
+            <input type="hidden" name="mesg[dest]" value="<%= name %>" />
+            <input type="hidden" name="mesg[param1]" value="<%= sched['params']['param1'] %>" />
+            <input type="hidden" name="mesg[param2]" value="<%= sched['params']['param2'] %>" />
+            <input type="hidden" name="mesg[param3]" value="<%= sched['params']['param3'] %>" />
+            <input type="hidden" name="mesg[param4]" value="<%= sched['params']['param4'] %>" />
+            <button style="width: 7em;" class="cron-now" name="cron-now" value="cron-now">Run Now</button>
+          </form>
           <pre>
 <%=           sched['cron'] -%>
 <%=           "\n  PARAM1: \"#{sched['params']['param1']}\"" if sched['params']['param1'] -%>

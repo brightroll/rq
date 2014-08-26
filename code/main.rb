@@ -242,12 +242,12 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      the_method = prms.fetch("_method", 'commit')
-      if the_method == 'prep'
+      case prms.fetch('_method', 'commit')
+      when 'prep'
         result = qc.prep_message(prms)
-      elsif the_method == 'single_que'
+      when 'single_que'
         result = qc.single_que(prms)
-      elsif the_method == 'commit'
+      when 'commit'
         result = qc.create_message(prms)
       else
         throw :halt, [400, "400 - Invalid method param"]
@@ -258,7 +258,14 @@ module RQ
       end
 
       if api_call == 'json'
-        "#{result.to_json}"
+        result.to_json
+      elsif params[:back]
+        if result[0] == "ok"
+          flash :notice, "Created message #{result[1]}"
+        else
+          flash :notice, "Error creating message: #{result[1]}"
+        end
+        redirect params[:back]
       else
         erb :new_message_post, :layout => true, :locals => { :result => result, :q_name => qc.name }
       end
