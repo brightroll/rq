@@ -160,6 +160,17 @@ pre {
 #filedata a:hover {text-decoration: underline}
 #filedata a:visited {}
 
+#filepos {
+  color: white;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 12em;
+  padding: 5px;
+  border: 2px solid;
+  opacity: 0.7;
+}
+
 form label.field_label {
   display: block;
   float: left;

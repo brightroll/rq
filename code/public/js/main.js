@@ -6,6 +6,28 @@ domready(function() {
   var last_file_start = 0;
   var last_fragment = "";
 
+  window.onscroll = updateFilePos;
+  window.onresize = updateFilePos;
+
+  function updateFilePos() {
+    // Set the filepos indicators
+    var filepos_top = document.getElementById("filepos-top");
+    var filepos_bot = document.getElementById("filepos-bot");
+    var filepos_end = document.getElementById("filepos-end");
+
+    var ansitxt = document.getElementById("ansitxt");
+    var lines = ansitxt.innerHTML.split("\n").length - 1;
+    var height = document.body.scrollHeight;
+
+    var line_height = height / lines;
+    var top_line = Math.floor(document.body.scrollTop / line_height);
+    var view_lines = Math.floor(document.body.clientHeight / line_height);
+
+    filepos_top.innerHTML = 1 + top_line;
+    filepos_bot.innerHTML = 1 + top_line + view_lines;
+    filepos_end.innerHTML = lines;
+  }
+
   function process(txt) {
 
     if (txt.length == 0) return;
@@ -51,8 +73,14 @@ domready(function() {
       ansitxt.insertBefore(new_last_fragment, ansitxt.nextSibling);
     }
 
-    // Scroll to the bottom
-    window.scrollTo(0, document.body.scrollHeight);
+    // Scroll to the bottom if the box is checked
+    var tail = document.getElementById("filepos-tail");
+    if (tail && tail.checked) {
+      window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    // Whether we scroll or not, update the position and line count
+    updateFilePos();
   }
 
   function checkState() {
