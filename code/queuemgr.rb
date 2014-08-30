@@ -58,6 +58,8 @@ module RQ
     # No '.' or '/' since that could change path
     # Basically it should just be alphanum and '-' or '_'
     def valid_queue_name(name)
+      return false unless name
+      return false unless name.length > 0
       nil == name.tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*').index('*')
     end
 
