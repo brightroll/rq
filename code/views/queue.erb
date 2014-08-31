@@ -1,6 +1,6 @@
 <div id="header">
-  <p id="new-message"><a href="<%= "#{url}q/#{qc.name}/new_message" %>">New Message</a></p>
-  <h1><a href="<%= url %>">RQ</a> : <%= qc.name %></h1>
+  <p id="new-message"><a href="<%= "#{root}q/#{qc.name}/new_message" %>">New Message</a></p>
+  <h1><a href="<%= root %>">RQ</a> : <%= qc.name %></h1>
 </div>
 
 <div id="sub-header">
@@ -11,12 +11,12 @@
     <span class=""> <%=  qc.ping %></span>
     <span class=""> <%=  qc.read_pid %></span>
     running for <%= qc.uptime %> seconds
-<%=     erb :_main_queue_form, :locals => {:status => status, :url => url, :name => qc.name } %>
+<%=     erb :_main_queue_form, :locals => {:status => status, :name => qc.name } %>
   <% else %>
    Status: <span class="red">queue is COMPLETELY DOWN</span>
   <% end %>
   </div>
-  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{url}q/#{qc.name}/config.json" %>">raw</a> ]</p>
+  <p id="json-config">config.json [ <a href="#" onclick="show_toggle()">show/hide</a> | <a href="<%= "#{root}q/#{qc.name}/config.json" %>">raw</a> ]</p>
   <pre id="config" class="json hidden"><%= JSON.pretty_generate(config) %></pre>
 </div>
 
@@ -53,7 +53,7 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
 <% end %>
@@ -74,7 +74,7 @@
     <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
     <li>
       <span class="">
-        <a href="<%= "#{url}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
+        <a href="<%= "#{root}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
       </span>
       <% if qc.name == 'relay' %>
         <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
@@ -84,7 +84,7 @@
       <% end %>
       : in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs</span>
       <span class="">
-        <form class="shush-form" method="post" action="<%= "#{url}q/#{qc.name}/#{msg_id}" %>">
+        <form class="shush-form" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}" %>">
           <input name="_method" type="hidden" value="delete" />
           <button class="shush-button" type="submit">Delete</button>
         </form>
@@ -111,7 +111,7 @@
   <%# hotfix for indika's problem. this needs to be revisited. %>
   <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
     <% msg_id = msg %>
-    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
+    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if qc.name == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
       <% if ok == 'ok' %>
@@ -121,7 +121,7 @@
         STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
       <% end %>
     <% end %>
-    <form class="shush-form" method="post" action="<%= "#{url}q/#{qc.name}/#{date}.#{msg_id}" %>">
+    <form class="shush-form" method="post" action="<%= "#{root}q/#{qc.name}/#{date}.#{msg_id}" %>">
       <input name="_method" type="hidden" value="destroy" />
       <button class="shush-button" type="submit">Destroy</button>
     </form>
@@ -143,7 +143,7 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
 <% end %>
@@ -162,7 +162,7 @@
   <h5><%= date %></h5>
   <ul>
   <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
+    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
   <% end %>
   </ul>
 <% end %>
@@ -186,7 +186,7 @@
     <ul>
     <% msgs.sort.reverse.each do |msg| %>
       <li class="relayed-li">
-        <a href="<%= "#{url}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a>
+        <a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a>
         <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
         <% if ok == 'ok' %>
           <%  status, new_location = msg_full['status'].split(' - ', 2) %>

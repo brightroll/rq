@@ -1,8 +1,8 @@
 <div id="header">
 <% if allow_new_queue? -%>
-  <p id="new-queue"><a href="/new_queue">New Queue</a></p>
+  <p id="new-queue"><a href="<%= root %>new_queue">New Queue</a></p>
 <% end -%>
-  <h1><a href="<%= url %>">RQ</a></h1>
+  <h1><a href="<%= root %>">RQ</a></h1>
 </div>
 
 <h2>Queue List</h2>

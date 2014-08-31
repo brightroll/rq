@@ -1,17 +1,17 @@
 <div id="header">
-  <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q_name}" %>"><%= q_name %></a> : <%= msg_id %></h1>
+  <h1><a href="<%= root %>">RQ</a> : <a href="<%= "#{root}q/#{q_name}" %>"><%= q_name %></a> : <%= msg_id %></h1>
 </div>
 
 <div id="sub-header">
   <div id="message-actions">
-    <form class="inline" id="clone-form" method="post" action="<%= "#{url}q/#{q_name}/#{msg_id}/clone" %>">
+    <form class="inline" id="clone-form" method="post" action="<%= "#{root}q/#{q_name}/#{msg_id}/clone" %>">
       <button id="clone-button">Clone message</button>
     </form>
-    <form class="inline" id="run-form" method="post" action="<%= "#{url}q/#{q_name}/#{msg_id}/run_now" %>">
+    <form class="inline" id="run-form" method="post" action="<%= "#{root}q/#{q_name}/#{msg_id}/run_now" %>">
       <button id="run-button">Run message (risky)</button>
     </form>
   </div>
-  <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{url}q/#{q_name}/#{msg_id}.json" %>">raw</a> ]</p>
+  <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{root}q/#{q_name}/#{msg_id}.json" %>">raw</a> ]</p>
 <table id="message-json-default" class="">
 <%  ['dest', 'status', 'state' ].each do |key| %>
 <%    next unless msg.has_key?(key) %>
@@ -63,7 +63,7 @@
 <%  msg['_attachments'].keys.sort.each do |key| %>
 <li>
   <span class="">
-    <a href="<%= "#{url}q/#{q_name}/#{msg_id}/attach/#{key}" %>"><%= key %></a>
+    <a href="<%= "#{root}q/#{q_name}/#{msg_id}/attach/#{key}" %>"><%= key %></a>
   </span>
 </li>
 <% end %>
@@ -72,8 +72,11 @@
   <p>No attachments.</p>
 <% end %>
 
-<h3>Log Tail Window [ <a href="<%= "#{url}q/#{q_name}/#{msg_id}/log/stdio.log" %>">raw</a> ] [ <a href="<%= "#{url}q/#{q_name}/#{msg_id}/tailviewlog/stdio.log" %>">Full Tail</a> ] </h3>
-<iframe src="<%= "#{url}q/#{q_name}/#{msg_id}/tailviewlog/stdio.log" %>"
+<h3>Log Tail Window
+[ <a href="<%= "#{root}q/#{q_name}/#{msg_id}/log/stdio.log" %>">Raw log</a> ]
+[ <a href="<%= "#{root}q/#{q_name}/#{msg_id}/tailviewlog/stdio.log" %>">Full tail</a> ]
+</h3>
+<iframe id="log" src="<%= "#{root}q/#{q_name}/#{msg_id}/tailviewlog/stdio.log" %>"
   width="100%" height="400" frameborder="0">
 </iframe>
 <script>

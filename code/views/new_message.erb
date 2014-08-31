@@ -1,9 +1,9 @@
 <div id="header">
-  <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q_name}" %>"><%= q_name %></a></h1>
+  <h1><a href="<%= root %>">RQ</a> : <a href="<%= "#{root}q/#{q_name}" %>"><%= q_name %></a></h1>
 </div>
 
 <h3>New Message</h3>
-<form id="new_queue_form" method="post" action="<%= "/q/#{q_name}/new_message" %>">
+<form id="new_queue_form" method="post" action="<%= "#{root}q/#{q_name}/new_message" %>">
 <fieldset>
 <legend>Message Options</legend>
 
@@ -11,7 +11,7 @@
 
 <div class="field" id="mesg_dest_field" <%= overrides.show_field('mesg_dest') ? '' : "style=\"display: none;\"" %>>
 <label class="field_label" for="mesg_dest">Destination Queue</label>
-<input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{url}q/#{q_name}" %>" />
+<input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{root}q/#{q_name}" %>" />
 </div>
 
 <div class="field" id="mesg_src_field" <%= overrides.show_field('mesg_src') ? '' : "style=\"display: none;\"" %>>

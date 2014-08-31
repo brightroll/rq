@@ -1,19 +1,19 @@
 <div id="header">
-  <h1><a href="<%= url %>">RQ</a> : <a href="<%= "#{url}q/#{q_name}" %>"><%= q_name %></a> : <%= msg_id %></h1>
+  <h1><a href="<%= root %>">RQ</a> : <a href="<%= "#{root}q/#{q_name}" %>"><%= q_name %></a> : <%= msg_id %></h1>
 </div>
 
 <div id="sub-header">
   <div id="message-actions">
-    <form class="inline" id="commit-message-form" method="post" action="<%= "#{url}q/#{q_name}/#{msg_id}" %>">
+    <form class="inline" id="commit-message-form" method="post" action="<%= "#{root}q/#{q_name}/#{msg_id}" %>">
       <input name="_method" type="hidden" value="commit" />
       <button id="commit-message-button">Commit Message</button>
     </form>
-    <form class="inline" id="delete-message-form" method="post" action="<%= "#{url}q/#{q_name}/#{msg_id}" %>">
+    <form class="inline" id="delete-message-form" method="post" action="<%= "#{root}q/#{q_name}/#{msg_id}" %>">
       <input name="_method" type="hidden" value="delete" />
       <button id="delete-message-button">Delete Message</button>
     </form>
   </div>
-  <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{url}q/#{q_name}/#{msg_id}.json" %>">raw</a> ]</p>
+  <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{root}q/#{q_name}/#{msg_id}.json" %>">raw</a> ]</p>
 <table id="message-json-default" class="">
 <%  ['dest', 'status', 'state' ].each do |key| %>
 <%    next unless msg.has_key?(key) %>
@@ -60,7 +60,7 @@
 
 <h3>Message Attachments</h3>
   <div id="attachment-actions">
-    <form class="inline" method="post" enctype="multipart/form-data" action="<%= "#{url}q/#{q_name}/#{msg_id}/attach/new" %>">
+    <form class="inline" method="post" enctype="multipart/form-data" action="<%= "#{root}q/#{q_name}/#{msg_id}/attach/new" %>">
       <input id="file_up" name="filedata" type="file">
       <input value="Upload" type="submit">
     </form>
@@ -87,7 +87,7 @@
 <%  msg['_attachments'].keys.sort.each do |key| %>
 <tr>
   <td class="">
-    <a href="<%= "#{url}q/#{q_name}/#{msg_id}/attach/#{key}" %>"><%= key %></a>
+    <a href="<%= "#{root}q/#{q_name}/#{msg_id}/attach/#{key}" %>"><%= key %></a>
   </td>
   <td>
     <%= msg['_attachments'][key]['md5'] %></a>
@@ -96,7 +96,7 @@
     <%= msg['_attachments'][key]['size'] %></a>
   </td>
   <td>
-    <form class="inline" id="delete-attach-form" method="post" action="<%= "#{url}q/#{q_name}/#{msg_id}/attach/#{key}" %>">
+    <form class="inline" id="delete-attach-form" method="post" action="<%= "#{root}q/#{q_name}/#{msg_id}/attach/#{key}" %>">
       <input name="_method" type="hidden" value="delete" />
       <button id="delete-attach-button">Delete</button>
     </form>

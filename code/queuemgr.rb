@@ -316,7 +316,7 @@ module RQ
 
         $0 = $log.progname = '[rq-web]'
         Rack::Handler::UnixRack.run(
-          RQ::Main.new(nil, @config), {
+          RQ::Main.to_app(@config), {
           :Port        => @config['port'],
           :Host        => @config['addr'],
           :Hostname    => @config['host'],

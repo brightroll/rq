@@ -342,7 +342,7 @@ module RQ
           ENV["RQ_VER"] = RQ_VER
           ENV["RQ_SCRIPT"] = @config.script
           ENV["RQ_REALSCRIPT"] = script_path
-          ENV["RQ_HOST"] = "http://#{@host}:#{@port}/"
+          ENV["RQ_HOST"] = "http://#{@host}:#{@port}#{@root}"
           ENV["RQ_DEST"] = gen_full_dest(msg)['dest']
           ENV["RQ_DEST_QUEUE"] = gen_full_dest(msg)['queue']
           ENV["RQ_MSG_ID"] = msg_id
@@ -429,6 +429,7 @@ module RQ
         js_data = JSON.parse(data)
         @host = js_data['host']
         @port = js_data['port']
+        @root = js_data.fetch('relative_root', '/').chomp('/') + '/'
         true
       rescue
         false
@@ -861,7 +862,7 @@ module RQ
     end
 
     def gen_full_msg_id(msg)
-      "http://#{@host}:#{@port}/q/#{@name}/#{msg['msg_id']}"
+      "http://#{@host}:#{@port}#{@root}q/#{@name}/#{msg['msg_id']}"
     end
 
     def gen_full_dest(msg)
