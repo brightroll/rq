@@ -44,7 +44,7 @@ while [  $COUNTER -lt 4 ]; do
         exit 1
     fi
 
-    if [ "${out3}" == "ok err - PROCESS EXITED IMPROPERLY" ]; then
+    if [[ "${out3}" =~ "ok err - PROCESS EXITED IMPROPERLY" ]]; then
         echo "Message went into proper state. ALL DONE"
         exit 0
     fi

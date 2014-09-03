@@ -1341,20 +1341,19 @@ module RQ
             reset_nonblocking(@signal_chld_rd)
             do_read(@signal_chld_rd, 1)
             # A child exited, figure out which one
-            pid, status = Process.wait2(-1, Process::WNOHANG) rescue nil
+            pid, exit_status = Process.wait2(-1, Process::WNOHANG) rescue nil
             if pid
               msg = @run.find { |o| o['child_pid'] == pid }
-              handle_child_close(msg, status) if msg
+              if msg
+                handle_status_read(msg) # read completion status
+                handle_child_close(msg, exit_status)
+              end
             end
 
           else
             msg = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
             if msg
-              status = handle_status_read(msg)
-              unless status
-                $log.debug("had a problem handling child status: #{status}")
-                handle_child_close(msg)
-              end
+              handle_status_read(msg)
             else
               $log.warn("activity on unexpected fd: #{io.fileno}")
             end
@@ -1363,20 +1362,8 @@ module RQ
       end
     end
 
-    def handle_child_close(msg, status=nil)
-      $log.debug("noticed child pipe close... #{msg['child_pid']}")
-
-      if status.nil?
-        pid, status = Process.wait2(msg['child_pid'], Process::WNOHANG)
-      end
-
-      if status.nil?
-        $log.debug("script child #{msg['child_pid']} was not ready to be reaped")
-        sleep 0.001
-        return
-      end
-
-      $log.info("script child #{msg['child_pid']} exit with status #{status}")
+    def handle_child_close(msg, exit_status)
+      $log.info("script child #{msg['child_pid']} exit with status #{exit_status}")
 
       msg_id = msg['msg_id']
       orig_msg_id = msg['orig_msg_id']
@@ -1397,38 +1384,24 @@ module RQ
         completion = [nil, nil, nil]
       end
 
-      new_state = nil
-      if completion[1] == :done && status == 0
-        new_state = 'done'
-      end
-
-      if completion[1] == :relayed && status == 0
-        new_state = 'relayed'
-      end
-
-      if completion[1] == :err
+      if exit_status != 0
+        write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR - Completion was #{completion[1]} but exit status was #{exit_status}" )
+        new_state = 'err'
+      elsif [:done, :relayed, :resend, :err].include? completion[1]
+        new_state = completion[1].to_s
+      else
         new_state = 'err'
       end
 
-      #if completion[1] == :pause
-      #  new_state = 'err'
-      #end
-
-      if completion[1] == :resend && status == 0
+      if new_state == 'resend'
         if msg['count'] >= msg['max_count']
-          new_state = 'err'
           $log.info("RESEND hit max: #{msg['count']} / #{msg['max_count']} - #{msg_id}")
           write_msg_status(msg_id, "HIT MAX RESEND COUNT - MOVING TO ERR" )
+          new_state = 'err'
         else
+          msg['due'] = Time.now.to_i + completion[2]
           new_state = 'que'
         end
-      end
-
-      if new_state == nil
-        # log a message
-        write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR- Expected #{completion[1]} - and - status #{status}" )
-        write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY" )
-        new_state = 'err'
       end
 
       # Process has exited, so it must change states at this point
@@ -1453,6 +1426,12 @@ module RQ
         return
       end
 
+      if new_state == 'que'
+        # Re-inject into que
+        @que.unshift(msg)
+        $log.info("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
+      end
+
       if ['err', 'done', 'relayed'].include? new_state
         # Send a webhook if there is a web hook
         if msg.include? 'post_run_webhook'
@@ -1462,19 +1441,10 @@ module RQ
         end
       end
 
-      $log.info("Prior to resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
       # Remove from completion
       @completed.delete(completion)
       # Remove from run
       @run.delete_if { |i| i['msg_id'] == msg_id }
-
-      if (completion[1] == :resend) && (new_state == 'que')
-        # Re-inject into que
-        msg['due'] = Time.now.to_i + completion[2]
-        @que.unshift(msg)
-
-        $log.info("Did resend: run - #{@run.length} que - #{@que.length} completed - #{@completed.length}")
-      end
     end
 
     # Inject a message into 'que' state
