@@ -79,19 +79,21 @@ td {
 .yellow {background-color: yellow; color: black}
 
 ul {list-style: none;}
-#message-json {
+
+table.message-info {
   background: white;
   line-height: 1.5;
   padding: 20px 0 20px 40px;
   font-family: monospace;
+  text-align: left;
 }
 
-#message-json-default {
-  background: white;
-  line-height: 1.5;
-  padding: 20px 0 20px 40px;
-  font-family: monospace;
+.message-info .key {
+  width: 12em;
+}
 
+.message-info .sep {
+  width: 1em;
 }
 
 #attachments {

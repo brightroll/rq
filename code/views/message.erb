@@ -11,49 +11,8 @@
       <button id="run-button">Run message (risky)</button>
     </form>
   </div>
-  <p>message.json [ <a href="#" onclick="show_toggle()">full/summary</a> | <a href="<%= "#{root}q/#{q_name}/#{msg_id}.json" %>">raw</a> ]</p>
-<table id="message-json-default" class="">
-<%  ['dest', 'status', 'state' ].each do |key| %>
-<%    next unless msg.has_key?(key) %>
-<tr>
-  <td class="left-aligned">
-    <% if key == 'status' && msg['state'] == 'relayed' %>
-       <% stuff, url = msg['status'].split(' - ', 2) %>
-       <%= key %></td><td> : </td><td class="left-aligned"> relayed - <a class="inline" href="<%= url %>"><%= url %></a> </td>
-    <% elsif key == 'orig_msg_id' || key == 'dup' %>
- <%= key %></td><td> : </td><td class="left-aligned"> <a class="inline" href="<%= msg[key] %>"><%= msg[key] %></a> </td>
-    <% elsif key == 'dups' %>
- <%= key %></td><td> : </td><td class="left-aligned"> [
-         <% msg[key].each do |v| %>
-            <a href="<%= v %>"><%= v %></a>
-         <% end %> ] </td>
-    <% else %>
- <%= key %></td><td> : </td><td class="left-aligned"> <%= Rack::Utils::escape_html msg[key] %> </td>
-    <% end %>
-</tr>
-<% end %>
-</table>
-<table id="message-json" class="hidden">
-<%  ['src', 'msg_id', 'count', 'max_count', 'param1', 'param2', 'param3', 'param4', 'post_run_webhook', 'orig_msg_id', 'cloned_from', 'dups', 'dup', 'force_remote'].each do |key| %>
-<%    next unless msg.has_key?(key) %>
-<tr>
-  <td class="left-aligned">
-    <% if key == 'status' && msg['state'] == 'relayed' %>
-       <% stuff, url = msg['status'].split(' - ', 2) %>
-       <%= key %></td><td> : </td><td class="left-aligned"> relayed - <a class="inline" href="<%= url %>"><%= url %></a> </td>
-    <% elsif key == 'orig_msg_id' || key == 'dup' %>
- <%= key %></td><td> : </td><td class="left-aligned"> <a class="inline" href="<%= msg[key] %>"><%= msg[key] %></a> </td>
-    <% elsif key == 'dups' %>
- <%= key %></td><td> : </td><td class="left-aligned"> [
-         <% msg[key].each do |v| %>
-            <a href="<%= v %>"><%= v %></a>
-         <% end %> ] </td>
-    <% else %>
- <%= key %></td><td> : </td><td class="left-aligned"> <%= Rack::Utils::escape_html msg[key] %> </td>
-    <% end %>
-</tr>
-<% end %>
-</table>
+
+<%= erb :_message_summary, :locals => { :q_name => q_name, :msg_id => msg_id, :msg => msg } %>
 </div>
 
 <h3>Message Attachments</h3>
@@ -80,16 +39,6 @@
   width="100%" height="400" frameborder="0">
 </iframe>
 <script>
-  function show_toggle() {
-    var cfg = document.getElementById('message-json');
-    if (cfg.className.indexOf('hidden') >= 0) {
-      cfg.className = cfg.className.replace('hidden', '').replace(/\s+$/, "");
-    } else {
-      cfg.className += ' hidden';
-    }
-    return false;
-  }
-
   var cloneForm = document.getElementById('clone-form');
   cloneForm.addEventListener('submit', function (e) {
     var cloneButton = document.getElementById('clone-button');

@@ -7,7 +7,7 @@
   <% if qc.running? %>
   <% status = qc.status %>
   <div id="queue-status">
-    <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span></span>
+    <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span>
     <span class=""> <%=  qc.ping %></span>
     <span class=""> <%=  qc.read_pid %></span>
     running for <%= qc.uptime %> seconds
@@ -73,22 +73,23 @@
   <% msgs_and_backoffs.sort.reverse.each do |msg_and_backoff| %>
     <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
     <li>
-      <span class="">
-        <a href="<%= "#{root}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
-      </span>
+      <a href="<%= "#{root}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
       <% if qc.name == 'relay' %>
         <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
         <% if ok == 'ok' %>
           dest: <span class="yellow"> <%= msg_full['dest'] %></span>
         <% end %>
       <% end %>
-      : in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs</span>
-      <span class="">
-        <form class="shush-form" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}" %>">
+      in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs
+      <div style="clear: both;">
+        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}/run_now" %>">
+          <button class="shush-button" id="run-button">Run now</button>
+        </form>
+        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}" %>">
           <input name="_method" type="hidden" value="delete" />
           <button class="shush-button" type="submit">Delete</button>
         </form>
-      </span>
+      </div>
     </li>
   <% end %>
   </ul>
