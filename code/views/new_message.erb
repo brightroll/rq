@@ -10,67 +10,68 @@
 <input type="hidden" name="x_format" value="html" />
 
 <div class="field" id="mesg_dest_field" <%= overrides.show_field('mesg_dest') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_dest">Destination Queue</label>
-<input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{root}q/#{q_name}" %>" />
+  <label class="field_label" for="mesg_dest">Destination Queue</label>
+  <input type="text" size="100" name="mesg[dest]" id="mesg_dest" value="<%= "#{root}q/#{q_name}" %>" />
 </div>
 
 <div class="field" id="mesg_src_field" <%= overrides.show_field('mesg_src') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_src"><%= overrides.text('mesg_src', 'label', 'Source Identifier') %></label>
-<input type="text" size="80" name="mesg[src]" id="mesg_src" value="" />
-<p class="note"><%= overrides.text('mesg_src', 'help', '') %></p>
+  <label class="field_label" for="mesg_src"><%= overrides.text('mesg_src', 'label', 'Source Identifier') %></label>
+  <input type="text" size="80" name="mesg[src]" id="mesg_src" value="" />
+  <p class="note"><%= overrides.text('mesg_src', 'help', '') %></p>
 </div>
 
 <div class="field" id="mesg_param1_field" <%= overrides.show_field('mesg_param1') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_param1"><%= overrides.text('mesg_param1', 'label', 'Param 1') %></label>
-<input type="text" name="mesg[param1]" value="" size="80" />
-<p class="note"><%= overrides.text('mesg_param1', 'help', 'optional parameter') %></p>
+  <label class="field_label" for="mesg_param1"><%= overrides.text('mesg_param1', 'label', 'Param 1') %></label>
+  <input type="text" name="mesg[param1]" value="" size="80" />
+  <p class="note"><%= overrides.text('mesg_param1', 'help', 'optional parameter') %></p>
 </div>
 
 <div class="field" id="mesg_param2_field" <%= overrides.show_field('mesg_param2') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_param2"><%= overrides.text('mesg_param2', 'label', 'Param 2') %></label>
-<input type="text" name="mesg[param2]" value="" size="80" />
-<p class="note"><%= overrides.text('mesg_param2', 'help', 'optional parameter') %></p>
+  <label class="field_label" for="mesg_param2"><%= overrides.text('mesg_param2', 'label', 'Param 2') %></label>
+  <input type="text" name="mesg[param2]" value="" size="80" />
+  <p class="note"><%= overrides.text('mesg_param2', 'help', 'optional parameter') %></p>
 </div>
 
 <div class="field" id="mesg_param3_field" <%= overrides.show_field('mesg_param3') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_param3"><%= overrides.text('mesg_param3', 'label', 'Param 3') %></label>
-<input type="text" name="mesg[param3]" value="" size="80" />
-<p class="note"><%= overrides.text('mesg_param3', 'help', 'optional parameter') %></p>
+  <label class="field_label" for="mesg_param3"><%= overrides.text('mesg_param3', 'label', 'Param 3') %></label>
+  <input type="text" name="mesg[param3]" value="" size="80" />
+  <p class="note"><%= overrides.text('mesg_param3', 'help', 'optional parameter') %></p>
 </div>
 
 <div class="field" id="mesg_param4_field" <%= overrides.show_field('mesg_param4') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_param4"><%= overrides.text('mesg_param4', 'label', 'Param 4') %></label>
-<input type="text" name="mesg[param4]" value="" size="80" />
-<p class="note"><%= overrides.text('mesg_param4', 'help', 'optional parameter') %></p>
+  <label class="field_label" for="mesg_param4"><%= overrides.text('mesg_param4', 'label', 'Param 4') %></label>
+  <input type="text" name="mesg[param4]" value="" size="80" />
+  <p class="note"><%= overrides.text('mesg_param4', 'help', 'optional parameter') %></p>
 </div>
 
-<p class="note">*NOTE*: To create attachments, first create a message in prep state. Then the message will allow you to add/remove attachments.</p>
-
 <div class="field" id="mesg_status_field" <%= overrides.show_field('mesg_status') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_status"><%= overrides.text('mesg_status', 'label', 'Status') %></label>
-<label for="mesg_status">commit</label>
-<input type="radio" name="mesg[_method]" value="commit" checked />
-<label for="mesg_status">prep</label>
-<input type="radio" name="mesg[_method]" value="prep" />
-<label for="mesg_status">single_que</label>
-<input type="radio" name="mesg[_method]" value="single_que" />
-<p class="note">'commit' gets queued now.</p>
-<p class="note">'prep' stays in prep state until commited (allows attachments/modification/etc.)</p>
-<p class="note">'single_que' only creates a message in 'que' state if that state is empty, otherwise it returns a msg_id of what is there. used for event coalescing.</p>
+  <label class="field_label" for="mesg_status"><%= overrides.text('mesg_status', 'label', 'Status') %></label>
+  <div class="field_together">
+    <input type="radio" name="mesg[_method]" value="commit" checked />
+    <label for="mesg_status">commit</label>
+    <br />
+    <input type="radio" name="mesg[_method]" value="prep" />
+    <label for="mesg_status">prep</label>
+    <br />
+    <input type="radio" name="mesg[_method]" value="single_que" />
+    <label for="mesg_status">single_que</label>
+  </div>
+  <p class="note">'commit' gets queued now.</p>
+  <p class="note">'prep' stays in prep state until commited (allows attachments/modification/etc.)</p>
+  <p class="note">'single_que' only creates a message in 'que' state if that state is empty, otherwise it returns a msg_id of what is there. used for event coalescing.</p>
 </div>
 
 <div class="field" id="mesg_post_run_webhook_field" <%= overrides.show_field('mesg_post_run_webhook') ? '' : "style=\"display: none;\"" %>>
-<label class="field_label" for="mesg_post_run_webhook">post_run_hook</label>
-<input type="text" name="mesg[post_run_webhook]" value="" size="100" />
-<p class="note">URL to receive webhook POST after a message transitions from 'run' state</p>
+  <label class="field_label" for="mesg_post_run_webhook">post_run_hook</label>
+  <input type="text" name="mesg[post_run_webhook]" value="" size="100" />
+  <p class="note">URL to receive webhook POST after a message transitions from 'run' state</p>
 </div>
 
 
 <div class="field" id="mesg_submit_field">
-<label class="field_label" for="mesg_submit">&nbsp;</label>
-<input type="submit" name="mesg_submit" value="submit" />
+  <label class="field_label" for="mesg_submit">&nbsp;</label>
+  <input type="submit" name="mesg_submit" value="submit" />
 </div>
 
 </fieldset>
 </form>
-
