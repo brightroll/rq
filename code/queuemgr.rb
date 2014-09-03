@@ -404,7 +404,14 @@ module RQ
             pid, status = Process.wait2(-1, Process::WNOHANG) rescue nil
             if pid
               worker = @queues.values.find { |o| o.pid == pid }
-              handle_worker_close(worker, status) if worker
+              if worker
+                handle_worker_close(worker, status)
+              elsif @web_server == pid
+                # TODO: Try to restart the web server? How many times?
+                $log.fatal("The web server has died. Terminating this RQ instance.")
+                @web_server = nil
+                shutdown!
+              end
             end
 
           else
