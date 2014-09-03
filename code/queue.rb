@@ -1818,19 +1818,24 @@ module RQ
           return
         end
 
-        resp = [ "fail", "unknown reason"].to_json
-
         state = msg_state(options)
-        if state == 'que'
-          # Jump to the front of the queue
-          ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
+        case state
+        when 'que'
           m = @que.find { |e| e['msg_id'] == options['msg_id'] }
-          if (not m.nil?) and (not ready_msg.nil?)
-            m['due'] = ready_msg['due'] - 1.0
+          unless m.nil?
+            # Jump to the front of the queue by setting the due time either to now
+            # or 1 less than the most due message (could be a negative due time)
+            ready_msg = @que.min {|a,b| a['due'].to_f <=> b['due'].to_f }
+            sooner = (ready_msg['due'].to_i - 1) if ready_msg
+            m['due'] = [ Time.now.to_i, sooner ].min
             resp = [ "ok", "msg sent to front of run queue" ].to_json
           else
-            resp = [ "fail", "cannot send message to run state" ].to_json
+            resp = [ "fail", "msg not found" ].to_json
           end
+        when 'run'
+          resp = [ "fail", "msg already running" ].to_json
+        else
+          resp = [ "fail", "msg not in runnable state" ].to_json
         end
 
         send_packet(sock, resp)
