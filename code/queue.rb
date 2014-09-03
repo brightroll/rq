@@ -1353,7 +1353,11 @@ module RQ
           else
             msg = @run.find { |o| o['child_read_pipe'].fileno == io.fileno }
             if msg
-              handle_status_read(msg)
+              status = handle_status_read(msg)
+              unless status
+                $log.debug("had a problem handling child status: #{status}")
+                handle_child_close(msg)
+              end
             else
               $log.warn("activity on unexpected fd: #{io.fileno}")
             end
@@ -1362,7 +1366,19 @@ module RQ
       end
     end
 
-    def handle_child_close(msg, exit_status)
+    def handle_child_close(msg, exit_status=nil)
+      $log.debug("noticed child pipe close... #{msg['child_pid']}")
+
+      if exit_status.nil?
+        pid, exit_status = Process.wait2(msg['child_pid'], Process::WNOHANG)
+      end
+
+      if exit_status.nil?
+        $log.debug("script child #{msg['child_pid']} was not ready to be reaped")
+        sleep 0.001
+        return
+      end
+
       $log.info("script child #{msg['child_pid']} exit with status #{exit_status}")
 
       msg_id = msg['msg_id']
