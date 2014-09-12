@@ -110,7 +110,6 @@ module RQ
       FileUtils.mkdir_p(queue_path + '/prep')
       FileUtils.mkdir_p(queue_path + '/que')
       FileUtils.mkdir_p(queue_path + '/run')
-      FileUtils.mkdir_p(queue_path + '/pause')
       RQ::HashDir.make(queue_path + '/done')
       RQ::HashDir.make(queue_path + '/relayed')
       FileUtils.mkdir_p(queue_path + '/err')
@@ -713,8 +712,6 @@ module RQ
           'relayed'
         elsif not Dir.glob(File.join(@queue_path, 'err', msg_id)).empty?
           'err'
-        elsif not Dir.glob("#{@queue_path}/pause/#{msg_id}").empty?
-          'pause'
         end
 
       return false unless state
@@ -754,7 +751,6 @@ module RQ
       end
       # TODO
       # run
-      # pause
       # done
     end
 
@@ -1061,8 +1057,6 @@ module RQ
           ## THE QUESTIONS: Do we kill the job now?
           # No  - up to script writer. They should exit
           #       we'll trust them for now
-        when 'pause'
-          @completed << [msg, :pause, Time.now.to_i]
         when 'relayed'
           @completed << [msg, :relayed, Time.now.to_i]
         when 'resend'
@@ -1590,7 +1584,6 @@ module RQ
         status['prep']     = @prep.length
         status['que']      = @que.length
         status['run']      = @run.length
-        status['pause']    = []
         status['done']     = RQ::HashDir.num_entries(@queue_path + "/done")
         status['relayed']  = RQ::HashDir.num_entries(@queue_path + "/relayed/")
         status['err']      = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.length
