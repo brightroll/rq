@@ -71,7 +71,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Creating the test blocking queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_blocking -F queue[script]=./test/test_blocking_script.rb -F queue[num_workers]=3 -F queue[blocking]=yes -F queue[blocking_param1]=1 -F queue[exec_prefix]="" -o _install_test_blocking.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_blocking -F queue[script]=./test/test_blocking_script.rb -F queue[num_workers]=3 -F queue[blocking_params][]=1 -F queue[exec_prefix]="" -o _install_test_blocking.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1

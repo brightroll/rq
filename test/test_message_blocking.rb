@@ -80,7 +80,7 @@ class TC_MessageBlockingTest < Test::Unit::TestCase
   private
 
   def strip_queue_prefix(msg)
-    msg.gsub("http://127.0.0.1:33193/q/test_blocking/", "")
+    msg.split("q/test_blocking/")[1]
   end
 
 end

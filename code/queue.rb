@@ -30,7 +30,6 @@ module RQ
     :env_vars,
     :coalesce,
     :coalesce_params,
-    :blocking,
     :blocking_params,
     :schedule
   )
@@ -457,8 +456,7 @@ module RQ
       new_config.env_vars        = conf['env_vars']
       new_config.coalesce        = so_truthy?(conf['coalesce'])
       new_config.coalesce_params = Hash[ (1..4).map {|x| [x, so_truthy?(conf["coalesce_param#{x}"])]} ]
-      new_config.blocking        = so_truthy?(conf['blocking'])
-      new_config.blocking_params = Hash[ (1..4).map {|x| [x, so_truthy?(conf["blocking_param#{x}"])]} ]
+      new_config.blocking_params = conf["blocking_params"]
       new_config.schedule        = (conf['schedule'] || []).map do |s|
                                      begin
                                        {
@@ -1219,8 +1217,7 @@ module RQ
 
     def first_unblocked_msg(messages)
       extract_blocking_params = Proc.new { |msg|
-        blocking_params = @config.blocking_params.select { |k,v| v }.keys
-        blocking_params.map { |p| msg["param#{p}"] }
+        @config.blocking_params.map { |p| msg["param#{p}"] }
       }
 
       param_set = @run.map { |msg| extract_blocking_params.call(msg) }
@@ -1264,10 +1261,10 @@ module RQ
       # by another job with the same blocking params
       sorted_msgs = @que.sort {|a,b| a['due'].to_f <=> b['due'].to_f }
 
-      ready_msg = if @config.blocking
-        first_unblocked_msg(sorted_msgs)
-      else
+      ready_msg = if @config.blocking_params.nil? || @config.blocking_params.empty?
         sorted_msgs.first
+      else
+        first_unblocked_msg(sorted_msgs)
       end
 
       if ready_msg.nil?
