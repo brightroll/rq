@@ -24,9 +24,12 @@ fi
 rm -fr queue/test
 rm -fr queue/test_symlink
 rm -fr queue/test_coalesce
+rm -fr queue/test_blocking
 rm -fr queue/test_run
 rm -fr queue/test_nop
 rm -fr queue/test_ansi
+rm -fr queue/test_env_var
+rm -fr queue/test_change
 
 echo "Creating the test queue..."
 curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="" -o _install_test.txt
@@ -64,6 +67,19 @@ fi
 egrep "queue created" _install_test_coalesce.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system didn't create test_coalesce queue"
+  exit 1
+fi
+
+echo "Creating the test blocking queue..."
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_blocking -F queue[script]=./test/test_blocking_script.rb -F queue[num_workers]=3 -F queue[blocking_params][]=1 -F queue[exec_prefix]="" -o _install_test_blocking.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ failed to respond correctly"
+  exit 1
+fi
+
+egrep "queue created" _install_test_blocking.txt > /dev/null
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, system didn't create test_blocking queue"
   exit 1
 fi
 
@@ -118,6 +134,7 @@ rm _install.txt
 rm _install_test.txt
 rm _install_test_symlink.txt
 rm _install_test_coalesce.txt
+rm _install_test_blocking.txt
 rm _install_test_run.txt
 rm _install_test_nop.txt
 rm _install_ansi_script.txt

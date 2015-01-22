@@ -42,6 +42,7 @@ for test in \
    test_hashdir.rb \
    test_overrides.rb \
    test_rule_processor.rb \
+   test_message_blocking.rb \
    \
    test_rq.sh \
    send_test_coalesce.sh \
