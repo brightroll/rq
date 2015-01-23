@@ -480,13 +480,14 @@ module RQ
       # Simple time insertion system - should work since single threaded
       times = 0
       z = Time.now.getutc
-      name = z.strftime("_%Y%m%d.%H%M.%S.") + sprintf("%03d", (z.tv_usec / 1000))
-      Dir.mkdir(@queue_path + "/prep/" + name)
-      stat = File.stat(@queue_path + "/prep/" + name)
-      new_name = z.strftime("%Y%m%d.%H%M.%S.") + sprintf("%03d.%d", (z.tv_usec / 1000), stat.ino)
-      File.rename(@queue_path + "/prep/" + name, @queue_path + "/prep/" + new_name)
+      name = z.strftime('_%Y%m%d.%H%M.%S.') + sprintf('%03d', (z.tv_usec / 1000))
+      prep_name = File.join(@queue_path, 'prep', name)
+      Dir.mkdir(prep_name)
+      stat = File.stat(prep_name)
+      new_name = z.strftime('%Y%m%d.%H%M.%S.') + sprintf('%03d.%d', (z.tv_usec / 1000), stat.ino)
+      File.rename(prep_name, File.join(@queue_path, 'prep', new_name))
       @prep << new_name
-      msg["msg_id"] = new_name
+      msg['msg_id'] = new_name
     rescue
       times += 1
       $log.warn("couldn't ALLOC ID times: #{times} [ #{$!} ]")
@@ -594,8 +595,8 @@ module RQ
           h['state'] = new_state
           store_msg(h, 'que')
           # TODO: refactor this
-          basename = "#{@queue_path}/que/#{i}"
-          RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", i)
+          basename = File.join(@queue_path, 'que', i)
+          RQ::HashDir.inject(basename, File.join(@queue_path, new_state), i)
         end
         msg['dups'] = msg['dups'].map { |i| gen_full_msg_id({'msg_id' => i}) }
       end
@@ -682,11 +683,10 @@ module RQ
 
     def msg_state_prep?(msg)
       msg_id = msg['msg_id']
-      basename = @queue_path + "/prep/" + msg_id
-
       return false unless @prep.include?(msg_id)
 
-      if not File.exists?(basename)
+      basename = File.join(@queue_path, 'prep', msg_id)
+      unless File.exists?(basename)
         $log.warn("WARNING - serious queue inconsistency #{msg_id}")
         $log.warn("WARNING - #{msg_id} in memory but not on disk")
         return false
@@ -704,11 +704,11 @@ module RQ
           'que'
         elsif @run.find { |o| o['msg_id'] == msg_id }
           'run'
-        elsif RQ::HashDir.exist(File.join(@queue_path, 'done'), msg_id)
-          basename = RQ::HashDir.path_for(File.join(@queue_path, 'done'), msg_id)
+        elsif RQ::HashDir.exist(@queue_path, 'done', msg_id)
+          basename = RQ::HashDir.path_for(@queue_path, 'done', msg_id)
           'done'
-        elsif RQ::HashDir.exist(File.join(@queue_path, 'relayed'), msg_id)
-          basename = RQ::HashDir.path_for(File.join(@queue_path, 'relayed'), msg_id)
+        elsif RQ::HashDir.exist(@queue_path, 'relayed', msg_id)
+          basename = RQ::HashDir.path_for(@queue_path, 'relayed', msg_id)
           'relayed'
         elsif not Dir.glob(File.join(@queue_path, 'err', msg_id)).empty?
           'err'
@@ -728,30 +728,28 @@ module RQ
       state
     end
 
-    def kill_msg!(msg)
-      state = msg_state(msg)
-      return nil unless state
-    end
-
     def delete_msg!(msg)
       state = msg_state(msg)
       return nil unless state
+      return nil unless msg['msg_id']
 
-      basename = @queue_path + "/#{state}/" + msg['msg_id']
+      basename = File.join(@queue_path, state, msg['msg_id'])
 
-      if state == 'prep'
-        #FileUtils.remove_entry_secure(basename)
+      # N.B. do not delete a message in 'run' state,
+      # first kill the process and force the message to err state,
+      # then delete it from err state.
+      case state
+      when 'prep'
         FileUtils.rm_rf(basename)
         @prep.delete(msg['msg_id'])
-      end
-      if state == 'que'
-        #FileUtils.remove_entry_secure(basename)
+      when 'que'
         FileUtils.rm_rf(basename)
         @que.delete_if { |o| o['msg_id'] == msg['msg_id'] }
+      when 'done'
+        FileUtils.rm_rf(basename)
+      when 'err'
+        FileUtils.rm_rf(basename)
       end
-      # TODO
-      # run
-      # done
     end
 
     def clone_msg(msg)
@@ -773,10 +771,10 @@ module RQ
 
       # Now check for, and copy attachments
       # Assumes that original message guaranteed attachment integrity
-      new_basename = @queue_path + "/prep/" + new_msg['msg_id']
+      new_basename = File.join(@queue_path, 'prep', new_msg['msg_id'])
 
-      if File.directory?(old_basename + "/attach/")
-        ents = Dir.entries(old_basename + "/attach/").reject {|i| i.start_with?('.') }
+      if File.directory?(old_basename + '/attach/')
+        ents = Dir.entries(old_basename + '/attach/').reject {|i| i.start_with?('.') }
         if not ents.empty?
           # simple check for attachment dir
           old_attach_path = old_basename + '/attach/'
@@ -805,9 +803,9 @@ module RQ
                     options={ :read_message => true,
                               :check_attachments => true})
       if ['done', 'relayed'].include? state
-        basename = RQ::HashDir.path_for("#{@queue_path}/#{state}", params['msg_id'])
+        basename = RQ::HashDir.path_for(@queue_path, state, params['msg_id'])
       else
-        basename = @queue_path + "/#{state}/" + params['msg_id']
+        basename = File.join(@queue_path, state, params['msg_id'])
       end
 
       msg = nil
@@ -835,11 +833,11 @@ module RQ
             msg['_attachments'] = { }
             ents.each do |ent|
               msg['_attachments'][ent] = { }
-              path = "#{basename}/attach/#{ent}"
+              path = File.join(basename, 'attach', ent)
               md5, size = file_md5(path)
               msg['_attachments'][ent]['md5'] = md5
               msg['_attachments'][ent]['size'] = size
-              msg['_attachments'][ent]['path'] = cwd + '/' + path
+              msg['_attachments'][ent]['path'] = File.join(cwd, path)
             end
           end
         end
@@ -878,7 +876,7 @@ module RQ
       # validate attachment
       result = [false, 'Unknown error']
       begin
-        basename = @queue_path + "/prep/" + msg_id
+        basename = File.join(@queue_path, 'prep', msg_id)
         return [false, "No message on disk"] unless File.exists? basename
 
         #TODO: deal with symlinks
@@ -950,7 +948,7 @@ module RQ
       # validate attachment
       result = [false, 'Unknown error']
       begin
-        basename = @queue_path + "/prep/" + msg_id
+        basename = File.join(@queue_path, 'prep', msg_id)
         return [false, "No message on disk"] unless File.exists? basename
 
         # simple check for attachment dir
@@ -1096,7 +1094,7 @@ module RQ
           msg_copy = copy_and_clean_msg(msg, new_dest)
           msg_copy['due'] = new_due
 
-          basename = @queue_path + "/run/" + msg['msg_id']
+          basename = File.join(@queue_path, 'run', msg['msg_id'])
 
           # Now see if there are any attachments
           attachments = []
@@ -1159,7 +1157,7 @@ module RQ
       # Write message to disk
       begin
         data = { 'job_status' => mesg }.to_json
-        basename = @queue_path + "/#{state}/" + msg_id + "/status"
+        basename = File.join(@queue_path, state, msg_id, 'status')
         File.open(basename + '.tmp', 'w') { |f| f.write(data) }
         File.rename(basename + '.tmp', basename)
       rescue
@@ -1171,7 +1169,7 @@ module RQ
     end
 
     def read_msg_process_id(msg_id)
-      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      basename = File.join(@queue_path, 'run', msg_id, 'pid')
       File.read(basename).to_i
     rescue
       nil
@@ -1179,7 +1177,7 @@ module RQ
 
     # Write message pid to disk
     def write_msg_process_id(msg_id, pid)
-      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      basename = File.join(@queue_path, 'run', msg_id, 'pid')
       File.open(basename + '.tmp', 'w') { |f| f.write(pid.to_s) }
       File.rename(basename + '.tmp', basename)
       true
@@ -1189,7 +1187,7 @@ module RQ
     end
 
     def remove_msg_process_id(msg_id, state = 'run')
-      basename = "#{@queue_path}/run/#{msg_id}/pid"
+      basename = File.join(@queue_path, 'run', msg_id, 'pid')
       FileUtils.rm_rf(basename)
     end
 
@@ -1434,13 +1432,13 @@ module RQ
           # store message since it made it to done and we want the 'dups' field to live
           handle_dups_done(msg, new_state)
           store_msg(msg, 'run')
-          RQ::HashDir.inject(basename, "#{@queue_path}/#{new_state}", msg_id)
+          RQ::HashDir.inject(basename, File.join(@queue_path, new_state), msg_id)
         else
           # store message since it failed to make it to done and
           # we want the 'dups' field to be removed
           handle_dups_fail(msg)
           store_msg(msg, 'run')
-          newname = "#{@queue_path}/#{new_state}/#{msg_id}"
+          newname = File.join(@queue_path, new_state, msg_id)
           File.rename(basename, newname)
         end
       rescue

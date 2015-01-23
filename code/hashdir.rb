@@ -8,14 +8,14 @@ module RQ
       return true
     end
 
-    def self.exist(path, msg_id)
+    def self.exist(que_base_path, state, msg_id)
       parts = self.msg_id_parts(msg_id)
       # parts = [ "YYYYmmDD", "HH", "MM" ]
 
       # If we got bad data, return false
       return false unless parts
 
-      File.exists?("#{path}/#{parts[0]}/#{parts[1]}/#{parts[2]}/#{msg_id}")
+      File.exist?("#{que_base_path}/#{state}/#{parts[0]}/#{parts[1]}/#{parts[2]}/#{msg_id}")
     end
 
     # Do a DFT traverse in reverse order so most
@@ -35,9 +35,9 @@ module RQ
       File.rename(prev_msg_path, newname)
     end
 
-    def self.path_for(que_base_path, msg_id)
+    def self.path_for(que_base_path, state, msg_id)
       parts = self.msg_id_parts(msg_id)
-      "#{que_base_path}/#{parts[0]}/#{parts[1]}/#{parts[2]}/#{msg_id}"
+      "#{que_base_path}/#{state}/#{parts[0]}/#{parts[1]}/#{parts[2]}/#{msg_id}"
     end
 
     private
