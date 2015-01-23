@@ -63,7 +63,7 @@ end
 
 options = {
   :env    => 'development',
-  :host   => Socket.gethostbyname(Socket.gethostname).first,
+  :host   => (Socket.gethostbyname(Socket.gethostname).first rescue 'localhost'),
   :port   => 3333,
   :addr   => '0.0.0.0',
   :tmpdir => '/tmp',
@@ -76,7 +76,7 @@ OptionParser.new do |opts|
   opts.on('--env ENV', 'Environment (default: development)') do |v|
     options[:env] = v
   end
-  opts.on('--host HOST', 'Hostname (default: fqdn)') do |v|
+  opts.on('--host HOST', 'Hostname (default: fqdn or localhost)') do |v|
     options[:host] = v
   end
   opts.on('--port PORT', 'Port (default: 3333)') do |v|
