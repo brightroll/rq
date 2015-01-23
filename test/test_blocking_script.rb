@@ -6,17 +6,17 @@ def write_status(state, mesg = '')
   io.syswrite(msg)
 end
 
-write_status('run', "just started")
+write_status('run', 'just started')
 
-unlock_file = "#{ENV['PWD']}/test/tmp/#{ENV['RQ_PARAM2']}"
+unlock_file = File.expand_path("../tmp/#{ENV['RQ_PARAM2']}", __FILE__)
 
 puts unlock_file
 
 until File.file?(unlock_file)
-  puts "File not found, going to sleep and try again....\n"
+  puts 'File not found, going to sleep and try again...'
   sleep(0.25)
 end
 
-puts "done"
+puts 'done'
 write_status('done')
 exit(0)
