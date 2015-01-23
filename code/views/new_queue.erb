@@ -1,21 +1,20 @@
 <div id="header">
-  <h1><a href="<%= url %>">RQ</a></h1>
+  <h1><a href="<%= root %>">RQ</a></h1>
 </div>
 
 <h3>New Queue</h3>
-<form id="new_queue_form" method="post" action="/new_queue">
+<form id="new_queue_form" method="post" action="<%= root %>new_queue">
 <fieldset>
 <legend>Queue Configuration</legend>
 
 <div class="field">
   <label class="field_label" for="queue_name">Queue name</label>
-  <span class=""><%= url %></span>
-  <input type="text" size="50" name="queue[name]" id="queue_name" value="" />
+  <input type="text" size="60" name="queue[name]" id="queue_name" value="" />
 </div>
 
 <div class="field">
   <label class="field_label" for="queue_script">Queue script path</label>
-  <input type="text" size="80" name="queue[script]" id="queue_script" value="" />
+  <input type="text" size="60" name="queue[script]" id="queue_script" value="" />
 </div>
 
 <div class="field">

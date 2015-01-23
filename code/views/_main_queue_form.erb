@@ -1,4 +1,4 @@
-        <form class="inline inrow" method="post" action="<%= "#{url}q/#{name}/adminoper" %>">
+        <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/adminoper" %>">
           <input type="hidden" name="back" value="<%= request.path  %>" />
           <%- if status == 'PAUSE' -%>
             <button id="resume-queue" name="resume" value="resume" <%= 'disabled="disabled"' if status == 'DOWN' %>>Resume</button>
@@ -11,7 +11,7 @@
             <button id="down-queue" name="down" value="down">Down</button>
           <%- end -%>
         </form>
-        <form class="inline inrow" method="post" action="<%= "#{url}q/#{name}/restart" %>">
+        <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/restart" %>">
           <input type="hidden" name="back" value="<%= request.path  %>" />
           <button id="restart-queue" name="restart" value="restart">Restart</button>
         </form>

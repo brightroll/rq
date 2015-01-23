@@ -58,6 +58,8 @@ module RQ
     # No '.' or '/' since that could change path
     # Basically it should just be alphanum and '-' or '_'
     def valid_queue_name(name)
+      return false unless name
+      return false unless name.length > 0
       nil == name.tr('/. ,;:@"(){}\\+=\'^`#~?[]%|$&<>', '*').index('*')
     end
 
@@ -314,7 +316,7 @@ module RQ
 
         $0 = $log.progname = '[rq-web]'
         Rack::Handler::UnixRack.run(
-          RQ::Main.new(nil, @config), {
+          RQ::Main.to_app(@config), {
           :Port        => @config['port'],
           :Host        => @config['addr'],
           :Hostname    => @config['host'],
@@ -402,7 +404,14 @@ module RQ
             pid, status = Process.wait2(-1, Process::WNOHANG) rescue nil
             if pid
               worker = @queues.values.find { |o| o.pid == pid }
-              handle_worker_close(worker, status) if worker
+              if worker
+                handle_worker_close(worker, status)
+              elsif @web_server == pid
+                # TODO: Try to restart the web server? How many times?
+                $log.fatal("The web server has died. Terminating this RQ instance.")
+                @web_server = nil
+                shutdown!
+              end
             end
 
           else

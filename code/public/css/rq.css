@@ -44,6 +44,10 @@ td {
   vertical-align: text-top;
 }
 
+#queue-list td {
+  white-space: nowrap;
+}
+
 #custom-queues {
   background: #FEF9EE;
 }
@@ -79,19 +83,21 @@ td {
 .yellow {background-color: yellow; color: black}
 
 ul {list-style: none;}
-#message-json {
+
+table.message-info {
   background: white;
   line-height: 1.5;
   padding: 20px 0 20px 40px;
   font-family: monospace;
+  text-align: left;
 }
 
-#message-json-default {
-  background: white;
-  line-height: 1.5;
-  padding: 20px 0 20px 40px;
-  font-family: monospace;
+.message-info .key {
+  width: 12em;
+}
 
+.message-info .sep {
+  width: 1em;
 }
 
 #attachments {
@@ -159,6 +165,17 @@ pre {
 #filedata a {color: yellow; text-decoration: none}
 #filedata a:hover {text-decoration: underline}
 #filedata a:visited {}
+
+#filepos {
+  color: white;
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 12em;
+  padding: 5px;
+  border: 2px solid;
+  opacity: 0.7;
+}
 
 form label.field_label {
   display: block;

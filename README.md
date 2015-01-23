@@ -122,6 +122,7 @@ config:
 config.json
 ``` json
 {"env":"development","host":"127.0.0.1","port":"3333","addr":"0.0.0.0","tmpdir":"/tmp",
+ "relative_root":"/therq",
  "basic_auth":{
   "realm":"Your RQ",
   "users":{
@@ -137,6 +138,7 @@ Key                   | Description
 **addr**              | Addr for the web UI to listen on (0.0.0.0 for all interfaces)
 **tmpdir**            | Directory for temp files
 allow_new_queue       | Boolean, enable the new queue web UI, default `false`
+relative_root         | Path prefix for the web UI, default `/`
 basic_auth            | Hash for HTTP Basic authentication, has two required elements
 basic_auth: **realm** | Realm for HTTP Basic
 basic_auth: **users** | Hash of username:password pairs

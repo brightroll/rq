@@ -1,5 +1,5 @@
     <tr class="<%= 'odd-row' if odd %>">
-      <td class="left-aligned"><a href="<%= "#{url}q/#{name}" %>"><%= name %></a></td>
+      <td class="left-aligned"><a href="<%= "#{root}q/#{name}" %>"><%= name %></a></td>
 <% begin
     qc = get_queueclient(name)
     raise unless qc.running?
@@ -9,7 +9,7 @@
       <td>
         <pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre>
         <% qc.config[1]['schedule'].each do |sched| %>
-          <form class="inline inrow" method="post" action="<%= "#{url}q/#{name}/new_message" %>">
+          <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/new_message" %>">
             <input type="hidden" name="back" value="<%= request.path  %>" />
             <input type="hidden" name="x_format" value="html" />
             <input type="hidden" name="mesg[src]" value="cron-now " />
@@ -46,6 +46,6 @@
       <td><span class="red">DOWN <%= $! %></span></td>
 <% end -%>
       <td>
-<%=     erb :_main_queue_form, :locals => {:status => status, :url => url, :name => name } %>
+<%=     erb :_main_queue_form, :locals => {:status => status, :name => name } %>
       </td>
     </tr>

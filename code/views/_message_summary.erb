@@ -1,0 +1,53 @@
+<p>
+  message.json
+  [ <a href="#" onclick="toggle_hidden()">full/summary</a> ]
+  [ <a href="<%= "#{root}q/#{q_name}/#{msg_id}.json" %>">raw</a> ]
+</p>
+
+<table class="message-info">
+  <tr>
+    <td class="key">dest</td><td class="sep"> : </td><td><%= msg['dest'] %></td>
+  </tr>
+  <tr>
+    <td class="key">status</td><td class="sep"> : </td><td>
+    <% if msg['state'] == 'relayed'
+      stuff, url = msg['status'].split(' - ', 2) %>
+      relayed - <a class="inline" href="<%= url %>"><%= url %></a> </td>
+    <% else %>
+      <%= msg['status'] %>
+    <% end %>
+  </tr>
+  <tr>
+    <td class="key">state</td><td class="sep"> : </td><td><%= msg['state'] %></td>
+  </tr>
+  <tr>
+    <td class="key">src</td><td class="sep"> : </td><td><%= msg['src'] %></td>
+  </tr>
+
+  <% %w(msg_id count max_count param1 param2 param3 param4 post_run_webhook orig_msg_id cloned_from dups dup force_remote).each do |key| %>
+  <% next unless msg.has_key?(key) %>
+  <tr class="hideme hidden">
+    <td class="key">
+    <% if key == 'orig_msg_id' || key == 'dup' %>
+ <%= key %></td><td class="sep"> : </td><td> <a class="inline" href="<%= msg[key] %>"><%= msg[key] %></a> </td>
+    <% elsif key == 'dups' %>
+ <%= key %></td><td class="sep"> : </td><td> [
+         <% msg[key].each do |v| %>
+            <a href="<%= v %>"><%= v %></a>
+         <% end %> ] </td>
+    <% else %>
+ <%= key %></td><td class="sep"> : </td><td> <%= msg[key] %> </td>
+    <% end %>
+  </tr>
+<% end %>
+</table>
+
+<script>
+  function toggle_hidden() {
+    var elms = document.getElementsByClassName('hideme');
+    for (var i = 0; i < elms.length; i++) {
+      elms[i].classList.toggle('hidden');
+    }
+    return false;
+  }
+</script>

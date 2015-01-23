@@ -11,6 +11,35 @@ require 'code/overrides'
 module RQ
   class Main < Sinatra::Base
 
+    # This is almost identical to Rack::URLMap but without checking that
+    # env['HTTP_HOST'] == env['SERVER_NAME'], and without support for
+    # multiple mapped paths.
+    class RelativeRoot
+      def initialize(app, relative_root)
+        @app = app
+        @relative_root = relative_root.chomp('/')
+        @match = Regexp.new("^#{Regexp.quote(@relative_root).gsub('/', '/+')}(.*)", nil, 'n')
+      end
+
+      def call(env)
+        script_name = env['SCRIPT_NAME']
+        path = env['PATH_INFO']
+
+        m = @match.match(path.to_s)
+        if m && (rest = m[1]) && (!rest || rest.empty? || rest[0] == ?/)
+          env['SCRIPT_NAME'] = (script_name + @relative_root)
+          env['PATH_INFO'] = rest
+          @app.call(env)
+        else
+          [404, {"Content-Type" => "text/plain", "X-Cascade" => "pass"}, ["Not Found: #{path}"]]
+        end
+
+      ensure
+        env['SCRIPT_NAME'] = script_name
+        env['PATH_INFO'] = path
+      end
+    end
+
     enable :sessions
     set :session_secret, 'super secret'  # we are forking, so we must set
 
@@ -42,25 +71,27 @@ module RQ
     def initialize(app=nil, config={})
       super(app)
       @allow_new_queue = config.fetch('allow_new_queue', false)
+      @relative_root = config.fetch('relative_root', '/').chomp('/') + '/'
     end
 
-    # If basic auth is enabled, wrap ourselves in Rack middleware
-    def self.new(app=nil, config={})
-      basic_auth = config['basic_auth']
-      if basic_auth
-        app = Rack::Auth::Basic.new(super(app, config)) do |username, password|
-           basic_auth['users'][username] == password
+    def self.to_app(config)
+      relative_root = config.fetch('relative_root', '/').chomp('/') + '/'
+      raise ArgumentError, 'relative_root must start with /' unless relative_root.start_with?('/')
+      Rack::Builder.app do
+        use RQ::Main::RelativeRoot, relative_root
+        basic_auth = config['basic_auth']
+        if basic_auth
+          use Rack::Auth::Basic, basic_auth['realm'] do |username, password|
+            basic_auth['users'][username] == password
+          end
         end
-        app.realm = basic_auth['realm']
-        app
-      else
-        super(app, config)
+        run RQ::Main.new(nil, config)
       end
     end
 
     helpers do
-      def url
-        "http://#{request.host}:#{request.port}/"
+      def root
+        @relative_root
       end
 
       def allow_new_queue?
@@ -124,7 +155,7 @@ module RQ
       # This creates and starts a queue
       result = queuemgr.create_queue(params['queue'])
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
-      redirect "/q/#{params['queue']['name']}"
+      redirect "#{root}q/#{params['queue']['name']}"
     end
 
     post '/new_queue_link' do
@@ -142,14 +173,14 @@ module RQ
       result = queuemgr.create_queue_link(params['queue']['json_path'])
       #TODO - do the right thing with the result code
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
-      redirect "/q/#{js_data['name']}"
+      redirect "#{root}q/#{js_data['name']}"
     end
 
     post '/delete_queue' do
       # This creates and starts a queue
       result = queuemgr.delete_queue(params['queue_name'])
       flash :notice, "We got <code>#{params.inspect}</code> from form, and <code>#{result}</code> from QueueMgr"
-      redirect "/"
+      redirect root
     end
 
     get '/q.txt' do
@@ -405,7 +436,7 @@ module RQ
       end
 
       flash :notice, "Message cloned successfully"
-      redirect "/q/#{params[:name]}"
+      redirect "#{root}q/#{params[:name]}"
     end
 
     post '/q/:name/:msg_id/run_now' do
@@ -425,7 +456,7 @@ module RQ
       end
 
       flash :notice, "Message in run successfully"
-      redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+      redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
     end
 
     # TODO: change URL for this call
@@ -481,7 +512,7 @@ module RQ
       else
         if result[0] == "ok"
           flash :notice, "Attached message successfully"
-          redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+          redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
         else
           "Commit #{params[:name]}/#{params[:msg_id]} got #{result}"
         end
@@ -506,7 +537,7 @@ module RQ
         else
           if result[0] == "ok"
             flash :notice, "Attachment deleted successfully"
-            redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+            redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
           else
             "Delete of attach #{params[:attachment_name]} on #{params[:name]}/#{params[:msg_id]} got #{result}"
           end
@@ -591,7 +622,7 @@ module RQ
       erb :tailview, :layout => false,
                      :locals => {
                        :tail_path  => path,
-                       :state_path => "/q/#{params[:name]}/#{msg_id}/state.json",
+                       :state_path => "#{root}q/#{params[:name]}/#{msg_id}/state.json",
                        :name       => params['attach_name'],
                      }
     end
@@ -612,8 +643,8 @@ module RQ
 
       erb :tailview, :layout => false,
                      :locals => {
-                       :tail_path  => "/q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
-                       :state_path => "/q/#{params[:name]}/#{msg_id}/state.json",
+                       :tail_path  => "#{root}q/#{params[:name]}/#{msg_id}/log/#{params[:log_name]}",
+                       :state_path => "#{root}q/#{params[:name]}/#{msg_id}/state.json",
                      }
     end
 
@@ -635,10 +666,10 @@ module RQ
         else
           if result[0] == "ok"
             flash :notice, "Message deleted successfully"
-            redirect "/q/#{params[:name]}"
+            redirect "#{root}q/#{params[:name]}"
           else
             flash :error, "Delete got #{result.inspect}"
-            redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+            redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
           end
         end
 
@@ -649,10 +680,10 @@ module RQ
         else
           if result[0] == "ok"
             flash :notice, "Message destroyed successfully"
-            redirect "/q/#{params[:name]}"
+            redirect "#{root}q/#{params[:name]}"
           else
             flash :error, "destroy got #{result.inspect}"
-            redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+            redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
           end
         end
 
@@ -666,7 +697,7 @@ module RQ
           else
             flash :error, "Commit got #{result.inspect}"
           end
-          redirect "/q/#{params[:name]}/#{params[:msg_id]}"
+          redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
         end
       else
         throw :halt, [400, "400 - Invalid method param"]
