@@ -20,9 +20,9 @@ module RQ
     end
 
     def update!
-      if File.exists?(@down_file)
+      if File.exist?(@down_file)
         @admin_status = 'DOWN'
-      elsif File.exists?(@pause_file)
+      elsif File.exist?(@pause_file)
         @admin_status = 'PAUSE'
       else
         @admin_status = 'UP'
@@ -55,7 +55,7 @@ module RQ
     private
 
     def create_file(file)
-      unless File.exists?(file)
+      unless File.exist?(file)
         File.new(file, File::CREAT, 0644) rescue nil
       else
         true
@@ -63,7 +63,7 @@ module RQ
     end
 
     def delete_file(file)
-      if File.exists?(file)
+      if File.exist?(file)
         count = File.unlink(file) rescue 0
         count > 0
       else

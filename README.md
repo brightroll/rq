@@ -171,8 +171,8 @@ Key                  | Description
 num_workers          | Maximum number of messages to process at a time, default `1`
 exec_prefix          | This is prepended to the script path before calling `exec()`, default `bash -lc`
 env_vars             | Hash of environment variables and values set before calling `exec()`, default empty
-coalesce             | Boolean, whether to coalesce messages with identical paramters, default `false`
-coalesce_paramN      | Boolean, if coalesce is true, whether to coalesce on a particular parameter
+coalesce_params      | Array of param numbers. Coalesce messages if they have identical parameters, default []
+blocking_params      | Array of param numbers. Run one message with identical parameters at a time, default []
 schedule             | Array of hashes of cron-like scheduled jobs
 schedule[]: **cron** | A cron-like five element recurring schedule, see crontab(5)
 schedule[]: paramN   | Optional param1-param4 will be passed to each scheduled job

@@ -32,7 +32,7 @@ rm -fr queue/test_env_var
 rm -fr queue/test_change
 
 echo "Creating the test queue..."
-curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="" -o _install_test.txt
+curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -45,7 +45,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Creating the test symlink queue..."
-curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_symlink -F queue[script]=./test/test_symlink/test_script_symlink.sh -F queue[num_workers]=1 -F queue[coalesce]=no -F queue[exec_prefix]="" -o _install_test_symlink.txt
+curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_symlink -F queue[script]=./test/test_symlink/test_script_symlink.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_test_symlink.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
@@ -58,7 +58,7 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Creating the test coalesce queue..."
-curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce]=yes -F queue[coalesce_param1]=1 -F queue[exec_prefix]="" -o _install_test_coalesce.txt
+curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_coalesce -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[coalesce_params][]=1 -F queue[exec_prefix]="" -o _install_test_coalesce.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1

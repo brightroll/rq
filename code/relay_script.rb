@@ -202,7 +202,7 @@ if remote_delivery
   new_short_msg_id = new_msg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 
   # Idempotently attach any attachments
-  if File.exists?('../attach')
+  if File.exist?('../attach')
     log("attempting sending attach")
     entries = Dir.entries('../attach').reject { |e| e.start_with?('.') }
 
@@ -349,7 +349,7 @@ new_short_msg_id = new_msg_id[/\/q\/[^\/]+\/([^\/]+)/, 1]
 log("attempting local send attach")
 
 # Idempotently attach any attachments
-if File.exists?('../attach')
+if File.exist?('../attach')
   entries = Dir.entries('../attach').reject { |e| e.start_with?('.') }
 
   fnames =  entries.select { |e| File.file?("../attach/#{e}") }

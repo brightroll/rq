@@ -24,35 +24,39 @@
 </div>
 
 <div class="field">
-  <label class="field_label" for="queue_coalesce">Message coalescing</label>
-  <label for="queue_coalesce">coalesce</label>
-  <input type="radio" name="queue[coalesce]" value="yes" />
-  <label for="queue_coalesce">no-coalesce</label>
-  <input type="radio" name="queue[coalesce]" value="no" checked />
-</div>
-
-<div class="field">
-  <label class="field_label" for="queue_coalesce_param1"></label>
-  <label for="queue_coalesce_param1">param1</label>
-  <input type="checkbox" id="queue_coalesce_param1" name="queue[coalesce_param1]" value="1" />
-  <label for="queue_coalesce_param2">param2</label>
-  <input type="checkbox" id="queue_coalesce_param2" name="queue[coalesce_param2]" value="1" />
-  <label for="queue_coalesce_param3">param3</label>
-  <input type="checkbox" id="queue_coalesce_param3" name="queue[coalesce_param3]" value="1" />
-  <label for="queue_coalesce_param4">param4</label>
-  <input type="checkbox" id="queue_coalesce_param4" name="queue[coalesce_param4]" value="1" />
+  <label class="field_label" for="queue_blocking">Message coalescing</label>
+  <div class="field_together">
+    <input type="checkbox" id="queue_coalesce_param1" name="queue[coalesce_params][]" value="1" />
+    <label for="queue_coalesce_param1">param1</label>
+    <br />
+    <input type="checkbox" id="queue_coalesce_param2" name="queue[coalesce_params][]" value="2" />
+    <label for="queue_coalesce_param2">param2</label>
+    <br />
+    <input type="checkbox" id="queue_coalesce_param3" name="queue[coalesce_params][]" value="3" />
+    <label for="queue_coalesce_param3">param3</label>
+    <br />
+    <input type="checkbox" id="queue_coalesce_param4" name="queue[coalesce_params][]" value="4" />
+    <label for="queue_coalesce_param4">param4</label>
+  </div>
+  <p class="note">If two queued messages have the same values in all of the checked params, only one will run.</p>
 </div>
 
 <div class="field">
   <label class="field_label" for="queue_blocking">Message blocking</label>
-  <label for="queue_blocking_param1">param1</label>
-  <input type="checkbox" id="queue_blocking_param1" name="queue[blocking_params][]" value="1" />
-  <label for="queue_blocking_param2">param2</label>
-  <input type="checkbox" id="queue_blocking_param2" name="queue[blocking_params][]" value="2" />
-  <label for="queue_blocking_param3">param3</label>
-  <input type="checkbox" id="queue_blocking_param3" name="queue[blocking_params][]" value="3" />
-  <label for="queue_blocking_param4">param4</label>
-  <input type="checkbox" id="queue_blocking_param4" name="queue[blocking_params][]" value="4" />
+  <div class="field_together">
+    <input type="checkbox" id="queue_blocking_param1" name="queue[blocking_params][]" value="1" />
+    <label for="queue_blocking_param1">param1</label>
+    <br />
+    <input type="checkbox" id="queue_blocking_param2" name="queue[blocking_params][]" value="2" />
+    <label for="queue_blocking_param2">param2</label>
+    <br />
+    <input type="checkbox" id="queue_blocking_param3" name="queue[blocking_params][]" value="3" />
+    <label for="queue_blocking_param3">param3</label>
+    <br />
+    <input type="checkbox" id="queue_blocking_param4" name="queue[blocking_params][]" value="4" />
+    <label for="queue_blocking_param4">param4</label>
+  </div>
+  <p class="note">If two queued messages have the same values in all of the checked params, only one will run at a time.</p>
 </div>
 
 <div class="field">
@@ -61,6 +65,7 @@
 </div>
 
 <div class="field">
+  <label class="field_label" for="submit">&nbsp;</label>
   <input type="submit" value="submit" />
 </div>
 

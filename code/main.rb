@@ -103,7 +103,7 @@ module RQ
         # No RQ should be connecting to another box's relay
         # However, users need the web ui to interact, so we think
         # this is safe and good for debugging/visiblity
-        if File.exists?("./config/rq_router_rules.rb")
+        if File.exist?("./config/rq_router_rules.rb")
           if not ['relay', 'cleaner'].include?(name)
             name = 'rq_router'
           end
@@ -347,7 +347,7 @@ module RQ
     get '/q/:name/config.json' do
       path = "./queue/#{params['name']}/config.json"
 
-      if not File.exists? path
+      if not File.exist? path
         throw :halt, [404, "404 - Queue config for '#{params['name']}' not found"]
       end
 
@@ -565,7 +565,7 @@ module RQ
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
-      if not File.exists? path
+      if not File.exist? path
         throw :halt, [404, "404 - Message ID log '#{params['log_name']}' not found"]
       end
 
@@ -590,7 +590,7 @@ module RQ
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
-      if not File.exists? path
+      if not File.exist? path
         throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
       end
 
@@ -615,7 +615,7 @@ module RQ
 
       # send_file does this check, but we provide a much more contextually relevant error
       # TODO: finer grained checking (que, msg_id exists, etc.)
-      if not File.exists? path
+      if not File.exist? path
         throw :halt, [404, "404 - Message ID attachment '#{params['attach_name']}' not found"]
       end
 

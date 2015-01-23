@@ -28,11 +28,33 @@ module RQ
     :num_workers,
     :exec_prefix,
     :env_vars,
-    :coalesce,
     :coalesce_params,
     :blocking_params,
     :schedule
   )
+
+    def to_json
+      {
+        'name'            => name,
+        'script'          => script,
+        'num_workers'     => num_workers,
+        'exec_prefix'     => exec_prefix,
+        'env_vars'        => env_vars,
+        'coalesce_params' => coalesce_params,
+        'blocking_params' => blocking_params,
+        'schedule'        => schedule.map do |s|
+                               {
+                                 'cron'     => s['cron'],
+                                 'params'   => {
+                                   'param1' => s['param1'],
+                                   'param2' => s['param2'],
+                                   'param3' => s['param3'],
+                                   'param4' => s['param4'],
+                                 }
+                               }
+                             end
+      }.to_json
+    end
   end
 
   class Queue
@@ -104,8 +126,11 @@ module RQ
     end
 
     def self.create(options, config_path=nil)
+      # Validate the options
+      config = sublimate_config(options)
+
       # Create a directories and config
-      queue_path = "queue/#{options['name']}"
+      queue_path = "queue/#{config['name']}"
       FileUtils.mkdir_p(queue_path)
       FileUtils.mkdir_p(queue_path + '/prep')
       FileUtils.mkdir_p(queue_path + '/que')
@@ -120,10 +145,10 @@ module RQ
       else
         # Write config to dir
         File.open(queue_path + '/config.json', "w") do |f|
-          f.write(options.to_json)
+          f.write(config.to_json)
         end
       end
-      RQ::Queue.start_process(options)
+      RQ::Queue.start_process(config)
     end
 
     def self.start_process(options)
@@ -242,7 +267,7 @@ module RQ
 
       basename = File.join(@queue_path, 'run', msg_id)
       job_path = File.expand_path(File.join(basename, 'job'))
-      Dir.mkdir(job_path) unless File.exists?(job_path)
+      Dir.mkdir(job_path) unless File.exist?(job_path)
 
       # Identify executable to run, if there is no script, go oper down
       # Also, fix an old issue where we didn't deref the symlink when executing a script
@@ -358,10 +383,8 @@ module RQ
           ENV["RQ_FORCE_REMOTE"] = "1" if msg['force_remote']
 
           # Set env vars specified in queue config file
-          if @config.env_vars
-            @config.env_vars.each do |varname, value|
-              ENV[varname] = value unless varname.match(/^RQ_/) # Don't let the config override RQ-specific env vars though
-            end
+          @config.env_vars.each do |varname, value|
+            ENV[varname] = value unless varname.match(/^RQ_/) # Don't let the config override RQ-specific env vars though
           end
 
           # unset RUBYOPT so it doesn't reinitialize the client ruby's GEM_HOME, etc.
@@ -436,26 +459,44 @@ module RQ
 
     def load_config
       data = File.read(File.join(@queue_path, 'config.json'))
-      @config = sublimate_config(JSON.parse(data))
+      @config = self.class.sublimate_config(JSON.parse(data))
     end
 
     # There are a variety of ways we used to specify truth.
     # Going forward, javascript true / false are preferred.
-    def so_truthy? fudge
+    def self.so_truthy? fudge
       !!([true, 'true', 'yes', '1', 1].include? fudge)
     end
 
-    def sublimate_config(conf)
+    def self.sublimate_config(conf)
       # TODO config validation
       new_config                 = QueueConfig.new
       new_config.name            = conf['name']
       new_config.script          = conf['script']
       new_config.num_workers     = conf['num_workers'].to_i
       new_config.exec_prefix     = conf['exec_prefix']
-      new_config.env_vars        = conf['env_vars']
-      new_config.coalesce        = so_truthy?(conf['coalesce'])
-      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, so_truthy?(conf["coalesce_param#{x}"])]} ]
-      new_config.blocking_params = conf["blocking_params"]
+
+      if conf['env_vars'].is_a? Hash
+        new_config.env_vars        = conf['env_vars']
+      else
+        new_config.env_vars        = {}
+      end
+
+      if so_truthy?(conf['coalesce'])
+        # Convert from old style coalesce / coalesce_paramN
+        new_config.coalesce_params = (1..4).map{ |x| x if so_truthy?(conf["coalesce_param#{x}"]) }.compact
+      elsif conf['coalesce_params'].is_a? Array
+        new_config.coalesce_params = conf['coalesce_params'].map(&:to_i)
+      else
+        new_config.coalesce_params = []
+      end
+
+      if conf['blocking_params'].is_a? Array
+        new_config.blocking_params = conf['blocking_params'].map(&:to_i)
+      else
+        new_config.blocking_params = []
+      end
+
       new_config.schedule        = (conf['schedule'] || []).map do |s|
                                      begin
                                        {
@@ -543,7 +584,7 @@ module RQ
         # Read in full message
         msg = get_message(msg, from_state)
         basename = msg['path']
-        return false unless File.exists? basename
+        return false unless File.exist? basename
         newname = File.join(@queue_path, 'que', msg_id)
         File.rename(basename, newname)
         msg['state']  = 'que'
@@ -575,12 +616,10 @@ module RQ
     end
 
     def is_duplicate?(msg1, msg2)
-      (1..4).each do |x|
-        if @config.coalesce_params[x] and msg1["param#{x}"] != msg2["param#{x}"]
-          return false
-        end
+      return false if @config.coalesce_params.empty?
+      @config.coalesce_params.all? do |p|
+        msg1["param#{p}"] == msg2["param#{p}"]
       end
-      true
     end
 
     # Handle a message that does succeed
@@ -615,7 +654,7 @@ module RQ
     end
 
     def handle_dups(msg)
-      return unless @config.coalesce
+      return unless @config.coalesce_params
 
       duplicates = @que.select { |i| is_duplicate?(msg, i) }
 
@@ -686,7 +725,7 @@ module RQ
       return false unless @prep.include?(msg_id)
 
       basename = File.join(@queue_path, 'prep', msg_id)
-      unless File.exists?(basename)
+      unless File.exist?(basename)
         $log.warn("WARNING - serious queue inconsistency #{msg_id}")
         $log.warn("WARNING - #{msg_id} in memory but not on disk")
         return false
@@ -718,7 +757,7 @@ module RQ
       basename ||= File.join(@queue_path, state, msg_id)
 
       if options[:consistency]
-        unless File.exists?(basename)
+        unless File.exist?(basename)
           $log.warn("WARNING - serious queue inconsistency #{msg_id}")
           $log.warn("WARNING - #{msg_id} in memory but not on disk")
           return false
@@ -819,7 +858,7 @@ module RQ
         msg['path'] = basename
         msg['status'] = state
         msg['state'] = state
-        if File.exists?(basename + "/status")
+        if File.exist?(basename + "/status")
           xtra_data = File.read(basename + "/status")
           xtra_status = JSON.parse(xtra_data)
           msg['status'] += " - #{xtra_status['job_status']}"
@@ -877,12 +916,12 @@ module RQ
       result = [false, 'Unknown error']
       begin
         basename = File.join(@queue_path, 'prep', msg_id)
-        return [false, "No message on disk"] unless File.exists? basename
+        return [false, "No message on disk"] unless File.exist? basename
 
         #TODO: deal with symlinks
         # simple early check, ok, now check for pathname
         return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].start_with?("/")
-        return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
+        return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exist?(msg['pathname'])
         return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
         return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
         return [false, "Attachment currently not of supported type: #{msg['pathname']}"] unless File.file?(msg['pathname'])
@@ -890,7 +929,7 @@ module RQ
 
         # simple check for attachment dir
         attach_path = basename + '/attach/'
-        Dir.mkdir(attach_path) unless File.exists?(attach_path)
+        Dir.mkdir(attach_path) unless File.exist?(attach_path)
 
         # OK do we have a name?
         # Try that first, else use basename
@@ -949,14 +988,14 @@ module RQ
       result = [false, 'Unknown error']
       begin
         basename = File.join(@queue_path, 'prep', msg_id)
-        return [false, "No message on disk"] unless File.exists? basename
+        return [false, "No message on disk"] unless File.exist? basename
 
         # simple check for attachment dir
         attach_path = basename + '/attach/'
-        return [false, "No attach directory for msg"] unless File.exists?(attach_path)
+        return [false, "No attach directory for msg"] unless File.exist?(attach_path)
 
         new_path = attach_path + attach_name
-        return [false, "No attachment with that named for msg"] unless File.exists?(new_path)
+        return [false, "No attachment with that named for msg"] unless File.exist?(new_path)
 
         File.unlink(new_path)
 
@@ -1426,7 +1465,7 @@ module RQ
       # Move to relay dir and update in-memory data structure
       begin
         basename = File.join(@queue_path, 'run', msg_id)
-        raise unless File.exists? basename
+        raise unless File.exist? basename
         remove_msg_process_id(msg_id)
         if ['done', 'relayed'].include? new_state
           # store message since it made it to done and we want the 'dups' field to live

@@ -64,7 +64,7 @@ def rm_logs_older_than(qname, regex, hours)
 end
 
 def mv_logs(qname)
-  if File.exists?("#{qname}/queue.log")
+  if File.exist?("#{qname}/queue.log")
     a=Time.now
     b = sprintf("%s%.2d%.2d.%.2d:%.2d" ,a.year, a.month, a.day, a.hour, a.min)
     puts "status: moving #{qname}/queue.log"
@@ -76,7 +76,7 @@ end
 def remove_old(qname, days)
   clean_queues = ["/done", "/relayed", "/prep", "/queue"]
   clean_queues.each do |cq|
-    if File.exists?(qname + cq)
+    if File.exist?(qname + cq)
   
       # go by directories and remove any day dir > days + 1
       # then go into the hour dirs and remove by time
@@ -145,7 +145,7 @@ if ENV['RQ_PARAM1'] == "ALLQUEUES"
   queues = listq(basedir)
 else
   queues = [basedir + "/queue/" + ENV['RQ_PARAM1']]
-  if not File.exists?queues[0]
+  if not File.exist?queues[0]
     fail_hard("the specified queue #{queues} does not exist")
   end
 end
