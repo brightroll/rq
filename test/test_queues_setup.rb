@@ -61,11 +61,6 @@ result = JSON.parse(res.body)
 test_key 'test_coalesce', result, 'name', 'test_coalesce'
 test_key 'test_coalesce', result, 'num_workers', '1'
 test_key 'test_coalesce', result, 'script', './test/test_script.sh'
-test_key 'test_coalesce', result, 'coalesce', 'yes'
 test_key 'test_coalesce', result, 'exec_prefix', ''
-test_key 'test_coalesce', result, 'coalesce_param1', '1'
-test_key 'test_coalesce', result, 'coalesce_param2', nil
-test_key 'test_coalesce', result, 'coalesce_param3', nil
-test_key 'test_coalesce', result, 'coalesce_param4', nil
-
-
+test_key 'test_coalesce', result, 'coalesce_params', []
+test_key 'test_coalesce', result, 'blocking_params', []

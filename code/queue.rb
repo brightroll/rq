@@ -28,7 +28,6 @@ module RQ
     :num_workers,
     :exec_prefix,
     :env_vars,
-    :coalesce,
     :coalesce_params,
     :blocking_params,
     :schedule
@@ -453,9 +452,13 @@ module RQ
       new_config.num_workers     = conf['num_workers'].to_i
       new_config.exec_prefix     = conf['exec_prefix']
       new_config.env_vars        = conf['env_vars']
-      new_config.coalesce        = so_truthy?(conf['coalesce'])
-      new_config.coalesce_params = Hash[ (1..4).map {|x| [x, so_truthy?(conf["coalesce_param#{x}"])]} ]
-      new_config.blocking_params = conf["blocking_params"]
+      if so_truthy?(conf['coalesce'])
+        # Convert from old style coalesce / coalesce_paramN
+        new_config.coalesce_params = (1..4).map{ |x| x if so_truthy?(conf["coalesce_param#{x}"]) }.compact
+      else
+        new_config.coalesce_params = conf['coalesce_params']
+      end
+      new_config.blocking_params = conf['blocking_params']
       new_config.schedule        = (conf['schedule'] || []).map do |s|
                                      begin
                                        {
@@ -575,12 +578,10 @@ module RQ
     end
 
     def is_duplicate?(msg1, msg2)
-      (1..4).each do |x|
-        if @config.coalesce_params[x] and msg1["param#{x}"] != msg2["param#{x}"]
-          return false
-        end
+      return false if @config.coalesce_params.empty?
+      @config.coalesce_params.all? do |p|
+        msg1["param#{p}"] == msg2["param#{p}"]
       end
-      true
     end
 
     # Handle a message that does succeed
@@ -615,7 +616,7 @@ module RQ
     end
 
     def handle_dups(msg)
-      return unless @config.coalesce
+      return unless @config.coalesce_params
 
       duplicates = @que.select { |i| is_duplicate?(msg, i) }
 
