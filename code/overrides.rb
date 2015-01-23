@@ -10,7 +10,7 @@ module RQ
     end
 
     def get_json(path)
-      if File.exists? path
+      if File.exist? path
         begin
           @data = JSON.parse(File.read(path))
         rescue

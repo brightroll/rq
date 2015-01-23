@@ -267,7 +267,7 @@ module RQ
 
       basename = File.join(@queue_path, 'run', msg_id)
       job_path = File.expand_path(File.join(basename, 'job'))
-      Dir.mkdir(job_path) unless File.exists?(job_path)
+      Dir.mkdir(job_path) unless File.exist?(job_path)
 
       # Identify executable to run, if there is no script, go oper down
       # Also, fix an old issue where we didn't deref the symlink when executing a script
@@ -584,7 +584,7 @@ module RQ
         # Read in full message
         msg = get_message(msg, from_state)
         basename = msg['path']
-        return false unless File.exists? basename
+        return false unless File.exist? basename
         newname = File.join(@queue_path, 'que', msg_id)
         File.rename(basename, newname)
         msg['state']  = 'que'
@@ -725,7 +725,7 @@ module RQ
       return false unless @prep.include?(msg_id)
 
       basename = File.join(@queue_path, 'prep', msg_id)
-      unless File.exists?(basename)
+      unless File.exist?(basename)
         $log.warn("WARNING - serious queue inconsistency #{msg_id}")
         $log.warn("WARNING - #{msg_id} in memory but not on disk")
         return false
@@ -757,7 +757,7 @@ module RQ
       basename ||= File.join(@queue_path, state, msg_id)
 
       if options[:consistency]
-        unless File.exists?(basename)
+        unless File.exist?(basename)
           $log.warn("WARNING - serious queue inconsistency #{msg_id}")
           $log.warn("WARNING - #{msg_id} in memory but not on disk")
           return false
@@ -858,7 +858,7 @@ module RQ
         msg['path'] = basename
         msg['status'] = state
         msg['state'] = state
-        if File.exists?(basename + "/status")
+        if File.exist?(basename + "/status")
           xtra_data = File.read(basename + "/status")
           xtra_status = JSON.parse(xtra_data)
           msg['status'] += " - #{xtra_status['job_status']}"
@@ -916,12 +916,12 @@ module RQ
       result = [false, 'Unknown error']
       begin
         basename = File.join(@queue_path, 'prep', msg_id)
-        return [false, "No message on disk"] unless File.exists? basename
+        return [false, "No message on disk"] unless File.exist? basename
 
         #TODO: deal with symlinks
         # simple early check, ok, now check for pathname
         return [false, "Invalid pathname, must be normalized #{msg['pathname']} (ie. must start with /"] unless msg['pathname'].start_with?("/")
-        return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
+        return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exist?(msg['pathname'])
         return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
         return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
         return [false, "Attachment currently not of supported type: #{msg['pathname']}"] unless File.file?(msg['pathname'])
@@ -929,7 +929,7 @@ module RQ
 
         # simple check for attachment dir
         attach_path = basename + '/attach/'
-        Dir.mkdir(attach_path) unless File.exists?(attach_path)
+        Dir.mkdir(attach_path) unless File.exist?(attach_path)
 
         # OK do we have a name?
         # Try that first, else use basename
@@ -988,14 +988,14 @@ module RQ
       result = [false, 'Unknown error']
       begin
         basename = File.join(@queue_path, 'prep', msg_id)
-        return [false, "No message on disk"] unless File.exists? basename
+        return [false, "No message on disk"] unless File.exist? basename
 
         # simple check for attachment dir
         attach_path = basename + '/attach/'
-        return [false, "No attach directory for msg"] unless File.exists?(attach_path)
+        return [false, "No attach directory for msg"] unless File.exist?(attach_path)
 
         new_path = attach_path + attach_name
-        return [false, "No attachment with that named for msg"] unless File.exists?(new_path)
+        return [false, "No attachment with that named for msg"] unless File.exist?(new_path)
 
         File.unlink(new_path)
 
@@ -1465,7 +1465,7 @@ module RQ
       # Move to relay dir and update in-memory data structure
       begin
         basename = File.join(@queue_path, 'run', msg_id)
-        raise unless File.exists? basename
+        raise unless File.exist? basename
         remove_msg_process_id(msg_id)
         if ['done', 'relayed'].include? new_state
           # store message since it made it to done and we want the 'dups' field to live

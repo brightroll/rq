@@ -102,7 +102,7 @@ class Commands
 
   def check_attachment(msg)
     # simple early check, ok, now check for pathname
-    return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exists?(msg['pathname'])
+    return [false, "No such file #{msg['pathname']} to attach to message"] unless File.exist?(msg['pathname'])
     return [false, "Attachment currently cannot be a directory #{msg['pathname']}"] if File.directory?(msg['pathname'])
     return [false, "Attachment currently cannot be read: #{msg['pathname']}"] unless File.readable?(msg['pathname'])
     return [false, "Attachment currently not of supported type: #{msg['pathname']}"] unless File.file?(msg['pathname'])
