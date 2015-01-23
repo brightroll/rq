@@ -40,9 +40,10 @@ end
 #{"script":"./test/test_script.sh","name":"test","url":"http://127.0.0.1:3333/","num_workers":"1"}
 #
 test_key 'test', result, 'name', 'test'
-test_key 'test', result, 'num_workers', '1'
+test_key 'test', result, 'num_workers', 1
 test_key 'test', result, 'script', './test/test_script.sh'
-test_key 'test', result, 'coalesce', 'no'
+test_key 'test', result, 'coalesce_params', []
+test_key 'test', result, 'blocking_params', []
 test_key 'test', result, 'exec_prefix', ''
 
 
@@ -59,8 +60,8 @@ end
 result = JSON.parse(res.body)
 
 test_key 'test_coalesce', result, 'name', 'test_coalesce'
-test_key 'test_coalesce', result, 'num_workers', '1'
+test_key 'test_coalesce', result, 'num_workers', 1
 test_key 'test_coalesce', result, 'script', './test/test_script.sh'
 test_key 'test_coalesce', result, 'exec_prefix', ''
-test_key 'test_coalesce', result, 'coalesce_params', []
+test_key 'test_coalesce', result, 'coalesce_params', [1]
 test_key 'test_coalesce', result, 'blocking_params', []
