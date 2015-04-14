@@ -1441,7 +1441,7 @@ module RQ
         completion = [nil, nil, nil]
       end
 
-      if exit_status != 0
+      if exit_status != 0 && completion[1] != :err
         write_msg_status(msg_id, "PROCESS EXITED IMPROPERLY - MOVING TO ERR - Completion was #{completion[1]} but exit status was #{exit_status}" )
         new_state = 'err'
       elsif [:done, :relayed, :resend, :err].include? completion[1]
