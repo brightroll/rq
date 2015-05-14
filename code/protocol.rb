@@ -51,8 +51,8 @@ module RQ
 
     def send_packet(sock, resp)
       log_msg = resp.length > 80 ? "#{resp[0...80]}..." : resp
-      $log.debug("RESP [ #{resp.length}  #{log_msg} ]")
-      sock_msg = sprintf("rq1 %08d %s", resp.length, resp)
+      $log.debug("RESP [ #{resp.bytesize}  #{log_msg} ]")
+      sock_msg = sprintf("rq1 %08d %s", resp.bytesize, resp)
       do_write(sock, sock_msg)
     end
 
