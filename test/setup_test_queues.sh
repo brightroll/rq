@@ -30,6 +30,7 @@ rm -fr queue/test_nop
 rm -fr queue/test_ansi
 rm -fr queue/test_env_var
 rm -fr queue/test_change
+rm -fr queue/test_search
 
 echo "Creating the test queue..."
 curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_test.txt
@@ -105,6 +106,13 @@ fi
 
 echo "Creating the ansi test queue..."
 curl -0 --cookie-jar ./cookie_jar http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_ansi -F queue[script]=./test/ansi_script.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_ansi_script.txt
+if [ "$?" -ne "0" ]; then
+  echo "Sorry, web server for RQ failed to respond correctly"
+  exit 1
+fi
+
+echo "Creating the search test queue..."
+curl -0 --cookie-jar ./cookie_jar  http://127.0.0.1:${rq_port}/new_queue -sL -F queue[name]=test_search -F queue[script]=./test/test_script.sh -F queue[num_workers]=1 -F queue[exec_prefix]="" -o _install_test.txt
 if [ "$?" -ne "0" ]; then
   echo "Sorry, web server for RQ failed to respond correctly"
   exit 1
