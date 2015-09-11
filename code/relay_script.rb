@@ -6,6 +6,7 @@ require 'json'
 require 'net/http'
 require 'uri'
 require 'fileutils'
+require 'shellwords'
 require 'digest'
 require 'resolv-replace'
 require 'code/queueclient'
@@ -214,7 +215,7 @@ if remote_delivery
 
       md5 = file_md5("../attach/#{fname}")
 
-      pipe_res = `curl -0 -s -F x_format=json -F filedata=@../attach/#{fname} -F pathname=#{fname} -F msg_id=#{new_short_msg_id} #{new_msg_id}/attach/new`
+      pipe_res = `curl -0 -s -F x_format=json -F filedata=@../attach/#{fname.shellescape} -F pathname=#{fname.shellescape} -F msg_id=#{new_short_msg_id.shellescape} #{new_msg_id.shellescape}/attach/new`
       #p $?
       #p pipe_res
       # Get the URL
