@@ -4,6 +4,7 @@ $:.unshift(File.join(File.dirname(__FILE__), ".."))
 require 'vendor/environment'
 require 'json'
 require 'net/http'
+require 'net/http/post/multipart'
 require 'uri'
 require 'fileutils'
 require 'shellwords'
@@ -203,44 +204,47 @@ if remote_delivery
     entries = Dir.entries('../attach').reject { |e| e.start_with?('.') }
 
     fnames =  entries.select { |e| File.file?("../attach/#{e}") }
-    fnames.each do
-      |fname|
-
+    fnames.each do |fname|
       log("attempting sending attach #{fname}")
 
       md5 = file_md5("../attach/#{fname}")
 
-      pipe_res = `curl -0 -s -F x_format=json -F filedata=@../attach/#{fname.shellescape} -F pathname=#{fname.shellescape} -F msg_id=#{new_short_msg_id.shellescape} #{new_msg_id.shellescape}/attach/new`
-      #p $?
-      #p pipe_res
-      # Get the URL
-      #res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/#{msg_id}/attach/new"), form)
+      url = URI.parse("#{new_msg_id}/attach/new")
+      req = Net::HTTP::Post::Multipart.new url.path, {
+        "filedata" => UploadIO.new("../attach/#{fname}", "application/octet-stream"),
+        "pathname" => fname,
+        "msg_id"   => new_short_msg_id,
+        "x_format" => "json",
+      }
+      res = Net::HTTP.start(url.host, url.port) do |http|
+        http.request(req)
+      end
 
-      if $?.exitstatus != 0
-        soft_fail("Couldn't run curl to attach to message: #{$?.exitstatus.inspect}")
+      if res.code != '200'
+        soft_fail("Couldn't attach message: #{res.inspect}")
       end
 
       begin
-        result = JSON.parse(pipe_res)
-      rescue Exception
+        result = JSON.parse(res.body)
+      rescue
         log("Could not parse JSON")
-        log(pipe_res)
+        log(res.body)
         write_status('err', "BAD JSON")
         exit(1)
       end
 
       if result[0] != 'ok'
         if result[0] == 'fail' and result[1] == 'cannot find message'
-          erase_id()
-          soft_fail("Remote message [#{new_msg_id}] disappeared: #{pipe_res}. Getting new id.")
+          erase_id
+          soft_fail("Remote message [#{new_msg_id}] disappeared: #{res.code} #{res.body}. Getting new id.")
         end
-        soft_fail("Couldn't attach to test message properly : #{pipe_res}")
+        soft_fail("Couldn't attach to test message properly: #{res.code} #{res.body}")
       end
 
       if result[1] != "#{md5}-Attached successfully"
-        log("Sorry, system couldn't attach to test message properly : #{pipe_res}\n")
+        log("Sorry, system couldn't attach to test message properly: #{res.code} #{res.body}")
         log("Was expecting: #{md5}-Attached successfully\n")
-        soft_fail("Couldn't attach to test message properly - md5 mismatch : #{pipe_res}")
+        soft_fail("Couldn't attach to test message properly - md5 mismatch: #{res.code} #{res.body}")
       end
 
     end
