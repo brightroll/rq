@@ -37,16 +37,11 @@ def soft_fail(mesg = 'soft fail')
   exit(0)
 end
 
-def get_id()
+def get_id
   return nil unless File.exist?('relay_id')
-  File.open('relay_id', "r") do
-    |f|
-    x = f.read
-    log("Using prior relay_id: #{x}")
-    return x
-  end
-
-  return nil
+  x = File.open('relay_id', 'r').read
+  log("Using prior relay_id: #{x}")
+  x
 end
 
 def set_id(msg_id)
@@ -61,7 +56,7 @@ def set_id(msg_id)
   return true
 end
 
-def erase_id()
+def erase_id
   File.unlink('relay_id') rescue nil
 end
 
@@ -137,7 +132,7 @@ if remote_delivery
 
   # 2 phase commit section
 
-  new_msg_id = get_id()         # Do we have an ID already
+  new_msg_id = get_id           # Do we have an ID already
 
                                 # Yes, skip prep...
   if nil == new_msg_id          # No, do prep, and store id
@@ -274,12 +269,12 @@ if remote_delivery
 
   if json_result[0] != 'ok'
     if json_result[0] == 'fail' and json_result[1] == 'cannot find message'
-      erase_id()
+      erase_id
       soft_fail("Remote message [#{new_msg_id}] disappeared: #{json_result.inspect}. Getting new id.")
     end
     soft_fail("Couldn't commit message: #{json_result.inspect}")
   else
-    erase_id()
+    erase_id
     write_status('relayed', new_msg_id)
   end
 
@@ -304,7 +299,7 @@ qc = RQ::QueueClient.new(destq, "../../../../..") rescue soft_fail("#{destq} doe
 
 # 2 phase commit section
 
-new_msg_id = get_id()         # Do we have an ID already
+new_msg_id = get_id           # Do we have an ID already
 
                               # Yes, skip prep...
 if nil == new_msg_id          # No, do prep, and store id
@@ -327,8 +322,7 @@ if nil == new_msg_id          # No, do prep, and store id
   # Construct message
   mesg = {}
   keys = %w(dest src count max_count param1 param2 param3 param4 post_run_webhook orig_msg_id)
-  keys.each do
-    |key|
+  keys.each do |key|
     next unless curr_msg.has_key?(key)
     mesg[key] = curr_msg[key]
   end
@@ -354,11 +348,10 @@ if File.exist?('../attach')
   entries = Dir.entries('../attach').reject { |e| e.start_with?('.') }
 
   fnames =  entries.select { |e| File.file?("../attach/#{e}") }
-  fnames.each do
-    |fname|
-
+  fnames.each do |fname|
     log("attempting local send attach #{fname}")
-    mesg = {'msg_id' => new_short_msg_id,
+    mesg = {
+      'msg_id' => new_short_msg_id,
       'pathname' => File.expand_path("../attach/#{fname}")
     }
     result = qc.attach_message(mesg)
@@ -374,11 +367,11 @@ if File.exist?('../attach')
 end
 
 # Commit ID
-mesg = {'msg_id' => new_short_msg_id, }
+mesg = { 'msg_id' => new_short_msg_id }
 result = qc.commit_message(mesg)
 
 if result && (result[0] == "ok")
-  erase_id()
+  erase_id
   write_status('relayed', new_msg_id)
 else
   soft_fail("Couldn't commit message: #{result[0]} - #{result[1]}")
