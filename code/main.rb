@@ -189,6 +189,7 @@ module RQ
     end
 
     get '/q.json' do
+      content_type 'application/json'
       queuemgr.queues.to_json
     end
 
@@ -232,7 +233,9 @@ module RQ
         limit = params['limit'].to_i
       end
       result = qc.messages({'state' => 'done', 'limit' => limit})
-      "#{result.to_json}"
+
+      content_type 'application/json'
+      result.to_json
     end
 
     get '/q/:name/new_message' do
@@ -289,6 +292,7 @@ module RQ
       end
 
       if api_call == 'json'
+        content_type 'application/json'
         result.to_json
       elsif params[:back]
         if result[0] == "ok"
@@ -362,6 +366,7 @@ module RQ
       end
 
       ok, config = qc.config
+      content_type 'application/json'
       config.to_json
     end
 
@@ -394,7 +399,7 @@ module RQ
           erb :message, :locals => { :q_name => qc.name,  :msg_id => msg_id, :msg => msg }
         end
       else
-        #content_type 'application/json'
+        content_type 'application/json'
         msg.to_json
       end
     end
@@ -415,6 +420,7 @@ module RQ
         throw :halt, [404, "404 - Message ID not found"]
       end
 
+      content_type 'application/json'
       [ state ].to_json
     end
 
@@ -508,6 +514,7 @@ module RQ
       end
 
       if api_call == 'json'
+        content_type 'application/json'
         result.to_json
       else
         if result[0] == "ok"
@@ -533,6 +540,7 @@ module RQ
         result = qc.delete_attach_message( {'msg_id' => params[:msg_id],
                                             'attachment_name' => params[:attachment_name]} )
         if api_call == 'json'
+          content_type 'application/json'
           result.to_json
         else
           if result[0] == "ok"
@@ -662,6 +670,7 @@ module RQ
       when 'delete'
         result = qc.delete_message( {'msg_id' => params[:msg_id]} )
         if api_call == 'json'
+          content_type 'application/json'
           result.to_json
         else
           if result[0] == "ok"
@@ -676,6 +685,7 @@ module RQ
       when 'destroy'
         result = qc.destroy_message( {'msg_id' => params[:msg_id]} )
         if api_call == 'json'
+          content_type 'application/json'
           result.to_json
         else
           if result[0] == "ok"
@@ -690,6 +700,7 @@ module RQ
       when 'commit'
         result = qc.commit_message( {'msg_id' => params[:msg_id]} )
         if api_call == 'json'
+          content_type 'application/json'
           result.to_json
         else
           if result[0] == "ok"
