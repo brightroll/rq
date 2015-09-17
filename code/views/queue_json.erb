@@ -9,5 +9,12 @@
 ,"done_size":<%= num_messages['done'] -%>
 ,"err_size":<%= num_messages['err'] -%>
 ,"relayed_size":<%= num_messages['relayed'] -%>
+,"messages":{
+"prep":<%= qc.messages({'state' => 'prep'}).to_json %>,
+"que":<%= qc.messages({'state' => 'que'}).to_json %>,
+"run":<%= qc.messages({'state' => 'run'}).to_json %>,
+"done":<%= qc.messages({'state' => 'done'}).to_json %>,
+"err":<%= qc.messages({'state' => 'err'}).to_json %>
+}
 <%- end -%>
 }
