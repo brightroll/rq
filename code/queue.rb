@@ -1499,7 +1499,7 @@ module RQ
 
       if ['err', 'done', 'relayed'].include? new_state
         # Send a webhook if there is a web hook
-        if msg.include? 'post_run_webhook'
+        if msg['post_run_webhook'].is_a? Array
           msg['post_run_webhook'].each do |wh|
             webhook_message(wh, msg, new_state)
           end
