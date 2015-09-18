@@ -130,6 +130,8 @@ module RQ
       val = session[:flash]
       @flash = val || {}
       session[:flash] = {}
+
+      throw :halt, [503, "503 - QueueMgr not running"] unless queuemgr.running?
     end
 
     # handle 404s
@@ -194,33 +196,39 @@ module RQ
     end
 
     get '/q/:name' do
-      if params[:name].end_with?(".txt")
-        content_type 'text/plain', :charset => 'utf-8'
-        return erb :queue_txt, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split(".txt").first) }
-      elsif params[:name].end_with?(".json")
-        content_type 'application/json'
-        return erb :queue_json, :layout => false, :locals => { :qc => RQ::QueueClient.new(params[:name].split(".json").first) }
-      end
-
-      if not queuemgr.running?
-        throw :halt, [503, "503 - QueueMgr not running"]
-      end
-
       begin
-        qc = RQ::QueueClient.new(params[:name])
+        name, type = params[:name].split('.', 2)
+        qc = RQ::QueueClient.new(name)
       rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      ok, config = qc.config
-      erb :queue, :locals => { :qc => qc, :config => config }
+      case type
+      when 'txt'
+        content_type 'text/plain', :charset => 'utf-8'
+        return erb :queue_txt, :layout => false, :locals => { :qc => qc }
+      when 'json'
+        content_type 'application/json'
+        return { 'status' => 'DOWN' }.to_json if qc.status == 'DOWN'
+
+        nm = qc.num_messages
+        return {
+          'status'       => qc.status,
+          'uptime'       => qc.uptime,
+          'prep_size'    => nm['prep'],
+          'que_size'     => nm['que'],
+          'run_size'     => nm['run'],
+          'done_size'    => nm['done'],
+          'err_size'     => nm['err'],
+          'relayed_size' => nm['relayed'],
+        }.to_json
+      else
+        ok, config = qc.config
+        erb :queue, :locals => { :qc => qc, :config => config }
+      end
     end
 
     get '/q/:name/done.json' do
-      if not queuemgr.running?
-        throw :halt, [503, "503 - QueueMgr not running"]
-      end
-
       begin
         qc = RQ::QueueClient.new(params[:name])
       rescue RQ::RqQueueNotFound
