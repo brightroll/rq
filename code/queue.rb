@@ -894,20 +894,26 @@ module RQ
     end
 
     def gen_full_dest(msg)
-      res = {
-        'dest' => "http://#{@host}:#{@port}/q/#{msg['dest']}/",
-        'queue' => msg['dest']
-      }
-
-      # IF message already has full remote dest...
-      if msg['dest'].start_with?('http:')
-        res['dest'] = msg['dest']
-        q_name = msg['dest'][/\/q\/([^\/]+)/, 1]
-        res['queue'] = q_name
-        #msg_id = msg['dest'][/\/q\/[^\/]+\/([^\/]+)/, 1]
+      case msg['dest']
+      when /^http:/
+        # If message already has dest url...
+        {
+          'dest' => msg['dest'],
+          'queue' => msg['dest'][%r{/q/([^\/]+)}, 1],
+        }
+      when %r{^/q/}
+        # If message already has dest path...
+        {
+          'dest' => "http://#{@host}:#{@port}#{msg['dest']}",
+          'queue' => msg['dest'][%r{/q/([^\/]+)}, 1],
+        }
+      else
+        # Bare queue name
+        {
+          'dest' => "http://#{@host}:#{@port}/q/#{msg['dest']}",
+          'queue' => msg['dest'],
+        }
       end
-
-      res
     end
 
     def attach_msg(msg)
