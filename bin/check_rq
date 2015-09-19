@@ -4,7 +4,7 @@ require 'net/http'
 require 'getoptlong'
 require 'pp'
 
-@server = "localhost"
+@server = '127.0.0.1'
 @port = (ENV['RQ_PORT'] || 3333).to_i
 
 # thresh [WARNING, CRITICAL, WARNING MAX, CRITICAL MAX, RELAYED WARN, RELAYED MAX]
