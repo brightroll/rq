@@ -67,6 +67,7 @@ for test in \
    send_test_fast_collide.sh  \
    send_test_relay_force.sh \
    send_test_relay.sh \
+   send_test_relay_loop.sh \
    send_test_remote_relay_force.sh \
    send_test_remote_relay_force_large.sh \
    send_test_remote_relay.sh \

@@ -1,14 +1,14 @@
-<% status = qc.status %>
-<%="status: #{status}"%>
-<% if status != "DOWN" %>
-<%="uptime: #{qc.uptime}"%>
+<%- status = qc.status -%>
+status: <%= status %>
+<%- if status != "DOWN" -%>
+uptime: <%= qc.uptime %>
 
-<% messages = qc.num_messages %>
-<%="prep: #{messages['prep']}"%>
-<%="que: #{messages['que']}"%>
-<%="run: #{messages['run']}"%>
+<%- messages = qc.num_messages -%>
+prep: <%= messages['prep'] %>
+que: <%= messages['que'] %>
+run: <%= messages['run'] %>
 
-<%="done: #{messages['done']}"%>
-<%="err: #{messages['err']}"%>
-<%="relayed: #{messages['relayed']}"%>
-<% end %>
+done: <%= messages['done'] %>
+err: <%= messages['err'] %>
+relayed: <%= messages['relayed'] %>
+<%- end -%>
