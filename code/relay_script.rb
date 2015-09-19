@@ -31,7 +31,7 @@ def soft_fail(mesg = 'soft fail')
   wait_seconds = count * count * 10
   write_status('resend', "#{wait_seconds}-#{mesg}")
   log("RESEND - #{wait_seconds} - #{count} - #{mesg}")
-  exit(0)
+  exit
 end
 
 def set_id(msg_id)
@@ -61,15 +61,18 @@ count = ENV['RQ_COUNT'].to_i
 if count > 15
   write_status('run', "RQ_COUNT > 15 - failing")
   write_status('fail', "RQ_COUNT > 15 FAIL")
+  exit
 end
 
-# Get destination queue
-dest = ENV['RQ_DEST']
-log("dest - #{dest}")
+# Check that we aren't in a relay loop
+if ENV['RQ_ORIG_MSG_ID'].start_with?(ENV['RQ_DEST'])
+  log("RQ_DEST '#{ENV['RQ_DEST']}' queue same as RQ_ORIG_MSG_ID '#{ENV['RQ_ORIG_MSG_ID']}'")
+  write_status('fail', "Relay loop detected: RQ_DEST queue same as RQ_ORIG_MSG_ID")
+  exit
+end
 
 # Get the URL
-remote_q_uri = dest[/(.*?\/q\/[^\/]+)/, 1]
-log("remote_q_uri - #{remote_q_uri}")
+log("dest - #{ENV['RQ_DEST']}")
 
 # There is a unit test for this, probably useless now
 log('FORCE REMOTE') if ENV['RQ_FORCE_REMOTE']
@@ -116,9 +119,9 @@ if new_msg_id.nil?
 
   mesg['_method'] = 'prep'
 
-  log("attempting remote #{remote_q_uri}")
+  log("attempting remote #{ENV['RQ_DEST']}")
   # Connect to that site for that queue and submit the message
-  uri = remote_q_uri + "/new_message"
+  uri = ENV['RQ_DEST'].chomp('/') + '/new_message'
   begin
     res = Net::HTTP.post_form(URI.parse(uri), {:x_format => 'json', :mesg => mesg.to_json })
   rescue Exception
@@ -230,4 +233,4 @@ else
   write_status('relayed', new_msg_id)
 end
 
-exit(0)
+exit
