@@ -195,6 +195,46 @@ module RQ
       queuemgr.queues.to_json
     end
 
+    get '/search' do
+      begin
+        qc = RQ::QueueClient.new(params[:name])
+      rescue RQ::RqQueueNotFound
+        throw :halt, [404, "404 - Queue not found"]
+      end
+      msg_ids = []
+      data = []
+      exact_match = params.fetch('exact', false)
+
+      queries = params.fetch('query', {})
+      # get every message on this queue, probably a little expensive
+      msgs_labels.each do |state|
+        ids = qc.messages({'state' => state})
+        # qc.messages can return lists with extra data, we just want id
+        if not ids.empty?
+          msg_ids += ids.flatten.reject{|id| msgs_labels.include?(id)}
+        end
+      end
+      msg_ids.each do |id|
+        (_, msg) = qc.get_message({ 'msg_id' => id })
+        if msg
+          data << msg
+        end
+      end
+      # a hash from /search?query[k]=v&query[k2]=v2...
+      queries.each do |k, v|
+        if exact_match
+          data = data.select{|message| message[k] == v}
+        else
+          data = data.select{|message|
+            if message[k]
+              message[k].include? v
+            end
+          }
+        end
+      end
+      data.to_json
+    end
+
     get '/q/:name' do
       begin
         name, type = params[:name].split('.', 2)

@@ -80,6 +80,7 @@ for test in \
    test_web_overrides.rb \
    send_dup.rb \
    test_web_done_json.rb \
+   test_web_search.rb \
    env_var_test.rb ; do
 
       echo "RUNNING TEST: ${test}"
