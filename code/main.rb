@@ -119,6 +119,10 @@ module RQ
         %w[prep que run err done relayed]
       end
 
+      def builtin_queue? q
+        %w[relay cleaner webhook rq_router].include? q
+      end
+
       def flash(type, msg)
         h = session[:flash] || {}
         h[type] = msg
@@ -192,7 +196,32 @@ module RQ
 
     get '/q.json' do
       content_type 'application/json'
-      queuemgr.queues.to_json
+      builtin_queues, custom_queues = queuemgr.queues.sort.partition { |q| builtin_queue? q }
+
+      (custom_queues.map do |name|
+        qc = get_queueclient(name)
+        {
+          'name'   => name,
+          'status' => qc.status,
+          'ping'   => qc.ping,
+          'pid'    => qc.read_pid,
+          'uptime' => qc.uptime,
+          'counts' => Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ],
+          # 'schedule' => qc.config[1]['schedule']...
+        }
+      end +
+      builtin_queues.map do |name|
+        qc = get_queueclient(name)
+        {
+          'name'   => name,
+          'status' => qc.status,
+          'ping'   => qc.ping,
+          'pid'    => qc.read_pid,
+          'uptime' => qc.uptime,
+          'counts' => Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ],
+          # 'schedule' => qc.config[1]['schedule']...
+        }
+      end).to_json
     end
 
     get '/search' do
@@ -232,6 +261,7 @@ module RQ
           }
         end
       end
+      content_type 'application/json'
       data.to_json
     end
 
