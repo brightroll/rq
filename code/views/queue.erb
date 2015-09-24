@@ -8,8 +8,8 @@
   <% status = qc.status %>
   <div id="queue-status">
     <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span>
-    <span class=""> <%=  qc.ping %></span>
-    <span class=""> <%=  qc.read_pid %></span>
+    <span class=""><%= qc.ping %></span>
+    <span class=""><%= qc.read_pid %></span>
     running for <%= qc.uptime %> seconds
 <%=     erb :_main_queue_form, :locals => {:status => status, :name => qc.name } %>
   <% else %>
@@ -41,11 +41,11 @@
     <tr>
       <!-- PREP -->
       <td class="prep">
-<% msg_ids = qc.messages({'state' => 'prep', 'limit' => 50}) %>
+<% msgs = qc.messages({'state' => 'prep', 'limit' => 50}) %>
 <% grouped = {} %>
-<% msg_ids.each do |msg_id| %>
-  <% next if msg_id.nil? %>
-  <% date, rest = msg_id.split('.', 2) %>
+<% msgs.each do |msg| %>
+  <% next if msg.nil? %>
+  <% date, rest = msg['msg_id'].split('.', 2) %>
   <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
 <% end %>
@@ -60,27 +60,27 @@
       </td>
       <!-- QUE -->
       <td class="que">
-<% msgs_and_backoffs = qc.messages({'state' => 'que'}) %>
+<% msgs= qc.messages({'state' => 'que'}) %>
 <% grouped = {} %>
-<% msgs_and_backoffs.each do |msg_and_backoff| %>
-  <% date, rest = msg_and_backoff[0].split('.', 2) %>
+<% msgs.each do |msg| %>
+  <% date, rest = msg['msg_id'].split('.', 2) %>
   <% grouped[date] ||= [] %>
-  <% grouped[date] << [ rest, msg_and_backoff[1] ] %>
+  <% grouped[date] << [ rest, msg['due'] ] %>
 <% end %>
-<% grouped.sort.reverse.each do |date, msgs_and_backoffs| %>
+<% grouped.sort.reverse.each do |date, msgs| %>
   <h5><%= date %></h5>
   <ul>
-  <% msgs_and_backoffs.sort.reverse.each do |msg_and_backoff| %>
-    <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
+  <% msgs.sort.reverse.each do |msg| %>
+    <% msg_id = "%s.%s" % [date, msg[0]] %>
     <li>
-      <a href="<%= "#{root}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
+      <a href="<%= "#{root}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg[0]}" %></a>
       <% if qc.name == 'relay' %>
         <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
         <% if ok == 'ok' %>
           dest: <span class="yellow"> <%= msg_full['dest'] %></span>
         <% end %>
       <% end %>
-      in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs
+      in <%= msg[1].to_i - Time.now.to_i %> secs
       <div style="clear: both;">
         <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}/run_now" %>">
           <button class="shush-button" id="run-button">Run now</button>
@@ -100,7 +100,7 @@
 <% msgs = qc.messages({'state' => 'run'}) %>
 <% grouped = {} %>
 <% msgs.each do |msg| %>
-  <% m = msg[0] %>
+  <% m = msg['msg_id'] %>
   <% next if m.nil? %>
   <% date, rest = m.split('.', 2) %>
   <% grouped[date] ||= [] %>
@@ -110,8 +110,7 @@
   <h5><%= date %></h5>
   <ul>
   <%# hotfix for indika's problem. this needs to be revisited. %>
-  <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
-    <% msg_id = msg %>
+  <% msgs.reject(&:nil?).sort.reverse.each do |msg_id| %>
     <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
     <% if qc.name == 'relay' %>
       <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
@@ -136,7 +135,7 @@
 <% msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
 <% grouped = {} %>
 <% msgs.each do |msg| %>
-  <% date, rest = msg.split('.', 2) %>
+  <% date, rest = msg['msg_id'].split('.', 2) %>
   <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
 <% end %>
@@ -155,7 +154,7 @@
 <% msgs = qc.messages({'state' => 'err'}) %>
 <% grouped = {} %>
 <% msgs.each do |msg| %>
-  <% date, rest = msg.split('.', 2) %>
+  <% date, rest = msg['msg_id'].split('.', 2) %>
   <% grouped[date] ||= [] %>
   <% grouped[date] << rest %>
 <% end %>
@@ -178,7 +177,7 @@
   <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
   <% grouped = {} %>
   <% msgs.each do |msg| %>
-    <% date, rest = msg.split('.', 2) %>
+    <% date, rest = msg['msg_id'].split('.', 2) %>
     <% grouped[date] ||= [] %>
     <% grouped[date] << rest %>
   <% end %>

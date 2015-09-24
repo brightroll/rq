@@ -291,6 +291,13 @@ module RQ
           'done_size'    => nm['done'],
           'err_size'     => nm['err'],
           'relayed_size' => nm['relayed'],
+          'messages' => {
+            'prep' => qc.messages({'state' => 'prep'}),
+            'que'  => qc.messages({'state' => 'que'}),
+            'run'  => qc.messages({'state' => 'run'}),
+            'done' => qc.messages({'state' => 'done'}),
+            'err'  => qc.messages({'state' => 'err'}),
+          }
         }.to_json
       else
         ok, config = qc.config

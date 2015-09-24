@@ -1638,17 +1638,17 @@ module RQ
       when 'messages'
         case options['state']
         when 'prep'
-          status = (options['limit'] ? @prep.take(options['limit']) : @prep)
+          status = (options['limit'] ? @prep.take(options['limit']) : @prep).map { |m| { :msg_id => m } }
         when 'que'
-          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| [m['msg_id'], m['due']] }
+          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| { :msg_id => m['msg_id'], :due => m['due'] } }
         when 'run'
-          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| [m['msg_id'], m['status']] }
+          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| { :msg_id => m['msg_id'], :status => m['status'] } }
         when 'done'
-          status = RQ::HashDir.entries(@queue_path + "/done", options['limit'])
+          status = RQ::HashDir.entries(@queue_path + "/done", options['limit']).map { |m| { :msg_id => m } }
         when 'relayed'
-          status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit'])
+          status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit']).map { |m| { :msg_id => m } }
         when 'err'
-          status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }
+          status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.map { |m| { :msg_id => m } }
         else
           status = [ "fail", "invalid or missing 'state' field (#{options['state']})"]
         end
