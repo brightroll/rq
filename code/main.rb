@@ -230,23 +230,15 @@ module RQ
       rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
-      msg_ids = []
-      data = []
       exact_match = params.fetch('exact', false)
-
       queries = params.fetch('query', {})
+
       # get every message on this queue, probably a little expensive
-      msgs_labels.each do |state|
-        ids = qc.messages({'state' => state})
-        # qc.messages can return lists with extra data, we just want id
-        if not ids.empty?
-          msg_ids += ids.flatten.reject{|id| msgs_labels.include?(id)}
-        end
-      end
-      msg_ids.each do |id|
-        (_, msg) = qc.get_message({ 'msg_id' => id })
-        if msg
-          data << msg
+      data = []
+      msgs_labels.map do |state|
+        qc.messages({'state' => state}).each do |msg|
+          (_, msg) = qc.get_message(msg)
+          data << msg if msg
         end
       end
       # a hash from /search?query[k]=v&query[k2]=v2...
@@ -312,14 +304,9 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      limit = 10
-      if params['limit']
-        limit = params['limit'].to_i
-      end
-      result = qc.messages({'state' => 'done', 'limit' => limit})
-
       content_type 'application/json'
-      result.to_json
+      limit = params['limit'] ? params['limit'].to_i : 10
+      qc.messages({'state' => 'done', 'limit' => limit}).map { |m| m['msg_id'] }.to_json
     end
 
     get '/q/:name/new_message' do
