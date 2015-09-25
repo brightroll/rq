@@ -1640,9 +1640,9 @@ module RQ
         when 'prep'
           status = (options['limit'] ? @prep.take(options['limit']) : @prep).map { |m| { :msg_id => m } }
         when 'que'
-          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| { :msg_id => m['msg_id'], :due => m['due'] } }
+          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| { :msg_id => m['msg_id'], :due => m['due'], :dest => m['dest'] } }
         when 'run'
-          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| { :msg_id => m['msg_id'], :status => m['status'] } }
+          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| { :msg_id => m['msg_id'], :status => m['status'], :dest => m['dest'] } }
         when 'done'
           status = RQ::HashDir.entries(@queue_path + "/done", options['limit']).map { |m| { :msg_id => m } }
         when 'relayed'
