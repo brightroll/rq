@@ -119,6 +119,10 @@ module RQ
         %w[prep que run err done relayed]
       end
 
+      def builtin_queue? q
+        %w[relay cleaner webhook rq_router].include? q
+      end
+
       def flash(type, msg)
         h = session[:flash] || {}
         h[type] = msg
@@ -192,7 +196,32 @@ module RQ
 
     get '/q.json' do
       content_type 'application/json'
-      queuemgr.queues.to_json
+      builtin_queues, custom_queues = queuemgr.queues.sort.partition { |q| builtin_queue? q }
+
+      (custom_queues.map do |name|
+        qc = get_queueclient(name)
+        {
+          'name'   => name,
+          'status' => qc.status,
+          'ping'   => qc.ping,
+          'pid'    => qc.read_pid,
+          'uptime' => qc.uptime,
+          'counts' => Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ],
+          # 'schedule' => qc.config[1]['schedule']...
+        }
+      end +
+      builtin_queues.map do |name|
+        qc = get_queueclient(name)
+        {
+          'name'   => name,
+          'status' => qc.status,
+          'ping'   => qc.ping,
+          'pid'    => qc.read_pid,
+          'uptime' => qc.uptime,
+          'counts' => Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ],
+          # 'schedule' => qc.config[1]['schedule']...
+        }
+      end).to_json
     end
 
     get '/search' do
@@ -201,23 +230,15 @@ module RQ
       rescue RQ::RqQueueNotFound
         throw :halt, [404, "404 - Queue not found"]
       end
-      msg_ids = []
-      data = []
       exact_match = params.fetch('exact', false)
-
       queries = params.fetch('query', {})
+
       # get every message on this queue, probably a little expensive
-      msgs_labels.each do |state|
-        ids = qc.messages({'state' => state})
-        # qc.messages can return lists with extra data, we just want id
-        if not ids.empty?
-          msg_ids += ids.flatten.reject{|id| msgs_labels.include?(id)}
-        end
-      end
-      msg_ids.each do |id|
-        (_, msg) = qc.get_message({ 'msg_id' => id })
-        if msg
-          data << msg
+      data = []
+      msgs_labels.map do |state|
+        qc.messages({'state' => state}).each do |msg|
+          (_, msg) = qc.get_message(msg)
+          data << msg if msg
         end
       end
       # a hash from /search?query[k]=v&query[k2]=v2...
@@ -232,6 +253,7 @@ module RQ
           }
         end
       end
+      content_type 'application/json'
       data.to_json
     end
 
@@ -261,6 +283,13 @@ module RQ
           'done_size'    => nm['done'],
           'err_size'     => nm['err'],
           'relayed_size' => nm['relayed'],
+          'messages' => {
+            'prep' => qc.messages({'state' => 'prep'}),
+            'que'  => qc.messages({'state' => 'que'}),
+            'run'  => qc.messages({'state' => 'run'}),
+            'done' => qc.messages({'state' => 'done'}),
+            'err'  => qc.messages({'state' => 'err'}),
+          }
         }.to_json
       else
         ok, config = qc.config
@@ -275,14 +304,9 @@ module RQ
         throw :halt, [404, "404 - Queue not found"]
       end
 
-      limit = 10
-      if params['limit']
-        limit = params['limit'].to_i
-      end
-      result = qc.messages({'state' => 'done', 'limit' => limit})
-
       content_type 'application/json'
-      result.to_json
+      limit = params['limit'] ? params['limit'].to_i : 10
+      qc.messages({'state' => 'done', 'limit' => limit}).map { |m| m['msg_id'] }.to_json
     end
 
     get '/q/:name/new_message' do

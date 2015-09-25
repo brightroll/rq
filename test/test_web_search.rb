@@ -43,22 +43,26 @@ class TC_WebSearch < Test::Unit::TestCase
           '_method' => 'prep'
         }
     ]
-    @messages.each do |m|
+    @message_ids = @messages.map do |m|
       post_new_mesg(m)
     end
   end
 
+  def teardown
+    @message_ids.each do |m|
+      Net::HTTP.post_form(URI.parse(m), { '_method' => 'delete' })
+    end
+  end
+
   def post_new_mesg(mesg)
-    form = { :mesg => mesg.to_json }
-    remote_q_uri = mesg['dest']
-      res = Net::HTTP.post_form(URI.parse(remote_q_uri + "/new_message"), form)
-    assert_equal("200", res.code)
+    uri = URI.parse(mesg['dest'] + '/new_message')
+    http = Net::HTTP.new(uri.host, uri.port)
+    res = http.post(uri.path, mesg.to_json, {'Content-Type' => 'application/json'})
 
+    assert_equal('200', res.code)
     result = JSON.parse(res.body)
+    assert_equal('ok', result[0])
 
-    assert_equal("ok", result[0])
-
-    msg_id = result[1][/\/q\/[^\/]+\/([^\/]+)/, 1]
     result[1]
   end
 

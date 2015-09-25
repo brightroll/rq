@@ -8,8 +8,8 @@
   <% status = qc.status %>
   <div id="queue-status">
     <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span>
-    <span class=""> <%=  qc.ping %></span>
-    <span class=""> <%=  qc.read_pid %></span>
+    <span class=""><%= qc.ping %></span>
+    <span class=""><%= qc.read_pid %></span>
     running for <%= qc.uptime %> seconds
 <%=     erb :_main_queue_form, :locals => {:status => status, :name => qc.name } %>
   <% else %>
@@ -39,134 +39,62 @@
   </thead>
   <tbody>
     <tr>
-      <!-- PREP -->
-      <td class="prep">
-<% msg_ids = qc.messages({'state' => 'prep', 'limit' => 50}) %>
+<%
+  if qc.name != 'relay'
+    states = %w{ prep que run done err }
+  else
+    states = %w{ prep que run err }
+  end
+
+  states.each do |state|
+%>
+      <!-- <%= state %> -->
+      <td class="<%= state %>">
+<% msgs = qc.messages({'state' => state, 'limit' => 50}) %>
 <% grouped = {} %>
-<% msg_ids.each do |msg_id| %>
-  <% next if msg_id.nil? %>
-  <% date, rest = msg_id.split('.', 2) %>
+<% msgs.each do |msg| %>
+  <% next if msg.nil? %>
+  <% date, msg['_short_msg_id'] = msg['msg_id'].split('.', 2) %>
   <% grouped[date] ||= [] %>
-  <% grouped[date] << rest %>
+  <% grouped[date] << msg %>
 <% end %>
 <% grouped.sort.reverse.each do |date, msgs| %>
   <h5><%= date %></h5>
   <ul>
-  <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
-  <% end %>
-  </ul>
-<% end %>
-      </td>
-      <!-- QUE -->
-      <td class="que">
-<% msgs_and_backoffs = qc.messages({'state' => 'que'}) %>
-<% grouped = {} %>
-<% msgs_and_backoffs.each do |msg_and_backoff| %>
-  <% date, rest = msg_and_backoff[0].split('.', 2) %>
-  <% grouped[date] ||= [] %>
-  <% grouped[date] << [ rest, msg_and_backoff[1] ] %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs_and_backoffs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <% msgs_and_backoffs.sort.reverse.each do |msg_and_backoff| %>
-    <% msg_id = "%s.%s" % [date, msg_and_backoff[0]] %>
+  <% msgs.sort_by{ |m| m['msg_id'] }.reverse.each do |msg| %>
     <li>
-      <a href="<%= "#{root}q/#{qc.name}/#{msg_id}" %>"><%= "#{msg_and_backoff[0]}" %></a>
+    <a href="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>"><%= msg['_short_msg_id'] %></a>
+    <% if state == 'que' %>
       <% if qc.name == 'relay' %>
-        <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
-        <% if ok == 'ok' %>
-          dest: <span class="yellow"> <%= msg_full['dest'] %></span>
-        <% end %>
+        dest: <span class="yellow"><%= msg['dest'] %></span>
       <% end %>
-      in <%= msg_and_backoff[1].to_i - Time.now.to_i %> secs
+      in <%= msg['due'].to_i - Time.now.to_i %> secs
       <div style="clear: both;">
-        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}/run_now" %>">
+        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}/run_now" %>">
           <button class="shush-button" id="run-button">Run now</button>
         </form>
-        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg_id}" %>">
+        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>">
           <input name="_method" type="hidden" value="delete" />
           <button class="shush-button" type="submit">Delete</button>
         </form>
       </div>
+    <% elsif state == 'run' %>
+      <% if qc.name == 'relay' %>
+        dest: <span class="yellow"><%= msg['dest'] %></span>
+        status: <span class="yellow"><%= msg['status'] %></span>
+      <% end %>
+      <form class="shush-form" method="post" action="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>">
+        <input name="_method" type="hidden" value="destroy" />
+        <button class="shush-button" type="submit">Destroy</button>
+      </form>
+    <% end %>
     </li>
   <% end %>
   </ul>
 <% end %>
       </td>
-      <!-- RUN -->
-      <td class="run">
-<% msgs = qc.messages({'state' => 'run'}) %>
-<% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% m = msg[0] %>
-  <% next if m.nil? %>
-  <% date, rest = m.split('.', 2) %>
-  <% grouped[date] ||= [] %>
-  <% grouped[date] << rest %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <%# hotfix for indika's problem. this needs to be revisited. %>
-  <% msgs.reject(&:nil?).sort.reverse.each do |msg| %>
-    <% msg_id = msg %>
-    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg_id}" %>"><%= "#{msg_id}" %></a></li>
-    <% if qc.name == 'relay' %>
-      <% ok, msg_full = qc.get_message({ 'msg_id' => msg_id }) %>
-      <% if ok == 'ok' %>
-        dest: <span class="yellow"> <%= msg_full['dest'] %></span>
-        STATUS: <span class="yellow"> <%= msg_full['status'] %></span>
-      <% else %>
-        STATUS: <span class="yellow"> <%= "#{ok} #{msg_full}" %></span>
-      <% end %>
     <% end %>
-    <form class="shush-form" method="post" action="<%= "#{root}q/#{qc.name}/#{date}.#{msg_id}" %>">
-      <input name="_method" type="hidden" value="destroy" />
-      <button class="shush-button" type="submit">Destroy</button>
-    </form>
-  <% end %>
-  </ul>
-<% end %>
-      </td>
-      <% if qc.name != 'relay' %>
-      <!-- DONE -->
-      <td class="done">
-<% msgs = qc.messages({'state' => 'done', 'limit' => 50}) %>
-<% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% date, rest = msg.split('.', 2) %>
-  <% grouped[date] ||= [] %>
-  <% grouped[date] << rest %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
-  <% end %>
-  </ul>
-<% end %>
-      </td>
-    <% end %>
-      <!-- ERR -->
-      <td class="err">
-<% msgs = qc.messages({'state' => 'err'}) %>
-<% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% date, rest = msg.split('.', 2) %>
-  <% grouped[date] ||= [] %>
-  <% grouped[date] << rest %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <% msgs.sort.reverse.each do |msg| %>
-    <li><a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a></li>
-  <% end %>
-  </ul>
-<% end %>
+
       </td>
   </tbody>
 </table>
@@ -178,21 +106,20 @@
   <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
   <% grouped = {} %>
   <% msgs.each do |msg| %>
-    <% date, rest = msg.split('.', 2) %>
+    <% date, msg['_short_msg_id'] = msg['msg_id'].split('.', 2) %>
     <% grouped[date] ||= [] %>
-    <% grouped[date] << rest %>
+    <% grouped[date] << msg %>
   <% end %>
   <% grouped.sort.reverse.each do |date, msgs| %>
     <h5><%= date %></h5>
     <ul>
-    <% msgs.sort.reverse.each do |msg| %>
+    <% msgs.sort_by{ |m| m['msg_id'] }.reverse.each do |msg| %>
       <li class="relayed-li">
-        <a href="<%= "#{root}q/#{qc.name}/#{date}.#{msg}" %>"><%= msg %></a>
-        <% ok, msg_full = qc.get_message({ 'msg_id' => date+'.'+msg}) %>
+        <a href="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>"><%= msg['_short_msg_id'] %></a>
+        <% ok, msg_full = qc.get_message('msg_id' => msg['msg_id']) %>
         <% if ok == 'ok' %>
-          <%  status, new_location = msg_full['status'].split(' - ', 2) %>
-          <!-- <%= status %> -->
-          <a title="<%= new_location %>" href="<%= new_location %>"> - <span class="green">relayed</span> - <%= new_location %></a>
+          <% status, new_location = msg_full['status'].split(' - ', 2) %>
+          - <span class="green"><%= status %></span> - <a title="<%= new_location %>" href="<%= new_location %>"><%= new_location %></a>
         <% end %>
       </li>
     <% end %>
