@@ -191,7 +191,9 @@ module RQ
 
     get '/q.txt' do
       content_type 'text/plain', :charset => 'utf-8'
-      erb :queue_list, :layout => false, :locals => {:queues => queuemgr.queues}
+      queuemgr.queues.sort.map do |queue|
+        "#{root}q/#{queue}.txt"
+      end.join("\n")
     end
 
     get '/q.json' do
