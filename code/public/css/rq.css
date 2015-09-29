@@ -63,8 +63,16 @@ td {
   background: #FEF3DD;
 }
 
-.meta {
+table#meta {
   margin-top: 20px;
+}
+
+#meta td, #meta th {
+  padding: 5px;
+  text-align: left;
+  background: #AB9B7D;
+  color: #FEF9EE;
+  white-space: nowrap;
 }
 
 #env {

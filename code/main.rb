@@ -200,30 +200,42 @@ module RQ
       content_type 'application/json'
       builtin_queues, custom_queues = queuemgr.queues.sort.partition { |q| builtin_queue? q }
 
-      (custom_queues.map do |name|
-        qc = get_queueclient(name)
-        {
-          'name'   => name,
-          'status' => qc.status,
-          'ping'   => qc.ping,
-          'pid'    => qc.read_pid,
-          'uptime' => qc.uptime,
-          'counts' => Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ],
-          # 'schedule' => qc.config[1]['schedule']...
-        }
-      end +
-      builtin_queues.map do |name|
-        qc = get_queueclient(name)
-        {
-          'name'   => name,
-          'status' => qc.status,
-          'ping'   => qc.ping,
-          'pid'    => qc.read_pid,
-          'uptime' => qc.uptime,
-          'counts' => Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ],
-          # 'schedule' => qc.config[1]['schedule']...
-        }
-      end).to_json
+      {
+        'status'  => queuemgr.running? ? 'OPERATIONAL' : 'DOWN',
+        'ping'    => queuemgr.ping,
+        'pid'     => queuemgr.read_pid,
+        'uptime'  => queuemgr.uptime,
+        'version' => queuemgr.version,
+        'time'    => Time.now,
+        'queues'  => (
+          custom_queues.map do |name|
+            qc = get_queueclient(name)
+            counts = Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ] rescue {}
+            {
+              'name'   => name,
+              'status' => qc.status,
+              'ping'   => qc.ping,
+              'pid'    => qc.read_pid,
+              'uptime' => qc.uptime,
+              'counts' => counts,
+              # 'schedule' => qc.config[1]['schedule']...
+            }
+          end +
+          builtin_queues.map do |name|
+            qc = get_queueclient(name)
+            counts = Hash[ msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)) ] rescue {}
+            {
+              'name'   => name,
+              'status' => qc.status,
+              'ping'   => qc.ping,
+              'pid'    => qc.read_pid,
+              'uptime' => qc.uptime,
+              'counts' => counts,
+              # 'schedule' => qc.config[1]['schedule']...
+            }
+          end
+        ),
+      }.to_json
     end
 
     get '/search' do

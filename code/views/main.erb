@@ -37,19 +37,26 @@ if queuemgr.running?
 </table>
 <% end %>
 
-<div class="meta">
+<table id="meta" cellspacing="0" cellpadding="5">
+  <thead>
+    <tr>
 <% if queuemgr.running? %>
-  <span class="green">QUEUE MGR is OPERATIONAL</span>
-  <span class="green"><%= queuemgr.ping %></span>
-  <span class="green"><%= queuemgr.read_pid %></span>
-  <span>uptime <%= queuemgr.uptime %> seconds</span> |
-  <% version = queuemgr.version %>
-  <% if version == RQ_VER %>
-    <span>server: <strong>v<%= version %></strong></span>
-  <% else %>
-    <span class="red">server: <strong>v<%= version %></strong> != web: <strong>v<%= RQ_VER %></strong></span>
-  <% end %>
+      <th><tt>QUEUEMGR:<span class="green" id="status">OPERATIONAL</span></tt></th>
+      <th><tt>PING:<span class="green" id="ping"><%= queuemgr.ping %></span></tt></th>
+      <th><tt>PID:<span class="green" id="pid"><%= queuemgr.read_pid %></span></tt></th>
+      <th><tt>UPTIME:<span class="green" id="uptime"><%= queuemgr.uptime %></span></tt></th>
+      <th><tt>TIME:<span class="green" id="time"><%= Time.now.to_i %></span></tt></th>
+      <th width="99%"><tt>
+        <% version = queuemgr.version %>
+        <% if version == RQ_VER %>
+          VERSION:<span class="green">v<strong id="version"><%= version %></strong></span>
+        <% else %>
+          VERSION:<span class="red">server:v<strong id="version"><%= version %></strong> != web:v<strong><%= RQ_VER %></strong></span>
+        <% end %>
+      </tt></th>
 <% else %>
-  <span class="red">QUEUE MGR is DOWN</span>
+      <th><tt>QUEUEMGR: <span class="red" id="status">DOWN</span></tt></th>
 <% end %>
-</div>
+    </tr>
+  </thead>
+</table>

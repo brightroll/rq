@@ -21,7 +21,7 @@ if [ "$?" -ne "0" ]; then
   echo "Sorry, system is still in install state"
   exit 1
 fi
-grep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
+egrep "QUEUEMGR:.*OPERATIONAL" _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is not running the queue mgr"
   exit 1

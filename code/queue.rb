@@ -1579,49 +1579,10 @@ module RQ
         return
       end
 
-      # IF queue status is DOWN, no need to respond to any of the
-      # following messages (Note: there are other states, this is a hard DOWN)
-      if @status.admin_status == 'DOWN'
-        resp = [ "fail", "status: DOWN"].to_json
-        send_packet(sock, resp)
-        return
-      end
-
       # These commands take arguments
       options = JSON.parse(arg) rescue nil
 
       case cmd
-      when 'create_message'
-        msg = { }
-        begin
-          msg = make_message(options)
-          msg_id = gen_full_msg_id(msg)
-          resp = [ "ok", msg_id ].to_json
-        rescue Exception => e
-          resp = ["fail", e.message].to_json
-        end
-
-        send_packet(sock, resp)
-        return
-
-      when 'single_que'
-        msg = { }
-
-        if not @que.empty?
-          msg_id = gen_full_msg_id(@que[0])
-          resp = [ "ok", msg_id ].to_json
-        else
-          begin
-            msg = make_message(options)
-            msg_id = gen_full_msg_id(msg)
-            resp = [ "ok", msg_id ].to_json
-          rescue Exception => e
-            resp = ["fail", e.mssage].to_json
-          end
-        end
-        send_packet(sock, resp)
-        return
-
       when 'num_messages'
         status = { }
         status['prep']     = @prep.length
@@ -1654,6 +1615,47 @@ module RQ
         end
 
         resp = status.to_json
+        send_packet(sock, resp)
+        return
+      end
+
+      # If queue status is DOWN, no need to respond to any of the
+      # following messages (Note: there are other states, this is a hard DOWN)
+      if @status.admin_status == 'DOWN'
+        resp = [ "fail", "status: DOWN"].to_json
+        send_packet(sock, resp)
+        return
+      end
+
+      case cmd
+      when 'create_message'
+        msg = { }
+        begin
+          msg = make_message(options)
+          msg_id = gen_full_msg_id(msg)
+          resp = [ "ok", msg_id ].to_json
+        rescue Exception => e
+          resp = ["fail", e.message].to_json
+        end
+
+        send_packet(sock, resp)
+        return
+
+      when 'single_que'
+        msg = { }
+
+        if not @que.empty?
+          msg_id = gen_full_msg_id(@que[0])
+          resp = [ "ok", msg_id ].to_json
+        else
+          begin
+            msg = make_message(options)
+            msg_id = gen_full_msg_id(msg)
+            resp = [ "ok", msg_id ].to_json
+          rescue Exception => e
+            resp = ["fail", e.mssage].to_json
+          end
+        end
         send_packet(sock, resp)
         return
 
