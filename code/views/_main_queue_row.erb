@@ -7,7 +7,7 @@
 -%>
 <%  if status != 'DOWN' -%>
       <td>
-        <pre><%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "#{ab[0]}:#{ab[1].to_s.ljust(4)} "}.join %></pre>
+        <%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "<pre>#{ab[0]}:</pre><pre id=\"#{ab[0]}-#{name}\">#{ab[1].to_s.ljust(4)}</pre>" }.join %>
         <% qc.config[1]['schedule'].each do |sched| %>
           <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/new_message" %>">
             <input type="hidden" name="back" value="<%= request.path  %>" />

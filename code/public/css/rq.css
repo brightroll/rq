@@ -231,6 +231,7 @@ a:visited {
 
 pre {
   margin: 0;
+  display: inline;
 }
 
 #filedata {
