@@ -76,6 +76,12 @@
 <% end %>
 
 <ul class="hidden">
+  <!-- date separator -->
+  <li id="template-separator">
+    <h5 class="template-date"></h5>
+    <br />
+  </li>
+
   <!-- prep -->
   <li id="template-prep">
     <a class="template-link"></a>
@@ -84,9 +90,8 @@
   <!-- que -->
   <li id="template-que">
     <a class="template-link"></a>
-    relay dest: <span class="yellow template-dest"></span>
-    <br />
-    in <span class="template-seconds"></span> secs
+    <a class="template-dest hidden"></a>
+    <span class="template-seconds"></span>
     <div style="clear: both;">
       <form class="shush-form inline template-form" method="post">
         <input name="_method" type="hidden" value="run_now" />
@@ -97,14 +102,14 @@
         <button class="shush-button" type="submit">Delete</button>
       </form>
     </div>
+    <br />
   </li>
 
   <!-- run -->
   <li id="template-run">
     <a class="template-link"></a>
-    relay dest: <span class="yellow template-dest"></span>
-    <br />
-    status: <span class="yellow template-status"></span>
+    <a class="template-dest hidden"></a>
+    <span class="yellow template-status"></span>
     <form class="shush-form template-form" method="post">
       <input name="_method" type="hidden" value="destroy" />
       <button class="shush-button" type="submit">Destroy</button>
@@ -122,7 +127,7 @@
   </li>
 
   <!-- relayed -->
-  <li id="template-relayed" class="relayed-li">
+  <li id="template-relayed">
     <a class="template-link"></a> - <span class="green template-status"></span> - <a class="template-new_msg"></a>
   </li>
 </ul>
@@ -131,3 +136,5 @@
   <h3>Queue is HARD DOWN</h3>
   <p>Nothing to display.</p>
 <% end %>
+
+<hr class="meta" />

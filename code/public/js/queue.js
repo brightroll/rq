@@ -29,16 +29,34 @@ domready(function() {
     for (var state in queues["messages"]) {
       var list = document.getElementById("list-" + state);
       if (list) {
+        // Post the date prefix above each day's messages
+        var last_date = "";
         // Zap everything in the list and then populate it again.
         // TODO: avoid refreshing everything, DOM redraws are a pain.
         list.innerHTML = "";
         for (var msg of queues["messages"][state]) {
+
+          var id_split = msg["msg_id"].split('.');
+          var date = id_split.shift();
+          msg["_short_msg_id"] = id_split.join('.');
+
+          if (date != last_date) {
+            var t = document.getElementById("template-separator");
+            var n = t.cloneNode(true);
+            var l = n.getElementsByClassName("template-date");
+            if (l && l[0]) {
+              l[0].innerHTML = date;
+            }
+            last_date = date;
+            list.appendChild(n);
+          }
+
           var t = document.getElementById("template-" + state);
           var n = t.cloneNode(true);
           var l = n.getElementsByClassName("template-link");
           if (l && l[0]) {
             l[0].href = config.queue_path + "/" + msg["msg_id"];
-            l[0].innerHTML = msg["msg_id"];
+            l[0].innerHTML = msg["_short_msg_id"];
           }
           var l = n.getElementsByClassName("template-seconds");
           if (l && l[0]) {
@@ -48,39 +66,25 @@ domready(function() {
           if (l && l[0]) {
             l[0].innerHTML = msg["status"];
           }
+          var l = n.getElementsByClassName("template-dest");
+          if (l && l[0]) {
+            l[0].href = msg["dest"];
+            l[0].innerHTML = msg["dest"];
+            l[0].style.display = "block";
+          }
           var l = n.getElementsByClassName("template-new_msg");
           if (l && l[0]) {
             l[0].href = msg["new_msg"];
             l[0].innerHTML = msg["new_msg"];
           }
           var l = n.getElementsByClassName("template-form");
-          // FIXME: "for (var f of l)" didn't work!?
-          if (l && l[0]) {
-            l[0].action = msg["dest"] + "/" + msg["msg_id"];
-          }
-          if (l && l[1]) {
-            l[1].action = msg["dest"] + "/" + msg["msg_id"];
+          // Iterate because there may be several forms
+          for (var pos = 0; pos < l.length; pos++) {
+            l.item(pos).action = msg["dest"] + "/" + msg["msg_id"];
           }
           list.appendChild(n);
         }
       }
-    /*
-
-<% msgs = qc.messages({'state' => state, 'limit' => 50}) %>
-<% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% next if msg.nil? %>
-  <% date, msg['_short_msg_id'] = msg['msg_id'].split('.', 2) %>
-  <% grouped[date] ||= [] %>
-  <% grouped[date] << msg %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <% msgs.sort_by{ |m| m['msg_id'] }.reverse.each do |msg| %>
-    <li>
-    <a href="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>"><%= msg['_short_msg_id'] %></a>
-    */
     }
   }
 
