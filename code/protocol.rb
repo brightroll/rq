@@ -91,14 +91,15 @@ module RQ
       defined?(nwritten) ? nwritten : 0
     end
 
-    def do_read(client, numr = 32768)
-      client.sysread(numr)
-    rescue Errno::EAGAIN, Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
-      sleep 0.001 # A tiny pause to prevent consuming all CPU
-      retry
+    def do_read(client, size)
+      out = ""
+      while out.bytesize < size
+        remain = size - out.bytesize
+        out << client.readpartial(remain)
+      end
+      out
     rescue EOFError
-      $log.debug("Got an EOF from socket read")
-      return nil
+      out
     rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
       raise "Got an #{$!} from socket read"
     end
