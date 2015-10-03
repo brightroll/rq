@@ -1597,24 +1597,37 @@ module RQ
         return
 
       when 'messages'
-        case options['state']
+        messages = case options['state']
         when 'prep'
-          status = (options['limit'] ? @prep.take(options['limit']) : @prep).map { |m| { :msg_id => m } }
+          (options['limit'] ? @prep.take(options['limit']) : @prep).map do |m|
+            { :msg_id => m }
+          end
         when 'que'
-          status = (options['limit'] ? @que.take(options['limit']) : @que).map { |m| { :msg_id => m['msg_id'], :due => m['due'], :dest => m['dest'] } }
+          (options['limit'] ? @que.take(options['limit']) : @que).map do |m|
+            { :msg_id => m['msg_id'], :due => m['due'], :dest => m['dest'] }
+          end
         when 'run'
-          status = (options['limit'] ? @run.take(options['limit']) : @run).map { |m| { :msg_id => m['msg_id'], :status => m['status'], :dest => m['dest'] } }
+          (options['limit'] ? @run.take(options['limit']) : @run).map do |m|
+            { :msg_id => m['msg_id'], :status => m['status'], :dest => m['dest'] }
+          end
         when 'done'
-          status = RQ::HashDir.entries(@queue_path + "/done", options['limit']).map { |m| { :msg_id => m } }
+          RQ::HashDir.entries(@queue_path + "/done", options['limit']).map do |m|
+            { :msg_id => m }
+          end
         when 'relayed'
-          status = RQ::HashDir.entries(@queue_path + "/relayed/", options['limit']).map { |m| { :msg_id => m } }
+          RQ::HashDir.entries(@queue_path + "/relayed/", options['limit']).map do |m|
+            msg = get_message({ 'msg_id' => m }, 'relayed')
+            { :msg_id => m, :status => msg['state'], :dest => msg['dest'], :new_msg => msg['status'].split.last }
+          end
         when 'err'
-          status = Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.map { |m| { :msg_id => m } }
+          Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.map do |m|
+            { :msg_id => m }
+          end
         else
-          status = [ "fail", "invalid or missing 'state' field (#{options['state']})"]
+          [ "fail", "invalid or missing 'state' field (#{options['state']})"]
         end
 
-        resp = status.to_json
+        resp = messages.to_json
         send_packet(sock, resp)
         return
       end

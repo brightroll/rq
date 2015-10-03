@@ -206,7 +206,7 @@ module RQ
         'pid'     => queuemgr.read_pid,
         'uptime'  => queuemgr.uptime,
         'version' => queuemgr.version,
-        'time'    => Time.now,
+        'time'    => Time.now.to_i,
         'queues'  => (
           custom_queues.map do |name|
             qc = get_queueclient(name)
@@ -290,24 +290,28 @@ module RQ
         nm = qc.num_messages
         return {
           'status'       => qc.status,
+          'ping'         => qc.ping,
+          'pid'          => qc.read_pid,
           'uptime'       => qc.uptime,
+          'time'         => Time.now.to_i,
           'prep_size'    => nm['prep'],
           'que_size'     => nm['que'],
           'run_size'     => nm['run'],
           'done_size'    => nm['done'],
           'err_size'     => nm['err'],
           'relayed_size' => nm['relayed'],
-          'messages' => {
-            'prep' => qc.messages({'state' => 'prep'}),
-            'que'  => qc.messages({'state' => 'que'}),
-            'run'  => qc.messages({'state' => 'run'}),
-            'done' => qc.messages({'state' => 'done'}),
-            'err'  => qc.messages({'state' => 'err'}),
+          'messages'  => {
+            'prep'    => qc.messages({'state' => 'prep'}),
+            'que'     => qc.messages({'state' => 'que'}),
+            'run'     => qc.messages({'state' => 'run'}),
+            'done'    => qc.messages({'state' => 'done'}),
+            'err'     => qc.messages({'state' => 'err'}),
+            'relayed' => qc.messages({'state' => 'relayed'}),
           }
         }.to_json
       else
         ok, config = qc.config
-        erb :queue, :locals => { :qc => qc, :config => config }
+        erb :queue, :locals => { :qc => qc, :config => config, :queue_path => "#{root}q/#{params[:name]}" }
       end
     end
 
@@ -801,6 +805,18 @@ module RQ
           end
           redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
         end
+      when 'run_now'
+        res = qc.run_message({ 'msg_id' => params[:msg_id] })
+
+        if not res
+          throw :halt, [500, "500 - Couldn't run message. Internal error."]
+        end
+        if res[0] != 'ok'
+          throw :halt, [500, "500 - Couldn't run message. #{res.inspect}."]
+        end
+
+        flash :notice, "Message in run successfully"
+        redirect "#{root}q/#{params[:name]}/#{params[:msg_id]}"
       else
         throw :halt, [400, "400 - Invalid method param"]
       end
