@@ -1071,7 +1071,7 @@ module RQ
       child_pid = msg['child_pid']
 
       $log.debug("#{child_pid}: Reading status from child")
-      data = do_read(child_io, 4096)
+      data = child_io.readpartial(4096) rescue nil
       return false unless data
 
       child_msgs = data.split("\n")

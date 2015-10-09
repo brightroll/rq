@@ -14,20 +14,13 @@ module RQ
     end
 
     def set_nonblocking(sock)
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= sock.fcntl(Fcntl::F_GETFL)
-      end
-      sock.fcntl(Fcntl::F_SETFL, flag)
+      flags = sock.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK
+      sock.fcntl(Fcntl::F_SETFL, flags)
     end
 
     def reset_nonblocking(sock)
-      # Linux Doesn't inherit and BSD does... recomended behavior is to set again
-      flag = 0xffffffff ^ File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag &= sock.fcntl(Fcntl::F_GETFL)
-      end
-      sock.fcntl(Fcntl::F_SETFL, flag)
+      flags = sock.fcntl(Fcntl::F_GETFL) ^ Fcntl::O_NONBLOCK
+      sock.fcntl(Fcntl::F_SETFL, flags)
     end
 
     def read_packet(sock)
@@ -91,14 +84,15 @@ module RQ
       defined?(nwritten) ? nwritten : 0
     end
 
-    def do_read(client, numr = 32768)
-      client.sysread(numr)
-    rescue Errno::EAGAIN, Errno::EINTR  # Ruby threading can cause an alarm/timer interrupt on a syscall
-      sleep 0.001 # A tiny pause to prevent consuming all CPU
-      retry
+    def do_read(client, size)
+      out = ""
+      while out.bytesize < size
+        remain = size - out.bytesize
+        out << client.readpartial(remain)
+      end
+      out
     rescue EOFError
-      $log.debug("Got an EOF from socket read")
-      return nil
+      out
     rescue Errno::ECONNRESET,Errno::EPIPE,Errno::EINVAL,Errno::EBADF
       raise "Got an #{$!} from socket read"
     end
