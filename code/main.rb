@@ -145,7 +145,7 @@ module RQ
     end
 
     get '/' do
-      erb :main
+      erb :main, :locals => { :main_path => "#{root}/q" }
     end
 
     get '/new_queue' do

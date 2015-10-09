@@ -33,7 +33,7 @@ domready(function() {
   // Fetch q.json
   function nextUpdate() {
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open("GET", "/q.json", true);
+    xmlhttp.open("GET", config.main_path + ".json", true);
     xmlhttp.setRequestHeader("Cache-Control", "no-cache");
     xmlhttp.onreadystatechange = function() {
       // State 4 means "totally done"
