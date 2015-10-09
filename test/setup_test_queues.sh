@@ -14,7 +14,7 @@ if [ "$?" -ne "0" ]; then
   exit 1
 fi
 
-egrep "QUEUE MGR is OPERATIONAL" _home.txt > /dev/null
+egrep "QUEUEMGR:.*OPERATIONAL" _home.txt > /dev/null
 if [ "$?" -ne "0" ]; then
   echo "Sorry, system is not running the queue mgr"
   exit 1

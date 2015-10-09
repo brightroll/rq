@@ -63,8 +63,23 @@ td {
   background: #FEF3DD;
 }
 
-.meta {
+hr.meta {
+  background: #AB9B7D;
+  color: #FEF9EE;
+  height: 10px;
+  margin-top: 10px;
+}
+
+table#meta {
   margin-top: 20px;
+}
+
+#meta td, #meta th {
+  padding: 5px;
+  text-align: left;
+  background: #AB9B7D;
+  color: #FEF9EE;
+  white-space: nowrap;
 }
 
 #env {
@@ -96,6 +111,22 @@ td {
 .yellow {
   background-color: yellow;
   color: black;
+}
+
+.template-dest:before {
+  content: "relay dest: ";
+}
+
+.template-status:before {
+  content: "status: ";
+}
+
+.template-seconds:before {
+  content: "in ";
+}
+
+.template-seconds:after {
+  content: " secs";
 }
 
 ul {
@@ -168,7 +199,9 @@ h1 {
 
 #queue-status, #message-actions {
   float: right;
-  text-align: right;
+  position: relative;
+  bottom: -4px;
+  right: 0px;
 }
 
 .right {
@@ -231,6 +264,7 @@ a:visited {
 
 pre {
   margin: 0;
+  display: inline;
 }
 
 #filedata {
@@ -336,10 +370,13 @@ form.inrow button {
 #queue-lists h5 {
   font-size: 1.5em;
   margin-bottom: 0;
+  padding-top: 15px;
 }
 
 #queue-lists ul {
   padding: 0;
+  margin: 0px;
+  margin-top: -15px;
 }
 
 #queue-lists li {
@@ -375,15 +412,15 @@ th.done {
   padding: 10px;
 }
 
-.relayed-li {
+.relayed li {
   margin-bottom: 15px;
 }
 
-.relayed-li a {
+.relayed li a {
   display: inline;
 }
 
-.relayed-li span {
+.relayed li span {
   padding: 5px;
 }
 

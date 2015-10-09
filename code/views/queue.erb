@@ -1,3 +1,12 @@
+
+<script src="<%= root %>js/ready.js"></script>
+<script src="<%= root %>js/queue.js"></script>
+<script>
+  var config = {
+    queue_path: "<%= queue_path %>",
+  };
+</script>
+
 <div id="header">
   <p id="new-message"><a href="<%= "#{root}q/#{qc.name}/new_message" %>">New Message</a></p>
   <h1><a href="<%= root %>">RQ</a> : <%= qc.name %></h1>
@@ -7,10 +16,10 @@
   <% if qc.running? %>
   <% status = qc.status %>
   <div id="queue-status">
-    <span class="<%= status == "UP" ? "green" : "red" %>"><%= status %></span>
-    <span class=""><%= qc.ping %></span>
-    <span class=""><%= qc.read_pid %></span>
-    running for <%= qc.uptime %> seconds
+    <span class="<%= status == "UP" ? "green" : "red" %>" id="status"><%= status %></span>
+    <span class="" id="ping"><%= qc.ping %></span>
+    <span class="" id="pid"><%= qc.read_pid %></span>
+    running for <span id="uptime"><%= qc.uptime %></span> seconds
 <%=     erb :_main_queue_form, :locals => {:status => status, :name => qc.name } %>
   <% else %>
    Status: <span class="red">queue is COMPLETELY DOWN</span>
@@ -23,18 +32,16 @@
 <% if status != 'DOWN' %>
 <h2>Message List</h2>
 
-<% num_msgs = qc.num_messages %>
-
 <table id="queue-lists" cellspacing="0" cellpading="5">
   <thead>
     <tr>
-      <th class="prep"><h4>PREP</h4><%= num_msgs['prep'] %></th>
-      <th class="que"><h4>QUE</h4><%= num_msgs['que'] %></th>
-      <th class="run"><h4>RUN</h4><%= num_msgs['run'] %></th>
-      <% if qc.name != 'relay' %>
-        <th class="done"><h4>DONE</h4><%= num_msgs['done'] %></th>
-      <% end %>
-      <th class="err"><h4>ERR</h4><%= num_msgs['err'] %></th>
+      <th class="prep"><h4>PREP</h4><span id="prep_size">...</span></th>
+      <th class="que"><h4>QUE</h4><span id="que_size">...</span></th>
+      <th class="run"><h4>RUN</h4><span id="run_size">...</span></th>
+      <%- if qc.name != 'relay' -%>
+      <th class="done"><h4>DONE</h4><span id="done_size">...</span></th>
+      <%- end -%>
+      <th class="err"><h4>ERR</h4><span id="err_size">...</span></th>
     </tr>
   </thead>
   <tbody>
@@ -50,102 +57,84 @@
 %>
       <!-- <%= state %> -->
       <td class="<%= state %>">
-<% msgs = qc.messages({'state' => state, 'limit' => 50}) %>
-<% grouped = {} %>
-<% msgs.each do |msg| %>
-  <% next if msg.nil? %>
-  <% date, msg['_short_msg_id'] = msg['msg_id'].split('.', 2) %>
-  <% grouped[date] ||= [] %>
-  <% grouped[date] << msg %>
-<% end %>
-<% grouped.sort.reverse.each do |date, msgs| %>
-  <h5><%= date %></h5>
-  <ul>
-  <% msgs.sort_by{ |m| m['msg_id'] }.reverse.each do |msg| %>
-    <li>
-    <a href="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>"><%= msg['_short_msg_id'] %></a>
-    <% if state == 'que' %>
-      <% if qc.name == 'relay' %>
-        dest: <span class="yellow"><%= msg['dest'] %></span>
-      <% end %>
-      in <%= msg['due'].to_i - Time.now.to_i %> secs
-      <div style="clear: both;">
-        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}/run_now" %>">
-          <button class="shush-button" id="run-button">Run now</button>
-        </form>
-        <form class="shush-form inline" method="post" action="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>">
-          <input name="_method" type="hidden" value="delete" />
-          <button class="shush-button" type="submit">Delete</button>
-        </form>
-      </div>
-    <% elsif state == 'run' %>
-      <% if qc.name == 'relay' %>
-        dest: <span class="yellow"><%= msg['dest'] %></span>
-        status: <span class="yellow"><%= msg['status'] %></span>
-      <% end %>
-      <form class="shush-form" method="post" action="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>">
-        <input name="_method" type="hidden" value="destroy" />
-        <button class="shush-button" type="submit">Destroy</button>
-      </form>
-    <% end %>
-    </li>
-  <% end %>
-  </ul>
-<% end %>
+        <ul id="list-<%= state %>">
+        </ul>
       </td>
-    <% end %>
+    <%- end -%>
 
-      </td>
+    </tr>
   </tbody>
 </table>
 
-<!-- RELAYED -->
 <% if qc.name == 'relay' %>
+<!-- RELAYED -->
 <div class="relayed">
-  <h4><b><%= num_msgs['relayed'] %></b> in RELAYED</h4>
-  <% msgs = qc.messages({'state' => 'relayed', 'limit' => 50}) %>
-  <% grouped = {} %>
-  <% msgs.each do |msg| %>
-    <% date, msg['_short_msg_id'] = msg['msg_id'].split('.', 2) %>
-    <% grouped[date] ||= [] %>
-    <% grouped[date] << msg %>
-  <% end %>
-  <% grouped.sort.reverse.each do |date, msgs| %>
-    <h5><%= date %></h5>
-    <ul>
-    <% msgs.sort_by{ |m| m['msg_id'] }.reverse.each do |msg| %>
-      <li class="relayed-li">
-        <a href="<%= "#{root}q/#{qc.name}/#{msg['msg_id']}" %>"><%= msg['_short_msg_id'] %></a>
-        <% ok, msg_full = qc.get_message('msg_id' => msg['msg_id']) %>
-        <% if ok == 'ok' %>
-          <% status, new_location = msg_full['status'].split(' - ', 2) %>
-          - <span class="green"><%= status %></span> - <a title="<%= new_location %>" href="<%= new_location %>"><%= new_location %></a>
-        <% end %>
-      </li>
-    <% end %>
-    </ul>
-  <% end %>
+  <h4><b id="relayed_size">...</b> in RELAYED</h4>
+  <ul id="list-relayed">
+  </ul>
+</div>
 <% end %>
+
+<ul class="hidden">
+  <!-- date separator -->
+  <li id="template-separator">
+    <h5 class="template-date"></h5>
+    <br />
+  </li>
+
+  <!-- prep -->
+  <li id="template-prep">
+    <a class="template-link"></a>
+  </li>
+
+  <!-- que -->
+  <li id="template-que">
+    <a class="template-link"></a>
+    <a class="template-dest hidden"></a>
+    <span class="template-seconds"></span>
+    <div style="clear: both;">
+      <form class="shush-form inline template-form" method="post">
+        <input name="_method" type="hidden" value="run_now" />
+        <button class="shush-button">Run now</button>
+      </form>
+      <form class="shush-form inline template-form" method="post">
+        <input name="_method" type="hidden" value="delete" />
+        <button class="shush-button" type="submit">Delete</button>
+      </form>
+    </div>
+    <br />
+  </li>
+
+  <!-- run -->
+  <li id="template-run">
+    <a class="template-link"></a>
+    <a class="template-dest hidden"></a>
+    <span class="yellow template-status"></span>
+    <form class="shush-form template-form" method="post">
+      <input name="_method" type="hidden" value="destroy" />
+      <button class="shush-button" type="submit">Destroy</button>
+    </form>
+  </li>
+
+  <!-- done -->
+  <li id="template-done">
+    <a class="template-link"></a>
+  </li>
+
+  <!-- err -->
+  <li id="template-err">
+    <a class="template-link"></a>
+  </li>
+
+  <!-- relayed -->
+  <li id="template-relayed">
+    <a class="template-link"></a> - <span class="green template-status"></span> - <a class="template-new_msg"></a>
+  </li>
+</ul>
 
 <% else %>
   <h3>Queue is HARD DOWN</h3>
   <p>Nothing to display.</p>
 <% end %>
 
-<script>
-  function show_toggle() {
-    var cfg = document.getElementById('config');
-    if (cfg.className.indexOf('hidden') >= 0) {
-      cfg.className = cfg.className.replace('hidden', '').replace(/\s+$/, "");
-    } else {
-      cfg.className += ' hidden';
-    }
-    return false;
-  }
-  var shushForms = document.getElementsByClassName('shush-form');
-  for (var i = 0; i < shushForms.length; i++) {
-    shushForms[i].addEventListener('submit', function (e) {
-        this.getElementsByClassName('shush-button').disabled = true;
-    });
-  }
-</script>
+<hr class="meta" />
