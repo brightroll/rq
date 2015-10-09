@@ -14,20 +14,13 @@ module RQ
     end
 
     def set_nonblocking(sock)
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= sock.fcntl(Fcntl::F_GETFL)
-      end
-      sock.fcntl(Fcntl::F_SETFL, flag)
+      flags = sock.fcntl(Fcntl::F_GETFL) | Fcntl::O_NONBLOCK
+      sock.fcntl(Fcntl::F_SETFL, flags)
     end
 
     def reset_nonblocking(sock)
-      # Linux Doesn't inherit and BSD does... recomended behavior is to set again
-      flag = 0xffffffff ^ File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag &= sock.fcntl(Fcntl::F_GETFL)
-      end
-      sock.fcntl(Fcntl::F_SETFL, flag)
+      flags = sock.fcntl(Fcntl::F_GETFL) ^ Fcntl::O_NONBLOCK
+      sock.fcntl(Fcntl::F_SETFL, flags)
     end
 
     def read_packet(sock)
