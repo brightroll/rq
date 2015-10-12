@@ -88,29 +88,14 @@ domready(function() {
     }
   }
 
-  // Fetch q.json
-  function nextUpdate() {
-    var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open("GET", config.queue_path + ".json", true);
-    xmlhttp.setRequestHeader("Cache-Control", "no-cache");
-    xmlhttp.onreadystatechange = function() {
-      // State 4 means "totally done"
-      if (xmlhttp.readyState == 4) {
-        // Schedule the next fetch
-        window.setTimeout(function () { nextUpdate(); }, 900);
-
-        // Process the result
-        if (xmlhttp.status == 200) {
-          var responseJSON = JSON.parse(xmlhttp.responseText);
-          displayQueues(responseJSON);
-        }
-      }
-    };
-    xmlhttp.send();
-  }
-
-  // Schedule the first fetch
-  nextUpdate();
+  rq_http_request(config.queue_path + ".json", function(s, b) {
+    // Process the result
+    if (s == 200) {
+      var responseJSON = JSON.parse(b);
+      displayQueues(responseJSON);
+    }
+    return 900;
+  });
 });
 
 function show_toggle() {
