@@ -31,7 +31,7 @@ end
 result = JSON.parse(res.body)
 
 if result.length != 2
-  print "JSON response not length 2 -> '#{result.inspect}' que properly: incorrect '#{key}' value: '#{under_test[key]}'\n"
+  print "JSON response not length 2 -> '#{result.inspect}'"
   exit 1
 end
 
@@ -55,7 +55,7 @@ end
 result = JSON.parse(res.body)
 
 if result.length != 10
-  print "JSON response not length 2 -> '#{result.inspect}' que properly: incorrect '#{key}' value: '#{under_test[key]}'\n"
+  print "JSON response not length 10 -> '#{result.inspect}'"
   exit 1
 end
 
