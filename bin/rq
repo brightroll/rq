@@ -13,6 +13,7 @@ require 'version'
 
 require 'optparse'
 
+args = {}
 options = {}
 op = OptionParser.new do |opts|
   opts.version = RQ_VER
@@ -89,9 +90,36 @@ BANNER
     options[:action] = :verify_rules
     options[:request] = v
   end
+
+  opts.separator "\nMessage Fields:"
+  keys = %w(dest src count max_count param1 param2 param3 param4 due)
+  keys.each do |k|
+    opts.on("--#{k} VALUE", "#{k} field") do |v|
+      args[k] = v
+    end
+  end
+  opts.on('--force_remote', 'Force remote relay (deprecated)') do |v|
+    args['force_remove'] = v
+  end
+  opts.on('--relay-ok', 'Relay allowed') do |v|
+    args['relay-ok'] = v
+  end
+
+  opts.separator "\nGeneral Options:"
+  opts.on('--verbose', 'Verbose') do |v|
+    options[:verbose] = v
+  end
+  opts.on('--help', 'Help and usage') do |v|
+    options[:help] = v
+  end
 end
 
 op.parse!
 
-cmd = "cmd_#{options[:action]}"
-RQ::Commands.send cmd, options
+if options[:action]
+  cmd = "cmd_#{options[:action]}"
+  RQ::Commands.send cmd, args
+else
+  puts op.help
+  exit 1
+end
