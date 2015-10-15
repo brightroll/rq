@@ -1611,7 +1611,7 @@ module RQ
             { :msg_id => m['msg_id'], :status => m['status'], :dest => m['dest'] }
           end
         when 'done'
-          RQ::HashDir.entries(@queue_path + "/done", options['limit']).map do |m|
+          RQ::HashDir.entries(@queue_path + "/done/", options['limit']).map do |m|
             { :msg_id => m }
           end
         when 'relayed'
@@ -1620,7 +1620,7 @@ module RQ
             { :msg_id => m, :status => msg['state'], :dest => msg['dest'], :new_msg => msg['status'].split.last }
           end
         when 'err'
-          Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.map do |m|
+          Dir.entries(@queue_path + "/err/").reject { |i| i.start_with?('.') }.sort.reverse.map do |m|
             { :msg_id => m }
           end
         else
