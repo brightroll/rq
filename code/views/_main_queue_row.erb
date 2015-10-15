@@ -8,6 +8,7 @@
       <td>
         <%= msgs_labels.zip(qc.num_messages.values_at(*msgs_labels)).map{|ab| "<pre>#{ab[0]}:</pre><pre id=\"#{ab[0]}-#{name}\">#{ab[1].to_s.ljust(4)}</pre>" }.join %>
         <% qc.config[1]['schedule'].each do |sched| %>
+        <div class="schedule">
           <form class="inline inrow" method="post" action="<%= "#{root}q/#{name}/new_message" %>">
             <input type="hidden" name="back" value="<%= request.path  %>" />
             <input type="hidden" name="x_format" value="html" />
@@ -17,16 +18,20 @@
             <input type="hidden" name="mesg[param2]" value="<%= sched['params']['param2'] %>" />
             <input type="hidden" name="mesg[param3]" value="<%= sched['params']['param3'] %>" />
             <input type="hidden" name="mesg[param4]" value="<%= sched['params']['param4'] %>" />
-            <button style="width: 7em;" class="cron-now" name="cron-now" value="cron-now">Run Now</button>
+            CRON: <%= sched['cron'] %>
+            <%- %w(param1 param2 param3 param4).each do |p| -%>
+              <%- if sched['params'][p] -%>
+                <br />
+                <%= p.upcase %>: "<%= sched['params'][p] %>"
+              <%- end -%>
+            <%- end -%>
+            <br />
+            Next run at <%= CronParser.new(sched['cron']).next.strftime("%c %Z") %>
+            <br />
+            <button class="cron-now" name="cron-now" value="cron-now">Run Now</button>
           </form>
-          <pre>
-<%=           sched['cron'] -%>
-<%=           "\n  PARAM1: \"#{sched['params']['param1']}\"" if sched['params']['param1'] -%>
-<%=           "\n  PARAM2: \"#{sched['params']['param2']}\"" if sched['params']['param2'] -%>
-<%=           "\n  PARAM3: \"#{sched['params']['param3']}\"" if sched['params']['param3'] -%>
-<%=           "\n  PARAM4: \"#{sched['params']['param4']}\"" if sched['params']['param4'] -%>
-          </pre>
-        <% end %>
+        </div>
+        <%- end -%>
       </td>
       <td id="ping-<%= name %>"><%= qc.ping %></td>
       <td id="pid-<%= name %>"><%= qc.read_pid %></td>

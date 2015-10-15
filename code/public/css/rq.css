@@ -345,6 +345,17 @@ form.inrow button {
   width: 5em;
 }
 
+.schedule {
+  font-family: monospace;
+  border-left: 2px solid #ddd;
+  padding-left: 3px;
+  margin-top: 5px;
+}
+
+.schedule button.cron-now {
+  width: 7em;
+}
+
 .queue-lists {
   table-layout: fixed;
 }
