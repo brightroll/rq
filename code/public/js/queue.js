@@ -34,13 +34,11 @@ domready(function() {
         // Zap everything in the list and then populate it again.
         // TODO: avoid refreshing everything, DOM redraws are a pain.
         list.innerHTML = "";
-        queues["messages"][state].sort(function(a, b) {
-          return a["msg_id"] < b["msg_id"];
-        });
-        queues["messages"][state].forEach(function(msg, idx, ary) {
-          var id_split = msg["msg_id"].split(".");
+        for (var msg of queues["messages"][state]) {
+
+          var id_split = msg["msg_id"].split('.');
           var date = id_split.shift();
-          msg["_short_msg_id"] = id_split.join(".");
+          msg["_short_msg_id"] = id_split.join('.');
 
           if (date != last_date) {
             var t = document.getElementById("template-separator");
@@ -85,7 +83,7 @@ domready(function() {
             l.item(pos).action = msg["dest"] + "/" + msg["msg_id"];
           }
           list.appendChild(n);
-        });
+        }
       }
     }
   }
