@@ -345,54 +345,45 @@ form.inrow button {
   width: 5em;
 }
 
-#queue-lists {
+.queue-lists {
   table-layout: fixed;
 }
 
-#queue-lists td, #queue-lists th {
+.queue-lists td {
   padding: 5px;
+  text-align: center;
+  vertical-align: top;
 }
 
-#queue-lists th {
+.queue-lists th {
+  padding: 5px;
   font-size: 20px;
 }
 
-#queue-lists td {
-  text-align: center;
-}
-
-#queue-lists h4 {
+.queue-lists h4 {
   font-size: 12px;
   margin-bottom: 0;
   border-bottom: 1px solid black;
 }
 
-#queue-lists h5 {
+.queue-lists h5 {
   font-size: 1.5em;
   margin-bottom: 0;
   padding-top: 15px;
 }
 
-#queue-lists ul {
+.queue-lists ul {
   padding: 0;
   margin: 0px;
   margin-top: -15px;
 }
 
-#queue-lists li {
+.queue-lists li {
   margin: 0;
 }
 
 table {
   width: 100%;
-}
-
-table a {
-  display: block;
-}
-
-#queue-lists td {
-  vertical-align: top;
 }
 
 span.green, span.red, span.yellow {
@@ -403,29 +394,16 @@ th.run {
   background: #fc6;
 }
 
-th.done {
+th.done, th.relayed {
   background: #cfc;
-}
-
-.relayed h4 {
-  background: #cfc;
-  padding: 10px;
-}
-
-.relayed li {
-  margin-bottom: 15px;
-}
-
-.relayed li a {
-  display: inline;
-}
-
-.relayed li span {
-  padding: 5px;
 }
 
 th.err {
   background: #f99;
+}
+
+.relayed li {
+  margin-bottom: 10px;
 }
 
 #log-output {

@@ -33,7 +33,7 @@
 <% if status != 'DOWN' %>
 <h2>Message List</h2>
 
-<table id="queue-lists" cellspacing="0" cellpading="5">
+<table class="queue-lists" cellspacing="0" cellpading="5">
   <thead>
     <tr>
       <th class="prep"><h4>PREP</h4><span id="prep_size">...</span></th>
@@ -47,7 +47,7 @@
   </thead>
   <tbody>
     <tr>
-<%
+<%-
   if qc.name != 'relay'
     states = %w{ prep que run done err }
   else
@@ -55,26 +55,29 @@
   end
 
   states.each do |state|
-%>
+-%>
       <!-- <%= state %> -->
       <td class="<%= state %>">
         <ul id="list-<%= state %>">
         </ul>
       </td>
-    <%- end -%>
-
+<%- end -%>
     </tr>
+
+<%- if qc.name == 'relay' -%>
+    <!-- relayed -->
+    <tr>
+      <th colspan="4" class="relayed"><h4>RELAYED</h4><span id="relayed_size">...</span></th>
+    <tr>
+    </tr>
+      <td colspan="4" class="relayed">
+        <ul id="list-relayed" class="left-aligned">
+        </ul>
+      </td>
+    </tr>
+<%- end -%>
   </tbody>
 </table>
-
-<% if qc.name == 'relay' %>
-<!-- RELAYED -->
-<div class="relayed">
-  <h4><b id="relayed_size">...</b> in RELAYED</h4>
-  <ul id="list-relayed">
-  </ul>
-</div>
-<% end %>
 
 <ul class="hidden">
   <!-- date separator -->
