@@ -29,8 +29,15 @@ domready(function() {
     for (var state in queues["messages"]) {
       var list = document.getElementById("list-" + state);
       if (list) {
+
+        // Be defensive in case the queue state failed to load
+        if (!queues["messages"][state]) {
+          continue;
+        }
+
         // Post the date prefix above each day's messages
         var last_date = "";
+
         // Zap everything in the list and then populate it again.
         // TODO: avoid refreshing everything, DOM redraws are a pain.
         list.innerHTML = "";
