@@ -1,4 +1,17 @@
 #!/bin/bash
+#
+### BEGIN INIT INFO
+# Provides:          rq
+# Required-Start:    $local_fs $remote_fs
+# Required-Stop:     $local_fs $remote_fs
+# Should-Start:      $network $syslog $time
+# Should-Stop:       $network $syslog $time
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: manage the RQ system
+# Description:       RQ queuing / messaging system for any Unix system which
+#                    can process messages in any language.
+### END INIT INFO
 
 COMMAND=$1
 # If you want to run RQ as yourself:
