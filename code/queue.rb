@@ -398,16 +398,11 @@ module RQ
           $log.debug("set ENV, now executing #{script_path}")
 
           # bash -lc will execute the command but first re-initializing like a new login (reading .bashrc, etc.)
-          exec_prefix = @config.exec_prefix || "bash -lc "
-          if exec_prefix.empty?
-            $log.debug("exec path: #{script_path}")
-            exec(script_path, "") if RUBY_VERSION < '2.0'
-            exec(script_path, "", :close_others => false)
-          else
-            $log.debug("exec path: #{exec_prefix + script_path}")
-            exec(exec_prefix + script_path) if RUBY_VERSION < '2.0'
-            exec(exec_prefix + script_path, :close_others => false)
-          end
+          exec_prefix = @config.exec_prefix || "bash -lc"
+          exec_path = "#{exec_prefix} #{script_path}".strip
+          $log.debug("exec path: #{exec_path}")
+          exec("#{exec_path}") if RUBY_VERSION < '2.0'
+          exec("#{exec_path}", :close_others => false)
         rescue
           $log.warn($!)
           $log.warn($!.backtrace)
