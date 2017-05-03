@@ -338,6 +338,7 @@ module RQ
           IO.for_fd(child_rd_fd).close rescue nil
 
           f = File.open(job_path + "/stdio.log", "a")
+          f.sync = true
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
           f.flush
