@@ -39,6 +39,8 @@ start)
 		echo "RQ is already running at pid $RQPID"
 		exit 0
 	fi
+	# remove any pidfile that exists since it's stale
+	rm -f /rq/current/config/queuemgr.pid
 
 	if [ "$NLIMIT" ]; then ulimit -n $NLIMIT; fi
 	sudo -H -u $RQUSER $RQDIR/bin/rq-mgr start
