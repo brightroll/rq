@@ -341,7 +341,6 @@ module RQ
           f.sync = true
           pfx = "#{Process.pid} - #{Time.now} -"
           f.write("\n#{pfx} RQ START - #{script_path}\n")
-          f.flush
 
           $stdin.close
           $stdout.reopen f
